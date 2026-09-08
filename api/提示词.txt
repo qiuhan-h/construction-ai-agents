@@ -1,0 +1,74 @@
+================================================================================
+api/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 api/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+api HTTP 接入层。 阶段二仅包含 A2A / MCP 协议端点与对应 Pydantic Schemas， 业务侧路由（agents / tasks / reports / websocket）留到阶段四。
+
+【依赖】
+- from api.routers.a2a_router import build_a2a_router
+- from api.routers.mcp_router import build_mcp_router
+- from api.schemas import ApiResponse, ErrorResponse, Page, PaginationQuery
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】main.py
+================================================================================
+你是一名 Python 后端开发者。请实现 main.py。
+
+【背景】
+FastAPI 主应用（4d 聚合所有路由 + lifespan）。 启动： PYTHONPATH=. uvicorn api.main:app --host 0.0.0.0 --port 8000 设计原则（4d D1, D2, D3, D4）： - lifespan：启动 AgentManager + Orchestrator + EventBus； - 关闭：orchestrator.stop() + bus.reset() + agent_manager.shutdown()； - 路由全部异步； - 4d 默认挂载以下前缀： - /api/v1/a2a          智能体间通信（阶段二） - /api/v1/mcp          MCP 资源/工具/提示词（阶段二） - /api/v1/agents       业务智能体（4d） - /api/v1/tasks        异步任务状态（4d） - /api/v1/reports      审查报告（4d） - /api/v1/orchestrator 编排器 trigger / run / timeline（4d） - /api/v1/health       healthz / readyz（4d） - /api/v1/ws           实时事件 WebSocket（4d） - /                     根 banner
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from contextlib import asynccontextmanager
+- from typing import Any, AsyncIterator
+- from fastapi import FastAPI
+- from common.constants import APP_NAME, APP_VERSION
+
+【必须实现的函数】
+1. async lifespan(app: FastAPI) -> AsyncIterator[None]  # 应用生命周期：启动 AgentManager + Orchestrator，关闭清理。
+2. create_app() -> FastAPI  # 构造 FastAPI 实例。供 uvicorn / pytest 复用。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

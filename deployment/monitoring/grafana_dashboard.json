@@ -1,0 +1,39 @@
+{
+  "title": "Construction AI Agents - 概览",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "title": "API 请求总数",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "rate(caai_request_total[5m])", "legendFormat": "{{method}} {{path}} {{status}}"}
+      ]
+    },
+    {
+      "title": "编排概览（工作流耗时）",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {"expr": "rate(caai_workflow_run_duration_seconds_sum[5m]) / rate(caai_workflow_run_duration_seconds_count[5m])", "legendFormat": "{{workflow}}"}
+      ]
+    },
+    {
+      "title": "智能体调用总数",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "rate(caai_agent_invocation_total[5m])", "legendFormat": "{{agent}} {{status}}"}
+      ]
+    },
+    {
+      "title": "事件总线积压量",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {"expr": "caai_event_bus_lag", "legendFormat": "lag"}
+      ]
+    }
+  ]
+}

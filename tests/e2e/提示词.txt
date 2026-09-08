@@ -1,0 +1,202 @@
+================================================================================
+tests/e2e/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/e2e/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_full_pipeline.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_full_pipeline.py。
+
+【背景】
+端到端冒烟：事件总线 → 编排器 → 工作流引擎 → 智能体 → 协作时间线 + 任务队列。 覆盖 verify_stage4c 内嵌冒烟的同一链路，以 pytest 形式固化： 现场告警 + 审查不通过两类事件都应驱动智能体协作并落时间线。 不依赖 LLM / 外部中间件：智能体用 Mock，事件与队列均为内存实现。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from core.a2a.message import A2AMessage
+- from core.events import Event, TOPIC_ALERT_TRIGGERED, TOPIC_INSPECTION_COMPLETED, get_event_bus, reset_event_bus
+- from core.orchestrator import Orchestrator, WorkflowEngine
+- from services import TaskQueue
+
+【必须实现的类】
+1. class _MockAgent
+   方法：
+   - __init__(self, name: str) -> None
+   - async handle(self, message: A2AMessage, task) -> A2AMessage
+1. class _MockAM
+   方法：
+   - __init__(self) -> None
+   - async get(self, name: str, tenant_id: str) -> _MockAgent
+   - list_for_tenant(self, tenant_id: str)
+   - async shutdown(self) -> None
+
+【必须实现的函数】
+1. async _full_pipeline() -> tuple[Orchestrator, _MockAM, TaskQueue]
+2. test_full_pipeline_events_drive_agents() -> None
+3. test_full_pipeline_timeline_isolated() -> None
+4. test_task_queue_owner_tracking_in_pipeline() -> None  # P1-2 回归：任务队列记录任务属主，支持多租户反查。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】test_smoke_prod_like.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_smoke_prod_like.py。
+
+【背景】
+7c-3 E2E 冒烟测试：预发配置，不进 CI 阻断。 验证内容（release_plan_stage7.md 7c-3）： 1. 健康检查：healthz + readyz 2. 三智能体端到端： - 安全审核 → 人工复核 → PDF - 合规校验 - 现场告警 → 通知 3. A2A/MCP 互通 4. 移动端 3 端点 5. 钉钉/企微内嵌打开（mock 模式） 6. RBAC 越权拒绝 用法： pytest tests/e2e/test_smoke_prod_like.py -v 或独立运行：python tests/e2e/test_smoke_prod_like.py
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- from pathlib import Path
+- import pytest
+- from fastapi.testclient import TestClient
+- from api.main import create_app
+
+【关键常量】
+- ROOT
+
+【必须实现的类】
+1. class TestHealthCheck：健康检查端点。
+   方法：
+   - test_healthz(self, client)  # healthz 返回 200。
+   - test_readyz(self, client)  # readyz 返回 200 或 503（降级模式）。
+1. class TestAgentsE2E：三智能体端到端冒烟。
+   方法：
+   - test_safety_audit_agent(self, client)  # 安全审核 agent：触发审核流程。
+   - test_compliance_agent(self, client)  # 合规校验 agent。
+   - test_site_monitor_agent(self, client)  # 现场监控 agent。
+   - test_orchestrator_trigger(self, client)  # 编排器触发：安全审核 → 合规 → 监控。
+   - test_reports_generation(self, client)  # 报告生成端点。
+1. class TestA2AMCP：A2A 和 MCP 服务互通。
+   方法：
+   - test_a2a_agent_card(self, client)  # A2A agent-card 端点。
+   - test_mcp_tools_list(self, client)  # MCP tools/list 端点。
+1. class TestMobileEndpoints：移动端关键端点。
+   方法：
+   - test_mobile_dashboard(self, client)  # 移动端 dashboard。
+   - test_mobile_alerts(self, client)  # 移动端 alerts。
+   - test_mobile_projects(self, client)  # 移动端 projects。
+1. class TestBIMGIS：BIM 和 GIS 端点（mock 降级模式）。
+   方法：
+   - test_bim_tree(self, client)  # BIM 项目树（mock 模式）。
+   - test_bim_progress(self, client)  # BIM 进度（mock 模式）。
+1. class TestRBAC：RBAC 越权拒绝。
+   方法：
+   - test_no_auth_rejected(self, client)  # 无 Authorization 头 → 401。
+   - test_cross_tenant_isolation(self, client)  # 跨租户访问 → 404 或 403。
+1. class TestQuota：配额限流测试。
+   方法：
+   - test_quota_endpoint(self, client)  # 配额查询端点。
+
+【必须实现的函数】
+1. client()  # 模块级 TestClient。
+2. _auth_headers(tenant_id: str='tnt_staging_alpha', user_id: str='user1') -> dict  # 构造测试用 Authorization 头。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】test_staging_hardening.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_staging_hardening.py。
+
+【背景】
+7c-4/7c-5/7c-6 预发环境硬化测试。 7c-4 压测：API 并发、配额限流、worker 队列 7c-5 安全测试：越权、JWT 伪造、SQL 注入、脱敏 7c-6 观测验证：Prometheus 采集、OTel trace 用法： pytest tests/e2e/test_staging_hardening.py -v
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- import threading
+- import time
+- from pathlib import Path
+- import pytest
+- from fastapi.testclient import TestClient
+- from api.main import create_app
+
+【关键常量】
+- ROOT
+
+【必须实现的类】
+1. class TestStress：API 并发压测。
+   方法：
+   - test_concurrent_healthz(self, client)  # 并发 20 个 healthz 请求，全部 200。
+   - test_concurrent_agents_list(self, client)  # 并发 10 个 agents 请求（带 auth）。
+   - test_response_time_under_load(self, client)  # 响应时间基线：单个请求 < 500ms。
+   - test_quota_429_scenario(self, client)  # 配额限流 429 场景（模拟超配额）。
+1. class TestSecurity：安全测试。
+   方法：
+   - test_no_auth_rejected(self, client)  # 无 Authorization 头 → 401/403。
+   - test_invalid_jwt_rejected(self, client)  # JWT 伪造 → 401/403。
+   - test_cross_tenant_isolation(self, client)  # 跨租户访问 → 403/404。
+   - test_sql_injection_tenant_id(self, client)  # SQL 注入 tenant_id → ORM 参数化保护，不泄露其他租户数据。
+   - test_path_traversal_rejected(self, client)  # 路径遍历 → 404。
+   - test_xss_in_query_param(self, client)  # XSS 查询参数 → 不执行脚本。
+   - test_prod_docs_disabled(self, client)  # 生产模式关闭 docs（APP_ENV=dev 时应可访问）。
+1. class TestObservability：观测验证。
+   方法：
+   - test_metrics_endpoint(self, client)  # Prometheus metrics 端点。
+   - test_request_id_in_response(self, client)  # 响应包含 request_id（链路追踪）。
+   - test_timestamp_in_response(self, client)  # 响应包含 timestamp。
+   - test_health_check_details(self, client)  # readyz 包含子组件状态（链路追踪基础）。
+
+【必须实现的函数】
+1. client()
+2. _auth_headers(tenant_id: str='tnt_staging_alpha', user_id: str='user1') -> dict
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

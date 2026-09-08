@@ -1,0 +1,331 @@
+================================================================================
+scripts/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 scripts/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+scripts 包初始化。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】init_agents.py
+================================================================================
+你是一名 Python 后端开发者。请实现 init_agents.py。
+
+【背景】
+初始化智能体：每租户注册到 AgentManager + 同步 A2A AgentRegistry。 设计（4d D7 幂等）： - 不实际注入"租户"概念到全局 registry（4d 不要求）； - 核心动作：对每个白名单智能体调用 ``make_xxx_agent(tenant_id=...)``， 通过 AgentManager 触发懒加载（验证工厂可用），并打印卡信息。 - 默认同时注册到 ``core.a2a.server.get_registry()``，方便 A2A 路由也能查到。 用法： python scripts/init_agents.py --tenant tnt_demo python scripts/init_agents.py --tenant tnt_demo --tenants tnt_a,tnt_b python scripts/init_agents.py --list       # 仅列出白名单 退出码： 0  全部成功 1  任意一个智能体工厂失败
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import asyncio
+- import logging
+- import os
+- import sys
+- from typing import Any
+- from api.dependencies.agent_manager import AgentManager, AgentManagerError, get_agent_manager
+- from common.constants import AgentName
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. _register_to_a2a_registry(agent: Any) -> None  # 把构造好的 agent 注入到 A2A AgentRegistry，方便 A2A 路由可用。
+2. async init_tenant(mgr: AgentManager, tenant_id: str) -> dict[str, Any]  # 对单个租户触发所有白名单智能体的懒加载。
+3. async async_main(args: argparse.Namespace) -> int
+4. main() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】load_gis_data.py
+================================================================================
+你是一名 Python 后端开发者。请实现 load_gis_data.py。
+
+【背景】
+GIS 数据加载：扫描 data/geodata/{geojson,shapefiles} → 注入 spatial_monitor + ORM upsert 围栏。 设计（4d D7 幂等，5b.3 升级 ORM）： - 默认从 ``data/geodata/geojson/*.geojson`` / ``*.json`` 扫描 GeoJSON FeatureCollection； - Shapefile 需要 ``pyshp``（shapefile）依赖，首版跳过并 warn； - 把每个 Feature 的 geometry 解析为 ``GeoPoint`` 列表，注入到 ``SpatialMonitor`` 的内存索引，并可选注册到 ``Geofencing`` 围栏表； - 5b.3：围栏定义 upsert 到 ``GeofenceRepository``（SQLAlchemy ORM）； 缺包 / 缺表时降级为只注入内存（4d 接口契约保留）； - 重复执行等价于 upsert：feature_id 唯一。 用法： python scripts/load_gis_data.py python scripts/load_gis_data.py --dir data/geodata/geojson python scripts/load_gis_data.py --tenant tnt_x --fence-id mysite python scripts/load_gis_data.py --dry-run python scripts/load_gis_data.py --list         # 列出当前 fence 缓存 退出码： 0  成功 1  目录不存在 / 解析失败
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import json
+- import logging
+- import os
+- import sys
+- from typing import Any
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. _get_geofence_repo() -> Any  # 返回 ``GeofenceRepository`` 或 None。
+2. _parse_geometry(coords: Any) -> list[tuple[float, float]]  # 把 GeoJSON coordinates 拍平为 ``[(lon, lat), ...]``。 支持：Point / LineString / Polygon / Multi*。
+3. _scan_geojson_dir(data_dir: str) -> list[dict[str, Any]]  # 扫描目录下所有 ``.geojson`` / ``.json`` 文件，提取 feature 列表。 返回 ``[{file, feature_index, fid, name, points: [(lon, lat)], props}, ...]``。
+4. _inject_into_spatial_monitor(features: list[dict[str, Any]]) -> int  # 把 features 注入到 SpatialMonitor 缓存（首版 in-memory）。
+5. _inject_into_geofencing(fence_id: str, features: list[dict[str, Any]], tenant_id: str) -> int  # 尝试把 features 写入 Geofencing 围栏（in-memory 即可）。
+6. _upsert_into_orm(repo: Any, fence_id: str, features: list[dict[str, Any]], tenant_id: str) -> int  # 把 features 写入 ``GeofenceRepository``。
+7. main(args: argparse.Namespace) -> int
+8. cli_entry() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】load_regulations.py
+================================================================================
+你是一名 Python 后端开发者。请实现 load_regulations.py。
+
+【背景】
+法规数据灌入：扫描 data/regulations/*.md → RegulationLoader → ORM upsert + 事件。 设计（4d D7 幂等，5b.3 升级 ORM）： - 文件名约定：``{code}-{version}.md``，例 ``GB50016-2014.md``； - 重复执行等价于 upsert：code + version + article 唯一；已存在则覆盖； - 5b.3：扫描结果写入 ``RegulationRepository``（SQLAlchemy ORM）； 缺包 / 缺表时降级为只打印（不抛错，保持 4d 接口契约）； - 注册成功后通过事件总线发布 ``TOPIC_REGULATION_UPDATED``，编排器会触发 ``regulation_record`` 工作流（仅记录 + 通知）。 用法： python scripts/load_regulations.py                       # 默认 data/regulations python scripts/load_regulations.py --dir data/regulations python scripts/load_regulations.py --tenant tnt_x python scripts/load_regulations.py --dry-run python scripts/load_regulations.py --list                 # 仅列出当前 loader 缓存 退出码： 0  成功 1  目录不存在或扫描失败
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import asyncio
+- import json
+- import logging
+- import os
+- import sys
+- from typing import Any
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. _get_regulation_repo() -> Any  # 返回 ``RegulationRepository`` 或 None。
+2. _build_loader(data_dir: str) -> Any  # 构造 RegulationLoader（兼容两种导入路径）。
+3. async _publish_regulation_updated(code: str, version: str, action: str='loaded') -> None  # 发布 regulation.updated 事件（fire-and-forget）。
+4. _to_orm_records(items: list[dict[str, Any]], tenant_id: str) -> list[dict[str, Any]]  # 将 loader 扫描结果转成 ORM ``RegulationRepository.add`` 可接受 dict。
+5. async async_main(args: argparse.Namespace) -> int
+6. main() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】seed_test_data.py
+================================================================================
+你是一名 Python 后端开发者。请实现 seed_test_data.py。
+
+【背景】
+测试种子数据：创建租户/项目/方案/报告 4 类 mock 数据。 设计（4d D7 幂等，5b.3 升级）： - 默认创建： 1 个租户  ``tnt_demo`` 2 个项目  ``prj_alpha`` / ``prj_beta`` 5 个方案  （不同 plan_id） 3 个报告  （通过 ORM ReviewReportRepository 注入；同时写入内存以兼容 4d） - 5b.3：报告 upsert 走 ``core.storage.sqlalchemy_repos.get_review_report_repository()``； 内存 mock 仍保留为兜底（旧路由层会优先 ORM）； - 4d 阶段不写入 DB；阶段五已切 ORM； - 重复执行等价于 upsert：以 tenant_id/project_id/plan_id/report_id 为主键； - 输出 JSON 摘要 + 退出码 0/1。 用法： python scripts/seed_test_data.py python scripts/seed_test_data.py --tenant tnt_other python scripts/seed_test_data.py --json python scripts/seed_test_data.py --reset           # 清空 ORM 表 + 内存 store 退出码： 0  成功 1  任何写入失败
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import json
+- import logging
+- import os
+- import sys
+- from typing import Any
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. _get_orm_repos() -> dict[str, Any] | None  # 获取 ORM 仓储集合；缺包/失败 → 返回 None（脚本仍可继续写内存 store）。
+2. _seed_reports(tenant_id: str, reset: bool=False) -> dict[str, int]  # 把 SEED_REPORTS 写入 ORM + 内存 store。返回 {orm: n, memory: n}。
+3. item_inspection_id_for(project_id: str, report_id: str) -> str  # 从 project_id+report_id 派生一个稳定的 inspection_id（4d 时期格式）。
+4. _seed_projects_and_plans() -> dict[str, int]  # 首版只打印（4d/5b.3 不强制注入到 DB）。
+5. main(args: argparse.Namespace) -> int
+6. cli_entry() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】setup_vector_db.py
+================================================================================
+你是一名 Python 后端开发者。请实现 setup_vector_db.py。
+
+【背景】
+向量库初始化：InMemoryVectorStore 灌入法规 + 案例文本。 设计（4d D7 幂等）： - 默认从 ``data/regulations/*.md`` + ``data/cases/*.md`` 读取纯文本； - 复用 ``safety_audit_agent.knowledge_base.vector_store.InMemoryVectorStore``； - 重复执行等价于 upsert：record id 由 ``code/version/case_id`` 决定； - 4d 阶段用 ``InMemoryVectorStore``；阶段五切换 ChromaDB 时 只需替换 ``_make_store()`` 实现。 用法： python scripts/setup_vector_db.py python scripts/setup_vector_db.py --reg-dir data/regulations python scripts/setup_vector_db.py --case-dir data/cases python scripts/setup_vector_db.py --tenant tnt_demo python scripts/setup_vector_db.py --dry-run python scripts/setup_vector_db.py --stats          # 打印当前 store count 退出码： 0  成功 1  目录不存在
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import asyncio
+- import logging
+- import os
+- import re
+- import sys
+- from typing import Any
+
+【关键常量】
+- _PROJECT_ROOT
+- _REG_FILENAME_RE
+- _CASE_FILENAME_RE
+
+【必须实现的函数】
+1. _read_text(path: str) -> str
+2. _truncate(text: str, max_len: int=4000) -> str  # 向量库首版只索引前 N 字符（避免大文件把 token 撑爆）。
+3. _make_store() -> Any  # 构造向量库（4d：InMemory；阶段五：ChromaDB）。
+4. _scan_regulations(reg_dir: str, tenant_id: str) -> list[dict[str, Any]]  # 扫描法规目录，返回待索引记录（不调用 store）。
+5. _scan_cases(case_dir: str, tenant_id: str) -> list[dict[str, Any]]  # 扫描案例目录。
+6. async async_main(args: argparse.Namespace) -> int
+7. main() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】start_a2a_server.py
+================================================================================
+你是一名 Python 后端开发者。请实现 start_a2a_server.py。
+
+【背景】
+启动 A2A 服务（独立 HTTP 服务，承载智能体 A2A 通信）。 使用： python -m scripts.start_a2a_server # 或 python scripts/start_a2a_server.py 环境变量（与 .env / config/settings 对齐）： A2A_HOST        监听地址，默认 0.0.0.0 A2A_PORT        监听端口，默认 9101 APP_ENV         dev / staging / prod 占位说明： 主机 / 端口均为内网地址，本地默认 0.0.0.0:9101；容器化时由 docker-compose 注入。 阶段二不预置任何业务智能体，注册逻辑由调用方在 register_business_agents() 中按需开启。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- import os
+- import sys
+- from typing import Any
+- from common.constants import APP_NAME, APP_VERSION
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.server import get_registry
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. register_business_agents() -> None  # 注册业务智能体到全局 AgentRegistry。 阶段二仅做"空跑"——不注册任何业务智能体，仅暴露空 Card 列表。 阶段三开始接入 safety_audit_agent / compliance_agent / site_monitor_agent。
+2. build_app() -> Any  # 构造 FastAPI app。
+3. main() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】start_mcp_server.py
+================================================================================
+你是一名 Python 后端开发者。请实现 start_mcp_server.py。
+
+【背景】
+启动 MCP 服务（独立 HTTP 服务，承载 MCP 资源/工具/提示词）。 使用： python -m scripts.start_mcp_server # 或 python scripts/start_mcp_server.py 环境变量： MCP_HOST        监听地址，默认 0.0.0.0 MCP_PORT        监听端口，默认 9201 LOG_LEVEL       日志级别 注意： 启动时会自动通过 _bootstrap_default_registry 触发 core.mcp.resources / tools / prompts 三组子模块的注册。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- import sys
+- from typing import Any
+- from common.constants import APP_NAME, APP_VERSION
+- from common.timeutils import to_iso, utc_now
+- from core.mcp.server import get_mcp_service
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. build_app() -> Any  # 构造 FastAPI app。
+2. main() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】start_worker.py
+================================================================================
+你是一名 Python 后端开发者。请实现 start_worker.py。
+
+【背景】
+启动 Celery worker（4d）。 设计（O3 / 4d D8）： - broker 走 ``services.celery_app.app``；缺包时降级为 mock 模式（空跑 + 信号退出）； - mock 模式下注册 SIGINT / SIGTERM handler 优雅退出； - worker 启动失败时打印明确错误 + 回退 mock； - 额外注入 ``celery_app.conf["agent_manager"]`` 供编排器节点任务使用（4c+）； 用法： python scripts/start_worker.py python scripts/start_worker.py --queues default,alerts python scripts/start_worker.py --concurrency 2 python scripts/start_worker.py --mock          # 强制走 mock 模式 python scripts/start_worker.py --loglevel DEBUG
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import logging
+- import os
+- import signal
+- import sys
+- import time
+- from typing import Any
+
+【关键常量】
+- _PROJECT_ROOT
+
+【必须实现的函数】
+1. _build_celery_app() -> Any  # 构造 Celery 应用（含 AgentManager 注入）。
+2. _install_signal_handlers(loop_running: bool=False) -> None  # 注册 SIGINT / SIGTERM handler，让 Ctrl+C 优雅退出。
+3. run_mock(args: argparse.Namespace) -> int  # 不实际拉起 worker，循环 sleep 直到被信号打断。
+4. run_celery_worker(args: argparse.Namespace) -> int  # 拉起 celery worker。
+5. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

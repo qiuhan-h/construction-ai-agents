@@ -1,0 +1,248 @@
+================================================================================
+agents/safety_audit_agent/calculators/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/safety_audit_agent/calculators/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+施工安全审核智能体：业务计算引擎。 设计原则： - 每个计算模块仅暴露 async 接口（CPU 密集型计算走 to_thread 包装）； - 内部使用纯 Python + dataclass，不引入 numpy/pandas 等重型依赖； - 数值常量与国标条文在同一文件内集中维护，便于阶段四替换为真实算法。
+
+【依赖】
+- from agents.safety_audit_agent.calculators.load_calculator import LoadCalculator, LoadInputs, LoadResult
+- from agents.safety_audit_agent.calculators.risk_assessor import HazardInput, LECAssessor, RiskAssessment, RiskItem, RiskLevel
+- from agents.safety_audit_agent.calculators.structural_analyzer import MemberType, StructuralAnalyzer, StructuralCheckInput, StructuralCheckResult
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】load_calc_gb.py
+================================================================================
+你是一名 Python 后端开发者。请实现 load_calc_gb.py。
+
+【背景】
+GB 50009-2012《建筑结构荷载规范》荷载组合（阶段六增强版）。 替换 / 叠加现有 LoadCalculator 简化公式。 系数严格按 GB 50009-2012 §3.2.4 取值： - 永久荷载 γG = 1.2（不利）/ 1.0（有利）/ 0.9（对抗倾覆/滑移有利） - 可变荷载 γQ = 1.4（一般）/ 1.35（用于 1.35G + 1.4×0.7Q 组合） - 组合值系数 ψc = 0.7（两个可变荷载）/ 0.6（风与雪同时） - 准永久系数 ψq = 0.5（楼盖活载）/ 0（屋面活载） 本类为 **6a 新增独立类**，不替换现有 LoadCalculator。 SafetyAuditAgent 按精度需求路由调用。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from dataclasses import dataclass, field
+- from typing import Any, Literal
+- from .load_calculator import FLOOR_LIVE_LOAD_KPA, LoadInputs, LoadResult, MATERIAL_SELF_WEIGHT_KN_M3
+
+【关键常量】
+- GAMMA_G_UNFAVORABLE = 1.2
+- GAMMA_G_FAVORABLE = 1.0
+- GAMMA_G_OVERTURN = 0.9
+- GAMMA_Q = 1.4
+- GAMMA_Q_LOW = 1.35
+- PSI_C_TWO = 0.7
+- PSI_C_WIND_SNOW = 0.6
+- PSI_Q_FLOOR = 0.5
+- PSI_Q_ROOF = 0.0
+
+【必须实现的类】
+1. class LoadCombinationResult：多种组合同时计算的结果。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class GB50009LoadCalculator：GB 50009-2012 荷载组合增强版计算器。 覆盖 §3.2.4 全部四种组合 + 抗倾覆验算。 与现有 LoadCalculator 并存，按需路由调用。
+   方法：
+   - async combine_loads(self, inputs: LoadInputs, region: str | None=None) -> LoadCombinationResult  # 计算 GB 50009 全套荷载组合。 用法:: gb = GB50009LoadCalculator() result = await gb.combine_loads(LoadInputs(plan_id="p1", dead_load_kpa=3.0, live_load_kpa=2.5)) print(result.basic_combos["G+Q"])   # 1.2D + 1.4L print(result.basic_combos["1.35G+0.7×1.4Q"])  # 1.35D + 0.98L
+   - _combine_loads_sync(self, inputs: LoadInputs, region: str | None) -> LoadCombinationResult
+   - basic_wind_pressure(region: str) -> float  # 按地区查基本风压（kN/m²）。
+   - basic_snow_pressure(region: str) -> float  # 按地区查基本雪压（kN/m²）。
+   - live_load(category: str) -> float | None  # 按房间类别查活荷载（kN/m²）。与 LoadCalculator 共享表。
+   - material_self_weight(material: str) -> float | None  # 按材料名查自重（kN/m³）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】load_calculator.py
+================================================================================
+你是一名 Python 后端开发者。请实现 load_calculator.py。
+
+【背景】
+荷载计算：GB 50009-2012《建筑结构荷载规范》核心公式的首版实现。 覆盖： - 永久荷载 D（按材料自重表查得） - 活荷载 L（按房间类别查表） - 风荷载 W = βz·μs·μz·w0 - 雪荷载 S = μr·Ce·Ct·sk - 基本组合：1.2D + 1.4L + 0.6W + 0.7S 首版说明： - 系数表为典型值（办公室/住宅/风敏感结构等），覆盖 80% 业务场景； - 阶段四将按 GB 50009 完整附表 A/B/C 替换为可配置数据集。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from dataclasses import dataclass, field
+- from typing import Any
+
+【必须实现的类】
+1. class LoadInputs：荷载计算输入（kPa = kN/m²）。
+1. class LoadResult：荷载计算结果。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class LoadCalculator：GB 50009 首版荷载组合计算器（async 接口，内部计算用 to_thread）。
+   方法：
+   - async combined_load(self, inputs: LoadInputs) -> LoadResult  # 基本组合 1.2D + 1.4L + 0.6W + 0.7S。
+   - _combined_load_sync(self, inputs: LoadInputs) -> LoadResult
+   - material_self_weight(material: str) -> float | None  # 按材料名查自重（kN/m³）；未收录返回 None。
+   - live_load(category: str) -> float | None  # 按房间类别查活荷载（kN/m²）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】risk_assessor.py
+================================================================================
+你是一名 Python 后端开发者。请实现 risk_assessor.py。
+
+【背景】
+风险评估：作业条件危险性评价法（LEC）。 公式：D = L · E · C L = 事故发生的可能性（likelihood） E = 暴露于危险环境的频繁程度（exposure） C = 发生事故可能造成的后果（consequence） 风险等级： D ≥ 320   重大风险（CRITICAL）→ 必须停工 + 触发告警 160 ≤ D < 320  较大风险（HIGH） 70  ≤ D < 160  一般风险（MEDIUM） 20  ≤ D < 70   较低风险（LOW） D < 20          轻微风险（NEGLIGIBLE）
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from dataclasses import dataclass, field
+- from enum import Enum
+- from typing import Any
+
+【必须实现的类】
+1. class RiskLevel(str, Enum)：风险等级（D 值划分）。
+1. class HazardInput：单个危险源。
+1. class RiskItem：单个危险源的风险评估结果。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class RiskAssessment：一批危险源的整体评估。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class LECAssessor：LEC 风险评估器（async）。
+   方法：
+   - async assess(self, hazards: list[HazardInput]) -> RiskAssessment
+   - _assess_sync(self, hazards: list[HazardInput]) -> RiskAssessment
+   - from_text(hazards: list[dict[str, Any]]) -> list[HazardInput]  # 从 dict 列表构造 HazardInput（便利方法）。
+
+【必须实现的函数】
+1. classify(score: float) -> RiskLevel
+2. _level_rank(level: RiskLevel) -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】structural_analyzer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 structural_analyzer.py。
+
+【背景】
+结构分析（首版占位 + 接口）：构件反查 + 最小配筋率提示。 说明： - 完整有限元 / GB 50010 / GB 50011 计算留到阶段四； - 首版根据构件类型与截面尺寸，给出： 1) 最小构造配筋率 ρ_min（参考 GB 50010 表 8.5.1） 2) 跨高比合理性提示（梁/板常用 L/h 限值） 3) 高跨结构警示（> 30m 提示专项论证） - 所有计算为粗略合理性校验，**不替代**详细结构计算。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from dataclasses import dataclass, field
+- from enum import Enum
+- from typing import Any
+
+【必须实现的类】
+1. class MemberType(str, Enum)：构件类型（节选）。
+1. class StructuralCheckInput
+1. class StructuralCheckResult
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class StructuralAnalyzer：结构粗略校验（首版）。
+   方法：
+   - async check(self, inputs: StructuralCheckInput) -> StructuralCheckResult
+   - _check_sync(self, inputs: StructuralCheckInput) -> StructuralCheckResult
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】structural_check_gb.py
+================================================================================
+你是一名 Python 后端开发者。请实现 structural_check_gb.py。
+
+【背景】
+GB 50010-2010《混凝土结构设计规范》承载力校核（阶段六增强版）。 覆盖矩形截面受弯构件正截面承载力基本公式： α1·f_c·b·x·(h0 − x/2) ≤ M_u ξ_b = β1·ε_cu / (ε_cu + ε_y)       适筋梁上限 x = (f_y·A_s) / (α1·f_c·b)         由平衡方程解得 本类为 **6a 新增独立类**，不替换现有 StructuralAnalyzer。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from dataclasses import dataclass, field
+- from enum import Enum
+- from typing import Any
+- from .structural_analyzer import MemberType
+
+【关键常量】
+- E_S_MPA = 200000.0
+- EPS_CU = 0.0033
+
+【必须实现的类】
+1. class ConcreteBeamInput：矩形截面受弯构件正截面承载力计算输入。 所有单位：mm（几何）、MPa（应力）、N（力）。 load_kN_per_m 为 **线荷载**（kN/m）— 即面荷载 × 梁分担宽度。 跨中弯矩 M = w·L²/8，w = load_kN_per_m × 1000（N/mm），L = span_mm（mm）。 若你手头只有面荷载（kN/m²），用 面荷载 × 梁间距(m) 换算成线荷载。
+   方法：
+   - h0_mm(self) -> float
+   - moment_Nmm(self) -> float  # 跨中弯矩 M = w·L²/8。w 单位 N/mm，L 单位 mm。
+1. class BearingCheckResult：GB 50010 结构校核结果。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class GB50010StructuralAnalyzer：GB 50010-2010 混凝土矩形截面受弯构件增强版校验。
+   方法：
+   - async check_bearing_capacity(self, inputs: ConcreteBeamInput) -> BearingCheckResult
+   - _check_sync(self, i: ConcreteBeamInput) -> BearingCheckResult
+   - concrete_fc(grade: str) -> float | None
+   - steel_fy(grade: str) -> float | None
+
+【必须实现的函数】
+1. _alpha1_beta1(concrete_grade: str) -> tuple[float, float]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

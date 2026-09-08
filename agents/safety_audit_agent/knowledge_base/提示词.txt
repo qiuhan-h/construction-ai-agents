@@ -1,0 +1,221 @@
+================================================================================
+agents/safety_audit_agent/knowledge_base/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/safety_audit_agent/knowledge_base/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+施工安全审核智能体：知识库。 设计要点： - 阶段三实现：内存版向量库 + 余弦相似度（不引入 numpy/scipy 等重型依赖）； - 阶段四将替换为 ChromaDB（已预留在 core.langchain.tools.vector_search）。
+
+【依赖】
+- from agents.safety_audit_agent.knowledge_base.case_retriever import CaseRetriever
+- from agents.safety_audit_agent.knowledge_base.standard_loader import StandardLoader
+- from agents.safety_audit_agent.knowledge_base.vector_store import InMemoryVectorStore, VectorHit, VectorRecord, VectorStore, get_default_vector_store
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】case_retriever.py
+================================================================================
+你是一名 Python 后端开发者。请实现 case_retriever.py。
+
+【背景】
+案例检索：在知识库中按相似度检索 Top-K 事故案例。 数据来源： - 阶段三：默认 InMemoryVectorStore；可注入外部数据 - 阶段四：接 ChromaDB（仍走 VectorStore 抽象） 多租户隔离：query 时强制 tenant_id 过滤。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass
+- from typing import Any
+- from agents.safety_audit_agent.knowledge_base.vector_store import VectorHit, VectorRecord, VectorStore, get_default_vector_store
+
+【必须实现的类】
+1. class CaseHit：单个检索到的案例。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class CaseRetriever：案例检索器（按相似度 Top-K）。
+   方法：
+   - __init__(self, vector_store: VectorStore | None=None) -> None
+   - async index_cases(self, tenant_id: str, cases: list[dict[str, Any]]) -> int  # 把一批 case 灌入向量库。
+   - async search_cases(self, tenant_id: str, query: str, top_k: int, min_score: float) -> list[CaseHit]  # 按相似度返回案例 Top-K。
+
+【必须实现的函数】
+1. _compose_case_text(case: dict[str, Any]) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】standard_kb.py
+================================================================================
+你是一名 Python 后端开发者。请实现 standard_kb.py。
+
+【背景】
+标准知识库 — GB 条文结构化检索接口。 包装 RuleChecker，提供 clause_id / severity / 关键词 三种检索维度， 供 LLM 辅助解释时调用。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass
+- from typing import Iterable
+
+【必须实现的类】
+1. class KnowledgeEntry：单条条文检索结果。
+1. class StandardKnowledgeBase：GB 条文结构化知识库。 用法:: kb = StandardKnowledgeBase() entries = kb.search(keyword="耐火")       # 关键词搜索 entries = kb.by_severity("critical")      # 严重度过滤 entries = kb.by_clause("GB50016-2014-5.1.1-1")  # 精确查找
+   方法：
+   - __init__(self) -> None
+   - all(self) -> list[KnowledgeEntry]  # 返回全部已加载条文。
+   - search(self, keyword: str) -> list[KnowledgeEntry]  # 按关键词检索 title / reason / suggestion。
+   - by_severity(self, severity: str) -> list[KnowledgeEntry]  # 按严重度筛选。
+   - by_clause(self, clause_id: str) -> KnowledgeEntry | None  # 精确查找。
+   - by_field(self, field_name: str) -> list[KnowledgeEntry]  # 按检查字段名筛选（含点号分隔的嵌套字段）。
+   - count(self) -> int
+   - _to_entry(rule: StructuredRule) -> KnowledgeEntry
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】standard_loader.py
+================================================================================
+你是一名 Python 后端开发者。请实现 standard_loader.py。
+
+【背景】
+国标/行标加载：把 MCP 资源（regulation://、standard://）的能力桥接到 safety_audit_agent 内部计算流程。 设计： - 通过 core.mcp.server.get_mcp_service() 调用资源； - 失败抛 AgentParseError（业务可读）； - 加载到内存向量库供后续检索。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import re
+- from dataclasses import dataclass, field
+- from typing import Any
+- from common.constants import DocType, ResourceType
+- from common.exceptions import AgentParseError
+- from common.ids import project_id as _project_id_factory
+- from common.timeutils import to_iso, utc_now
+- from agents.safety_audit_agent.knowledge_base.vector_store import VectorRecord, get_default_vector_store
+
+【必须实现的类】
+1. class RegulationSummary：法规摘要。
+   方法：
+   - uri(self) -> str
+1. class StandardSummary：标准摘要。
+   方法：
+   - uri(self) -> str
+1. class StandardLoader：标准/法规资源桥接：list + read + 加载到向量库。
+   方法：
+   - __init__(self, vector_store=None) -> None
+   - _mcp_service()
+   - async list_regulations(self, tenant_id: str) -> list[RegulationSummary]  # 列出可用法规（首版经 regulation_resource 暴露；为空时返回 []）。
+   - async list_standards(self, tenant_id: str) -> list[StandardSummary]
+   - async read_regulation(self, code: str, version: str, tenant_id: str) -> str  # 按 URI 读法规全文。失败抛 AgentParseError。
+   - async load_to_vector_store(self, tenant_id: str, code: str, version: str, max_chunk_chars: int) -> int  # 把法规全文切分后写入向量库。返回写入条数。
+
+【必须实现的函数】
+1. _chunk_text(text: str, max_chars: int) -> list[str]  # 按段落（空行）切分；单段超长则硬切。
+2. re_split_paragraphs(text: str) -> list[str]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】vector_store.py
+================================================================================
+你是一名 Python 后端开发者。请实现 vector_store.py。
+
+【背景】
+向量库抽象与首版（内存版）实现。 设计： - VectorStore：抽象接口（upsert / query / delete / count） - InMemoryVectorStore：纯 Python + 数学库实现（无第三方依赖） - 分词：unicode 字符 + 简单停用词过滤 - 向量化：词袋 + 词频 → L2 归一化 - 相似度：cosine 阶段四将用 ChromaDB 替换 InMemoryVectorStore，对外接口保持不变。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import math
+- import re
+- import threading
+- from abc import ABC, abstractmethod
+- from collections import Counter
+- from dataclasses import dataclass, field
+- from typing import Any, Iterable
+
+【关键常量】
+- _TOKEN_PATTERN
+
+【必须实现的类】
+1. class VectorRecord：一条向量记录。
+1. class VectorHit：一条检索结果。
+1. class VectorStore(ABC)：向量库抽象接口（阶段四 ChromaDB 实现将继承此）。
+   方法：
+   - async upsert(self, records: list[VectorRecord]) -> int
+   - async query(self, tenant_id: str, text: str, top_k: int, filter: dict[str, Any] | None, min_score: float) -> list[VectorHit]
+   - async delete(self, ids: Iterable[str]) -> int
+   - count(self, tenant_id: str | None=None) -> int
+1. class InMemoryVectorStore(VectorStore)：内存版向量库（首版，无第三方依赖）。
+   方法：
+   - __init__(self) -> None
+   - async upsert(self, records: list[VectorRecord]) -> int
+   - _upsert_sync(self, records: list[VectorRecord]) -> int
+   - async query(self, tenant_id: str, text: str, top_k: int, filter: dict[str, Any] | None, min_score: float) -> list[VectorHit]
+   - _query_sync(self, tenant_id: str, text: str, top_k: int, filter: dict[str, Any] | None, min_score: float) -> list[VectorHit]
+   - async delete(self, ids: Iterable[str]) -> int
+   - _delete_sync(self, ids: list[str]) -> int
+   - count(self, tenant_id: str | None=None) -> int
+   - all_records(self, tenant_id: str | None=None) -> list[VectorRecord]  # 测试用：导出全部记录。
+
+【必须实现的函数】
+1. _tokenize(text: str) -> list[str]  # 简单分词：unicode 词字符 + 去停用词 + 小写。
+2. get_default_vector_store() -> InMemoryVectorStore
+3. reset_default_vector_store() -> None  # 测试用：重置默认向量库。
+4. _to_vector(tokens: list[str]) -> dict[str, float]  # 词频向量（dict[token, count]）。 P0-4 修补：旧实做把 Counter.items() 排序后丢弃 token 名，仅保留 counts 列表，按位置 zip 配对——两个完全不相关单 token 文档会 得到 1.0 相似度。改为保留 token 名做 dict，按 key 交集算内积。
+5. _cosine(a: dict[str, float], b: dict[str, float]) -> float  # 两个 dict[str, float] 间的余弦相似度。 按 key 交集算内积（token 名对齐，避免位置错配）。
+6. _match_filter(metadata: dict[str, Any], flt: dict[str, Any]) -> bool  # 简单 metadata 过滤（值完全相等）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

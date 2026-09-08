@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caai-api
+  labels: {app: caai-api}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: caai-api}
+  template:
+    metadata:
+      labels: {app: caai-api}
+    spec:
+      containers:
+        - name: api
+          image: caai/api:latest
+          ports: [{containerPort: 8000}]
+          livenessProbe:
+            httpGet: {path: /api/v1/health/healthz, port: 8000}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /api/v1/health/readyz, port: 8000}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 200m, memory: 512Mi}
+            limits: {cpu: 1000m, memory: 1Gi}
+          envFrom:
+            - configMapRef: {name: caai-config}
+            - secretRef: {name: caai-secrets}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: caai-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: caai-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 70}
+    - type: Resource
+      resource:
+        name: memory
+        target: {type: Utilization, averageUtilization: 80}

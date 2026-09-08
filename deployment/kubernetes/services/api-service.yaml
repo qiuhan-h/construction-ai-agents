@@ -1,0 +1,14 @@
+# 5c.5 预留：K8s Service — API 服务暴露。
+# 模板：
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: caai-api
+#   namespace: caai
+# spec:
+#   selector:
+#     app: caai-api
+#   ports:
+#     - port: 80
+#       targetPort: 8000
+#       protocol: TCP

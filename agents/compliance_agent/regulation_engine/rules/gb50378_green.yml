@@ -1,0 +1,124 @@
+# GB 50378-2019 绿色建筑评价标准
+# 结构化规则 — 机器可判定
+
+rules:
+  - clause_id: "GB50378-2019-3.2.1"
+    title: "绿色建筑等级应匹配各项指标得分"
+    severity: critical
+    field: "green_building.level_match"
+    operator: "=="
+    value: true
+    unit: ""
+    target_element: "building"
+    reason: "等级与实际指标不符会导致绿色建筑评价结果失真，失去公信力"
+    suggestion: "按总得分和各指标得分表正确评定三星（≥85）、二星（≥70）、一星（≥60）"
+
+  - clause_id: "GB50378-2019-4.2.1"
+    title: "节约用地率不应小于 7%"
+    severity: high
+    field: "land_efficiency.save_ratio"
+    operator: ">="
+    value: 7.0
+    unit: "%"
+    target_element: "site"
+    reason: "节约用地是绿色建筑核心目标，减少土地占用有利于保护耕地和生态环境"
+    suggestion: "通过合理的建筑布局、地下空间开发等方式，实现节地率 ≥ 7%"
+
+  - clause_id: "GB50378-2019-5.2.1"
+    title: "节约水资源率不应小于 10%"
+    severity: medium
+    field: "water_efficiency.save_ratio"
+    operator: ">="
+    value: 10.0
+    unit: "%"
+    target_element: "building"
+    reason: "节水率不足意味着没有充分利用非传统水源，不符合绿色建筑节水要求"
+    suggestion: "采用雨水收集、中水回用、高效节水器具等措施，节水率 ≥ 10%"
+
+  - clause_id: "GB50378-2019-6.2.1"
+    title: "节能率不应小于 15%（相对基准建筑）"
+    severity: high
+    field: "energy_efficiency.save_ratio"
+    operator: ">="
+    value: 15.0
+    unit: "%"
+    target_element: "building"
+    reason: "节能率是绿色建筑最重要的指标之一，反映围护结构和设备系统的节能水平"
+    suggestion: "通过高效围护结构、节能设备和运行管理，实现相对节能率 ≥ 15%"
+
+  - clause_id: "GB50378-2019-7.2.1"
+    title: "绿色建材使用率不应小于 50%"
+    severity: medium
+    field: "green_materials.usage_ratio"
+    operator: ">="
+    value: 50.0
+    unit: "%"
+    target_element: "building"
+    reason: "绿色建材具有低碳、环保、可循环等特性，高使用率能有效降低建筑碳排放"
+    suggestion: "选用获得环境标志认证的绿色建材，使用率 ≥ 50%"
+
+  - clause_id: "GB50378-2019-6.2.2"
+    title: "可再生能源利用率不应小于 15%"
+    severity: medium
+    field: "renewable_energy.usage_ratio"
+    operator: ">="
+    value: 15.0
+    unit: "%"
+    target_element: "building"
+    reason: "提高可再生能源利用比例是建筑领域实现碳中和的关键途径"
+    suggestion: "采用光伏发电、太阳能热水、地源热泵等技术，可再生能源占比 ≥ 15%"
+
+  - clause_id: "GB50378-2019-8.2.1"
+    title: "室内空气质量等级不应低于国家标准"
+    severity: high
+    field: "indoor_air_quality.level"
+    operator: ">="
+    value: "II"
+    unit: ""
+    target_element: "indoor_space"
+    reason: "室内空气污染直接影响居住者健康，是绿色建筑健康性评价的核心指标"
+    suggestion: "室内空气质量应达到《民用建筑工程室内环境污染控制标准》GB 50325 II 类"
+
+  - clause_id: "GB50378-2019-4.2.2"
+    title: "场地绿化率不应小于 30%"
+    severity: low
+    field: "site.greening_ratio"
+    operator: ">="
+    value: 30.0
+    unit: "%"
+    target_element: "site"
+    reason: "绿地具有改善微气候、降低热岛效应、净化空气等多重环境效益"
+    suggestion: "合理布置乔木、灌木和草坪，场地绿化率 ≥ 30%"
+
+  - clause_id: "GB50378-2019-7.2.2"
+    title: "可循环材料利用率不应小于 5%"
+    severity: medium
+    field: "recyclable_materials.usage_ratio"
+    operator: ">="
+    value: 5.0
+    unit: "%"
+    target_element: "building"
+    reason: "提高可循环材料使用比例可减少建筑废弃物和原生资源消耗"
+    suggestion: "采用钢结构预制构件、再生混凝土等可循环材料，利用率 ≥ 5%"
+
+  - clause_id: "GB50378-2019-8.2.4"
+    title: "室内噪声等级满足 ≤ 50dB（昼间）"
+    severity: medium
+    field: "indoor_noise.daytime_level"
+    operator: "<="
+    value: 50.0
+    unit: "dB"
+    target_element: "indoor_space"
+    reason: "室内噪声过大会影响居住者的工作、学习和休息，危害身心健康"
+    suggestion: "采取隔声门窗、隔声墙体等措施，昼间室内噪声 ≤ 50dB"
+
+  - clause_id: "GB50378-2019-8.2.5"
+    title: "室内噪声夜间等级满足 ≤ 40dB"
+    severity: medium
+    field: "indoor_noise.nighttime_level"
+    operator: "<="
+    value: 40.0
+    unit: "dB"
+    target_element: "indoor_space"
+    reason: "夜间噪声对睡眠干扰更为严重，是评价室内声环境质量的重要指标"
+    suggestion: "提高外窗气密性和隔声性能，必要时设置被动式通风隔声窗"

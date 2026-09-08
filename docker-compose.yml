@@ -1,0 +1,151 @@
+# =====================================================
+# construction-ai-agents 本地编排
+# 一键启动: docker compose up -d
+#
+# 使用方式：在每行 `# >>>` 注释下方填写真实值，替换 `需要补充实际链接`
+# .env 文件已含完整配置，本文件仅处理 docker-compose 专属参数
+# （端口映射、容器内地址、InfluxDB 初始化参数）
+# =====================================================
+
+services:
+  # ---------- 基础设施 ----------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      # >>> 数据库名，例 construction_agents
+      POSTGRES_DB: 需要补充实际链接
+      # >>> 数据库账号，例 caai_app
+      POSTGRES_USER: 需要补充实际链接
+      # >>> 数据库密码，8-32 位含大小写+数字+特殊字符，例 Hk9$mL2x
+      POSTGRES_PASSWORD: 需要补充实际链接
+    ports:
+      # >>> 宿主机端口:5432，仅本机 "127.0.0.1:5432:5432"，所有网卡 "5432:5432"
+      - "需要补充实际链接:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # >>> 健康检查账号，与 POSTGRES_USER 保持一致
+      test: ["CMD-SHELL", "pg_isready -U 需要补充实际链接"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      # >>> 宿主机端口:6379，例 "6379:6379"
+      - "需要补充实际链接:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      # >>> InfluxDB 管理员账号，例 admin
+      DOCKER_INFLUXDB_INIT_USERNAME: 需要补充实际链接
+      # >>> InfluxDB 管理员密码，至少 8 位，例 InfluxAdmin#2026
+      DOCKER_INFLUXDB_INIT_PASSWORD: 需要补充实际链接
+      # >>> InfluxDB 组织名，与 .env 的 TSDB_ORG 保持一致，例 construction
+      DOCKER_INFLUXDB_INIT_ORG: 需要补充实际链接
+      # >>> InfluxDB 桶名，与 .env 的 TSDB_BUCKET 保持一致，例 sensor_data_dev
+      DOCKER_INFLUXDB_INIT_BUCKET: 需要补充实际链接
+      # >>> InfluxDB Admin Token，与 .env 的 TSDB_TOKEN 保持一致，例 aBcDeFgHiJkLmN1234567890_abCdEfGhIjKlMnO-Pq==
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 需要补充实际链接
+    ports:
+      # >>> 宿主机端口:8086，例 "8086:8086"
+      - "需要补充实际链接:8086"
+    volumes:
+      - influxdata:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------- 应用服务 ----------
+  api:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.api
+    ports:
+      # >>> 宿主机端口:8000，例 "8000:8000"
+      - "需要补充实际链接:8000"
+    env_file: .env
+    environment:
+      # >>> 容器内 PostgreSQL 连接串：postgresql+psycopg://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
+      # >>> 例 postgresql+psycopg://caai_app:Hk9$mL2x@postgres:5432/construction_agents
+      DATABASE_URL: 需要补充实际链接
+      # >>> 容器内 Redis 地址：redis://redis:6379/0
+      REDIS_URL: 需要补充实际链接
+      # >>> 容器内 Celery Broker：redis://redis:6379/1
+      CELERY_BROKER_URL: 需要补充实际链接
+      # >>> 容器内 Celery 后端：redis://redis:6379/2
+      CELERY_RESULT_BACKEND: 需要补充实际链接
+      # >>> 容器内 InfluxDB 地址：http://influxdb:8086
+      TSDB_URL: 需要补充实际链接
+      # >>> InfluxDB Token，与上方 DOCKER_INFLUXDB_INIT_ADMIN_TOKEN 保持一致
+      TSDB_TOKEN: 需要补充实际链接
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.worker
+    env_file: .env
+    environment:
+      # >>> 容器内 PostgreSQL 连接串，与 api 服务 DATABASE_URL 保持一致
+      DATABASE_URL: 需要补充实际链接
+      # >>> 容器内 Celery Broker：redis://redis:6379/1
+      CELERY_BROKER_URL: 需要补充实际链接
+      # >>> 容器内 Celery 后端：redis://redis:6379/2
+      CELERY_RESULT_BACKEND: 需要补充实际链接
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.streamlit
+    ports:
+      # >>> 宿主机端口:8501，例 "8501:8501"
+      - "需要补充实际链接:8501"
+    environment:
+      # >>> 前端访问的后端地址，容器内用 http://api:8000，本机访问用 http://localhost:8000
+      API_BASE_URL: 需要补充实际链接
+    depends_on:
+      - api
+
+  a2a-server:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.a2a
+    ports:
+      # >>> 宿主机端口:9101，例 "9101:9101"
+      - "需要补充实际链接:9101"
+    env_file: .env
+    depends_on:
+      - api
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.mcp
+    ports:
+      # >>> 宿主机端口:9201，例 "9201:9201"
+      - "需要补充实际链接:9201"
+    env_file: .env
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  influxdata:

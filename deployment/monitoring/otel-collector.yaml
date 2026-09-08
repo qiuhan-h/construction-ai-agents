@@ -1,0 +1,155 @@
+# 7e OTel Collector 配置。
+#
+# 用途：收集分布式链路追踪数据，转发到 Jaeger/Tempo。
+#
+# 部署：
+#   kubectl apply -f deployment/monitoring/otel-collector.yaml
+#
+# 依赖：
+#   - OTEL_EXPORTER_OTLP_ENDPOINT 环境变量配置在应用 Pod 中
+#   - Jaeger/Tempo 后端已部署（见 deployment_runbook.md §4）
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: caai-prod  # 需要补充实际链接：真实命名空间
+  labels:
+    app: otel-collector
+    component: monitoring
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      # OTLP gRPC 接收（应用通过 OTLP 导出）
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      # 采样：生产环境 10% 采样率，降低存储压力
+      probabilistic_sampler:
+        sampling_percentage: 10  # 需要补充实际链接：采样率（10%→100% 按需调整）
+
+      # 批处理：减少导出请求频率
+      batch:
+        timeout: 5s
+        send_batch_size: 1000
+
+      # 资源属性：添加环境信息
+      resource:
+        attributes:
+          - key: deployment.environment
+            value: production  # 需要补充实际链接：环境名
+            action: upsert
+          - key: service.namespace
+            value: caai
+            action: upsert
+
+      # 过滤：排除健康检查 trace
+      filter:
+        traces:
+          span:
+            - 'attributes["http.route"] == "/api/v1/health/healthz"'
+            - 'attributes["http.route"] == "/api/v1/health/readyz"'
+            - 'attributes["http.route"] == "/metrics"'
+
+    exporters:
+      # Jaeger 导出（gRPC）
+      jaeger:
+        endpoint: jaeger-collector:14250  # 需要补充实际链接：Jaeger 地址
+        tls:
+          insecure: true
+
+      # 日志导出（降级用）
+      logging:
+        loglevel: warn
+
+      # Prometheus 指标导出
+      prometheus:
+        endpoint: 0.0.0.0:8889
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [filter, probabilistic_sampler, resource, batch]
+          exporters: [jaeger, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [resource, batch]
+          exporters: [prometheus]
+        logs:
+          receivers: [otlp]
+          processors: [resource, batch]
+          exporters: [logging]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: caai-prod  # 需要补充实际链接：真实命名空间
+  labels:
+    app: otel-collector
+    component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.90.1  # 需要补充实际链接：版本号
+        ports:
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 8889
+          name: prometheus
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otelcol/config.yaml
+          subPath: otel-collector-config.yaml
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: caai-prod  # 需要补充实际链接：真实命名空间
+  labels:
+    app: otel-collector
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4317
+    name: otlp-grpc
+    targetPort: 4317
+  - port: 4318
+    name: otlp-http
+    targetPort: 4318
+  - port: 8889
+    name: prometheus
+    targetPort: 8889
+  selector:
+    app: otel-collector

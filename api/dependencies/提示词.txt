@@ -1,0 +1,185 @@
+================================================================================
+api/dependencies/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 api/dependencies/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+api.dependencies 包：FastAPI 依赖注入项。 公开 API： - AuthContext / get_auth_context  鉴权上下文（4d） - AgentManager / get_agent_manager / init_agent_manager  智能体 DI（4d） - get_orchestrator / init_orchestrator  编排器 DI（4d）
+
+【依赖】
+- from api.dependencies.agent_manager import AgentManager, init_agent_manager, reset_agent_manager, get_agent_manager
+- from api.dependencies.auth import AuthContext, get_auth_context, reset_auth_state
+- from api.dependencies.orchestrator_provider import get_orchestrator, init_orchestrator, reset_orchestrator
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】agent_manager.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agent_manager.py。
+
+【背景】
+AgentManager：FastAPI 层的智能体 DI 容器。 设计原则（4c O1, 4d D1）： - 实现 4c ``AgentManagerProtocol``（get / list_for_tenant / shutdown）； - 按 (tenant_id, agent_name) 缓存智能体实例，避免重复构造； - 4d 不强制注入到 A2A registry（保持 A2A registry 与 AgentManager 互不耦合）； - 工厂函数 fail-fast：缺包或工厂缺失即抛 500（避免静默回退到 mock）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- import threading
+- from typing import Any
+- from common.constants import AgentName
+- from common.exceptions import AppException
+
+【必须实现的类】
+1. class AgentManagerError(AppException)：AgentManager 内部异常。
+1. class AgentManager：按 (tenant_id, agent_name) 缓存智能体实例。
+   方法：
+   - __init__(self) -> None
+   - async get(self, name: str, tenant_id: str) -> Any
+   - list_for_tenant(self, tenant_id: str) -> list[Any]
+   - list_supported(self) -> list[str]
+   - async shutdown(self) -> None
+   - stats(self) -> dict[str, int]
+
+【必须实现的函数】
+1. _create_agent(name: str, tenant_id: str) -> Any  # 根据 name 构造业务智能体。
+2. init_agent_manager() -> AgentManager  # 进程级单例初始化（lifespan 中调用）。
+3. get_agent_manager() -> AgentManager  # 获取单例。未初始化时自动初始化（保证 FastAPI 启动前也能使用）。
+4. reset_agent_manager() -> None  # 重置单例（仅测试使用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】auth.py
+================================================================================
+你是一名 Python 后端开发者。请实现 auth.py。
+
+【背景】
+JWT / dev 鉴权依赖。 设计原则（D1, D3）： - 优先用 python-jose 解析 HS256 token； - 缺失时降级为 ``dev-{tenant_id}-{user_id}`` 前缀校验，仅供本地开发； - 任何失败统一抛 401，错误码 30001（UNAUTHORIZED）。 - 4d 不引入 RBAC，仅做租户提取 + 身份记录。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from fastapi import Depends, HTTPException, status
+- from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+- from config import get_settings
+
+【必须实现的类】
+1. class AuthContext：鉴权上下文：从 Authorization Bearer token 解析得到。 6b.2 新增 ``role`` 字段（默认 viewer），来源： - dev token: 固定 ``admin``（便于本地调试）； - JWT: ``role`` claim，缺失时默认 ``viewer``。
+   方法：
+   - __init__(self, tenant_id: str, user_id: str, scopes: list[str], role: str='viewer', attributes: dict[str, Any] | None=None)
+   - has_scope(self, scope: str) -> bool
+   - to_dict(self) -> dict[str, Any]
+
+【必须实现的函数】
+1. _parse_dev_token(token: str) -> AuthContext  # ``dev-{tenant_id}-{user_id}`` 形式解析。
+2. _parse_jwt_token(token: str) -> AuthContext  # HS256 JWT 解析。
+3. async get_auth_context(creds: HTTPAuthorizationCredentials=Depends(_bearer)) -> AuthContext  # FastAPI 依赖：从 Bearer token 解析 AuthContext。 解析顺序： 1. token 以 ``dev-`` 开头 → 走 dev 降级（不论 jose 是否可用）； 2. 否则按 JWT 解码； 3. jose 缺失 → 走 dev 降级。
+4. set_auth_override(ctx: AuthContext | None) -> None  # 测试用：直接覆盖 get_auth_context 的返回值。
+5. reset_auth_state() -> None  # 重置测试覆盖 + 计数器。
+6. _maybe_override(ctx: AuthContext) -> AuthContext
+7. async get_auth_context_with_override(creds: HTTPAuthorizationCredentials=Depends(_bearer))
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】orchestrator_provider.py
+================================================================================
+你是一名 Python 后端开发者。请实现 orchestrator_provider.py。
+
+【背景】
+编排器 DI 容器：把 core.orchestrator.Orchestrator 注入到 FastAPI 路由。 设计要点： - 4d 让 API 路由直接调 Orchestrator（trigger workflow / list / get_run）； - 单例持有 task_queue + agent_manager + workflow_engine； - lifespan 启动 Orchestrator，订阅事件；停止时 unsub。 - 测试可通过 ``reset_orchestrator`` 强制重新构造。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- import threading
+- from typing import Any
+
+【必须实现的函数】
+1. init_orchestrator(task_queue: Any | None, agent_manager: Any | None, workflow_engine: Any | None, event_bus: Any | None) -> Any  # 构造并启动 Orchestrator 单例（lifespan 调用）。 任一依赖为 None 时使用默认实现： - task_queue   -> services.task_queue.TaskQueue() - agent_manager-> api.dependencies.agent_manager.get_agent_manager() - workflow_engine -> core.orchestrator.workflow_engine.WorkflowEngine() - event_bus    -> core.events.get_event_bus()
+2. get_orchestrator() -> Any  # 获取单例 Orchestrator。
+3. async shutdown_orchestrator() -> None  # 停止 Orchestrator（lifespan 关闭阶段调用）。
+4. reset_orchestrator() -> None  # 重置单例（仅测试）。不会 await stop。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】rbac.py
+================================================================================
+你是一名 Python 后端开发者。请实现 rbac.py。
+
+【背景】
+RBAC 访问控制装饰器。 F7 原则：默认拒绝 + 最小权限。 - prod 模式：未声明 @require_role 的路由 → 拒绝（fail-secure）。 - dev 模式：未声明 @require_role 的路由 → 放行（便于调试）。
+
+【依赖】
+- from __future__ import annotations
+- import functools
+- from typing import Any
+- from fastapi import HTTPException
+- from api.dependencies.auth import AuthContext
+- from config.settings import get_settings
+
+【必须实现的函数】
+1. require_role(*roles)  # 路由级权限装饰器：检查 auth.role 是否在允许的 role 列表中。 用法： @router.post("/agents/{name}/invoke") @require_role("admin", "engineer") async def invoke_agent(...): ...
+2. require_permission(resource: str, action: str)  # 细粒度权限装饰器：检查 role 对 resource 的 action 权限。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

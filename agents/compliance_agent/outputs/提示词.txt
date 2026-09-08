@@ -1,0 +1,152 @@
+================================================================================
+agents/compliance_agent/outputs/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/compliance_agent/outputs/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+报告输出层：合规报告 + 违规追踪 + 违规仓储。
+
+【依赖】
+- from agents.compliance_agent.outputs.compliance_report import ComplianceReporter, ReportArtifacts
+- from agents.compliance_agent.outputs.violation_repository import ViolationRepository
+- from agents.compliance_agent.outputs.violation_tracker import ViolationTracker
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】compliance_report.py
+================================================================================
+你是一名 Python 后端开发者。请实现 compliance_report.py。
+
+【背景】
+合规报告生成器：结构化 ReviewReport + Markdown。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from dataclasses import dataclass, field
+- from typing import Any
+- from common.constants import AgentName, AuditConclusion, ReportStatus, ViolationSeverity
+- from common.ids import inspection_id as _inspection_id_factory, report_id
+- from common.timeutils import utc_now
+- from models.domain import Inspection, ReviewReport, Violation
+- from agents.compliance_agent.regulation_engine.mcp_loader import RegulationSummary
+
+【必须实现的类】
+1. class ReportArtifacts：合规报告生成产物。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class ComplianceReporter：合规报告生成器：ReviewReport + Markdown。
+   方法：
+   - __init__(self) -> None
+   - generate(self, tenant_id: str, project_id: str, plan_id: str, design_doc: dict[str, Any], violations: list[Violation] | None, regulations: list[RegulationSummary] | None) -> ReportArtifacts
+   - _conclude(violations: list[Violation]) -> AuditConclusion
+   - _render_markdown(design_doc: dict[str, Any], violations: list[Violation], regulations: list[RegulationSummary], regulation_versions: dict[str, str], conclusion: AuditConclusion) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】violation_repository.py
+================================================================================
+你是一名 Python 后端开发者。请实现 violation_repository.py。
+
+【背景】
+违规表 SQLAlchemy 仓储：落库 + 状态变更。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from models.database import ViolationTable
+
+【必须实现的类】
+1. class ViolationRepository：违规表仓储（首版支持 session_factory 注入；无 session_factory 时走 mock）。
+   方法：
+   - __init__(self, session_factory: Any | None=None) -> None
+   - add(self, violations: list[Any]) -> int  # 批量插入 violations 表。返回写入条数。
+   - get(self, violation_id: str) -> dict[str, Any] | None
+   - list_by_inspection(self, inspection_id: str) -> list[dict[str, Any]]
+   - list_by_tenant(self, tenant_id: str, status: str | None, limit: int) -> list[dict[str, Any]]
+   - update_status(self, violation_id: str, status: str, note: str | None=None) -> bool
+   - _to_row(v: Any) -> ViolationTable
+   - _from_row(row: ViolationTable) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】violation_tracker.py
+================================================================================
+你是一名 Python 后端开发者。请实现 violation_tracker.py。
+
+【背景】
+违规追踪：落库 + 状态变更 + 事件发布。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any
+- from core.events import get_event_bus
+- from core.events.events import ViolationCreatedEvent, ViolationRectifiedEvent
+- from models.domain import Violation
+- from agents.compliance_agent.outputs.violation_repository import ViolationRepository
+
+【必须实现的类】
+1. class ViolationTracker：违规追踪：落库 + 状态变更 + 事件发布。
+   方法：
+   - __init__(self, tenant_id: str, repo: ViolationRepository, event_bus=None) -> None
+   - async record(self, violations: list[Violation], inspection_id: str) -> list[str]  # 落库 + 回填 inspection_id + 触发 violation.created 事件。 返回入库的 violation_id 列表。
+   - async mark_rectifying(self, violation_id: str) -> bool
+   - async mark_closed(self, violation_id: str, note: str) -> bool
+   - async mark_waived(self, violation_id: str, reason: str) -> bool
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

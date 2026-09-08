@@ -1,0 +1,115 @@
+================================================================================
+tests/site_monitor_agent/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/site_monitor_agent/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+site_monitor_agent 端到端自检测试包。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_agent.py。
+
+【背景】
+阶段四·子阶段 4b（site_monitor_agent）端到端自检。 执行方式： cd construction-ai-agents python tests/site_monitor_agent/test_agent.py 覆盖 stage4b_site_monitor_agent.txt §5 验收清单 a–p 共 22 项。 所有用例不依赖外部 broker / DB / LLM：MQTT 走 mock，TSDB 走 mock， LLM 调用不触发（agent 主流程不调 LLM）。 可直接 ``python`` 运行，也可被 pytest 收集（自检仅在 __main__ 下执行， 避免模块级 sys.exit 触发 INTERNALERROR）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- _SELF_TEST_CASES = [('a) MQTTConnector mock 模式 (mock_inject + loop_forever)', t_mqtt_mock_inject), 
+
+【必须实现的函数】
+1. check(name: str, fn) -> None
+2. t_mqtt_mock_inject() -> None  # MQTTConnector mock 模式（缺失 paho-mqtt 时自动降级）。
+3. t_sensor_manager() -> None
+4. t_data_pipeline_clean() -> None
+5. t_data_pipeline_run() -> None
+6. t_data_pipeline_queue_full_drop() -> None  # 队列满时丢非关键数据并累加 dropped 计数。
+7. t_tsdb_writer() -> None
+8. t_spatial_monitor() -> None
+9. t_geofencing() -> None
+10. t_risk_heatmap() -> None
+11. t_bim_connector_mock() -> None
+12. t_ifc_parser_mock() -> None
+13. t_progress_tracker() -> None
+14. t_rule_engine_operators() -> None
+15. t_alert_dispatcher_dedup() -> None
+16. t_alert_dispatcher_critical_escalation() -> None  # CRITICAL 触发 notifier 升级调用。
+17. t_alert_repository_tenant_isolation() -> None
+18. t_daily_report() -> None
+19. t_trend_analyzer() -> None
+20. t_dashboard_data() -> None
+21. t_agent_end_to_end_alert() -> None
+22. t_agent_end_to_end_daily_report() -> None
+23. t_multi_tenant_isolation_e2e() -> None
+24. _run_self_test() -> int  # 脚本式自检：逐条运行 ``_SELF_TEST_CASES``，汇总通过/失败计数。 返回退出码（0=全过，1=有失败）。仅在 ``python test_agent.py`` 直接执行 时被调用；pytest 收集时不会触发，避免 ``sys.exit`` 导致 INTERNALERROR。
+25. test_mqtt_mock_inject() -> None
+26. test_sensor_manager() -> None
+27. test_data_pipeline_clean() -> None
+28. test_data_pipeline_run() -> None
+29. test_data_pipeline_queue_full_drop() -> None
+30. test_tsdb_writer() -> None
+31. test_spatial_monitor() -> None
+32. test_geofencing() -> None
+33. test_risk_heatmap() -> None
+34. test_bim_connector_mock() -> None
+35. test_ifc_parser_mock() -> None
+36. test_progress_tracker() -> None
+37. test_rule_engine_operators() -> None
+38. test_alert_dispatcher_dedup() -> None
+39. test_alert_dispatcher_critical_escalation() -> None
+40. test_alert_repository_tenant_isolation() -> None
+41. test_daily_report() -> None
+42. test_trend_analyzer() -> None
+43. test_dashboard_data() -> None
+44. test_agent_end_to_end_alert() -> None
+45. test_agent_end_to_end_daily_report() -> None
+46. test_multi_tenant_isolation_e2e() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

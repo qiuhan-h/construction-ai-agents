@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caai-worker
+  labels: {app: caai-worker}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: caai-worker}
+  template:
+    metadata:
+      labels: {app: caai-worker}
+    spec:
+      containers:
+        - name: worker
+          image: caai/worker:latest
+          ports: [{containerPort: 8001}]
+          livenessProbe:
+            exec: {command: ["celery", "-A", "services.celery_app", "inspect", "ping"]}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            exec: {command: ["celery", "-A", "services.celery_app", "inspect", "ping"]}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: {cpu: 200m, memory: 512Mi}
+            limits: {cpu: 1000m, memory: 1Gi}
+          envFrom:
+            - configMapRef: {name: caai-config}
+            - secretRef: {name: caai-secrets}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: caai-worker-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: caai-worker
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 70}
+    - type: Resource
+      resource:
+        name: memory
+        target: {type: Utilization, averageUtilization: 80}

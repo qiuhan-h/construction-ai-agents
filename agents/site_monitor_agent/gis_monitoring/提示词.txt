@@ -1,0 +1,172 @@
+================================================================================
+agents/site_monitor_agent/gis_monitoring/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/site_monitor_agent/gis_monitoring/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】geofence_history.py
+================================================================================
+你是一名 Python 后端开发者。请实现 geofence_history.py。
+
+【背景】
+地理围栏越界历史持久化（5b.7）。 设计： - ``GeofenceHistoryStore`` Protocol：统一持久化接口，4d 时期 ``Geofencing.list_violations_since`` 始终返回空 → 5b.7 让它可以 从 ``store`` 取真实历史； - 内存实现 ``InMemoryGeofenceHistoryStore``：环形 buffer（按 fence_id 分桶，最多 ``max_per_fence`` 条；超出丢弃最旧），线程安全； - 5b.3 接 ORM 时实现 ``ORMGeofenceHistoryStore``，本模块**预留 factory 函数** ``get_geofence_history_store()``，环境变量 ``GEOFENCE_HISTORY_BACKEND=memory`` 切换； - 5b.7 与 5b.3 解耦：4d ``Geofencing`` 只需把 ``store`` 注入即可， 4d 接口契约不变（F2 兼容）。 字段： - 每条 ``FenceViolation`` 历史记录 = 4d 时期 ``FenceViolation`` + ``id`` + ``tenant_id``。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- import threading
+- import uuid
+- from collections import defaultdict, deque
+- from datetime import datetime
+- from typing import Any, Iterable, Protocol, runtime_checkable
+- from agents.site_monitor_agent.gis_monitoring.geofencing import FenceViolation
+- from common.timeutils import utc_now
+- from models.domain import GeoPoint
+
+【必须实现的类】
+1. class GeofenceHistoryStore(Protocol)：地理围栏历史持久化协议。
+   方法：
+   - async record(self, violation: FenceViolation, tenant_id: str) -> str  # 记录一条越界，返回 id。
+   - async list_since(self, tenant_id: str, since: datetime, fence_id: str | None, device_id: str | None, limit: int) -> list[FenceViolation]  # 列出指定时间之后的历史。
+   - count(self, tenant_id: str | None=None) -> int  # 总条数（按租户可选过滤）。
+1. class InMemoryGeofenceHistoryStore：内存环形 buffer 实现（线程安全；最大 ``max_per_fence`` 条/fence）。
+   方法：
+   - __init__(self, max_per_fence: int) -> None
+   - async record(self, violation: FenceViolation, tenant_id: str) -> str
+   - async list_since(self, tenant_id: str, since: datetime, fence_id: str | None, device_id: str | None, limit: int) -> list[FenceViolation]
+   - count(self, tenant_id: str | None=None) -> int
+
+【必须实现的函数】
+1. get_geofence_history_store() -> GeofenceHistoryStore  # 获取进程级单例；环境变量 ``GEOFENCE_HISTORY_BACKEND`` 切换实现。
+2. reset_default_geofence_history_store() -> None  # 测试用：重置单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】geofencing.py
+================================================================================
+你是一名 Python 后端开发者。请实现 geofencing.py。
+
+【背景】
+地理围栏：定义 + 检测越界。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from dataclasses import dataclass, field
+- from datetime import datetime
+- from typing import Any
+- from common.timeutils import utc_now
+- from models.domain import GeoPoint
+
+【必须实现的类】
+1. class FenceViolation：围栏越界记录。
+1. class Geofencing：地理围栏：定义 polygon + 检测点是否在多边形内。
+   方法：
+   - __init__(self, history_store: 'GeofenceHistoryStore | None'=None) -> None
+   - _store(self)
+   - define_fence(self, fence_id: str, polygon: list[GeoPoint], name: str='') -> None
+   - remove_fence(self, fence_id: str) -> bool
+   - get_polygon(self, fence_id: str) -> list[GeoPoint]
+   - check_violation(self, fence_id: str, point: GeoPoint, device_id: str='') -> bool  # 点在 polygon 外 = 越界。
+   - async record_violation(self, fence_id: str, point: GeoPoint, device_id: str='', tenant_id: str='t-default', metadata: dict[str, Any] | None=None) -> str | None  # 5b.7 新增：把一条越界写入历史。返回 id，越界未发生返回 None。 P0-5 修补：原同步 ``def`` 内部调 ``await self._store().record(...)`` 返回的是 coroutine 对象未 await，5b.7 接口契约彻底失效。 改为 ``async def`` + ``await``。
+   - async list_violations_since(self, since: datetime, device_id: str, tenant_id: str, fence_id: str | None, limit: int='') -> list[FenceViolation]  # 4d 时期接口契约保留；5b.7 起从 ``history_store`` 真实取数。 P0-5 修补：同 ``record_violation``，改 ``async def`` + ``await``。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】risk_heatmap.py
+================================================================================
+你是一名 Python 后端开发者。请实现 risk_heatmap.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】spatial_monitor.py
+================================================================================
+你是一名 Python 后端开发者。请实现 spatial_monitor.py。
+
+【背景】
+空间监控：坐标范围 / 距离 / 区域计算。
+
+【依赖】
+- from __future__ import annotations
+- import math
+- from typing import Any
+- from models.domain import GeoPoint
+
+【关键常量】
+- EARTH_RADIUS_M = 6371008.8
+
+【必须实现的类】
+1. class SpatialMonitor：坐标 / 距离 / 区域工具（GCJ-02 投影，度为经纬度）。
+   方法：
+   - point_in_polygon(self, point: GeoPoint, polygon: list[GeoPoint]) -> bool  # 射线法判断点是否在多边形内。
+   - distance_m(self, a: GeoPoint, b: GeoPoint) -> float  # Haversine 球面距离（米）。
+   - bounding_box(self, points: list[GeoPoint]) -> tuple[float, float, float, float]  # 返回 (min_lon, min_lat, max_lon, max_lat)。空列表返回 (0,0,0,0)。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

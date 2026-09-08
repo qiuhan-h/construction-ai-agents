@@ -1,0 +1,311 @@
+================================================================================
+core/security/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/security/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请为安全包 core/security/ 编写 __init__.py 文件。
+
+【背景】
+本包提供 RBAC 权限矩阵 + ABAC 属性访问控制 + 字段级脱敏 + 国密 SM2 电子签章。
+该文件是包入口，仅做声明，不包含业务逻辑。
+
+【要求】
+1. 文件顶部包含中文模块文档字符串，说明本包的整体职责范围
+2. 包含 from __future__ import annotations
+3. 不放置任何业务逻辑代码
+4. 不强制导出子模块符号（子模块按需 import）
+
+【输出】
+完整的 __init__.py 文件内容，使用中文 docstring，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】permissions.py
+================================================================================
+你是一名 Python 后端开发者。请实现 core/security/permissions.py，
+即 RBAC 权限矩阵数据源与查询接口。
+
+【背景】
+本文件定义 角色 × 资源 × 操作 的静态权限矩阵，是整个访问控制体系的基础数据层。
+遵循 F7 原则：默认拒绝 + 最小权限，未声明的角色/资源组合一律拒绝。
+
+【必须实现的接口】
+1. ROLES: tuple[str]
+   角色枚举，包含 "admin"、"engineer"、"reviewer"、"viewer" 四个角色
+
+2. RESOURCES: tuple[str]
+   资源枚举，包含以下资源：
+   "safety_audit"（安全审查）、"compliance"（合规）、"site_monitor"（工地监控）、
+   "report"（报告）、"gis"（GIS）、"agent_management"（Agent 管理）、"workflow"（工作流）
+
+3. PERMISSIONS: dict[str, dict[str, set[str] | None]]
+   权限矩阵，结构为 角色 -> {资源 -> 操作集合}
+   - None 表示该角色对该资源拥有全部权限（仅 admin 使用）
+   - 空 set 表示无任何权限
+   权限分配如下：
+   - admin：对所有资源权限为 None（全权限）
+   - engineer：
+       safety_audit / compliance / site_monitor: {"invoke", "read", "list"}
+       report: {"read", "list", "download"}
+       gis: {"read"}
+       agent_management: {"invoke", "read"}
+       workflow: {"trigger", "read"}
+   - reviewer：
+       safety_audit / compliance / site_monitor: {"read", "list"}
+       report: {"read", "list", "download", "approve"}
+       gis: {"read"}
+       agent_management: {"read"}
+       workflow: {"read"}
+   - viewer：
+       safety_audit / compliance / site_monitor: {"list"}
+       report: {"list"}
+       gis: {"read"}
+       agent_management: set()
+       workflow: set()
+
+4. def check_permission(role: str, resource: str, action: str) -> bool:
+   检查 role 对 resource 是否有 action 权限。
+   - 查表，actions 为 None 返回 True（admin 全权限）
+   - 否则判断 action in actions
+   - role 或 resource 未声明时返回 False（默认拒绝）
+
+5. def list_permissions(role: str) -> dict[str, set[str] | None]:
+   返回 role 的完整权限矩阵，用于调试和 UI 展示。
+
+【约束】
+- 矩阵为纯静态数据，无外部依赖
+- 禁止在运行时修改 PERMISSIONS（无锁保护）
+- 新增角色或资源时必须同步更新 ROLES、RESOURCES、PERMISSIONS 三处
+
+【输出】
+完整的 permissions.py 文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】policies.py
+================================================================================
+你是一名 Python 后端开发者。请实现 core/security/policies.py，
+即策略引擎，串联 RBAC 快路径 + ABAC 后置判定。
+
+【背景】
+本文件是访问控制的核心调度器。对外暴露统一的 PolicyEngine.evaluate() 入口。
+执行流程：RBAC 先判定 → 拒绝则短路返回 → 通过则追加 ABAC 属性级评估。
+
+【依赖】
+- from core.security.permissions import check_permission
+- from core.security.abac_engine import get_abac_engine（在 evaluate 内部延迟导入，避免循环依赖）
+
+【必须实现的接口】
+1. class PolicyEngine:
+   def evaluate(
+       self,
+       role: str,
+       resource: str,
+       action: str,
+       *,
+       tenant_id: str = "",
+       context: dict | None = None,
+       subject_attrs: dict | None = None,
+       resource_attrs: dict | None = None,
+       env_attrs: dict | None = None,
+   ) -> bool:
+
+   评估逻辑：
+   (1) RBAC 快路径：调用 check_permission(role, resource, action)，
+       若返回 False 则记录 debug 日志并直接返回 False（短路，不走 ABAC）
+   (2) 旧接口兼容：从 context 中取 tenant_id，若与传入的 tenant_id 均非空
+       且不一致，则返回 False（租户隔离）
+   (3) 若 subject_attrs 和 resource_attrs 均为 None，则返回 True
+       （无 ABAC 属性，仅 RBAC 结果）
+   (4) 构建 subject 属性字典：复制 subject_attrs，补充 role 和 tenant_id
+   (5) 构建 resource 属性字典：复制 resource_attrs，补充 resource
+   (6) 调用 get_abac_engine().evaluate(subject, resource, action, env)
+
+2. def get_policy_engine() -> PolicyEngine: 单例获取
+3. def reset_policy_engine() -> None: 测试用，重置单例
+
+【约束】
+- context 参数为旧接口兼容保留，新代码应使用 subject_attrs/resource_attrs
+- 单例 _engine 非线程安全创建，测试间需 reset_policy_engine()
+- 使用 logging.getLogger("core.security.policies") 记录日志
+
+【输出】
+完整的 policies.py 文件，中文 docstring，包含 __all__ 导出，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】abac_engine.py
+================================================================================
+你是一名 Python 后端开发者。请实现 core/security/abac_engine.py，
+即属性级访问控制（ABAC）引擎。
+
+【背景】
+ABAC 基于主体、资源、环境三类属性进行策略评估。所有规则采用 AND 逻辑，
+任一规则返回 False 则整体拒绝。评估超时则默认拒绝（fail-secure）。
+本引擎无外部依赖（不依赖 sqlparse 等）。
+
+【必须实现的接口】
+
+1. 关键常量：
+   - ABAC_TIMEOUT_SECONDS = 0.05（单次评估超时阈值，秒）
+   - WORK_HOUR_START = 9, WORK_HOUR_END = 18（工作时段，UTC+8）
+   - CLEARANCE_LEVELS = {"low": 0, "medium": 1, "high": 2}
+   - SENSITIVITY_LEVELS = {"low": 0, "medium": 1, "high": 2}
+
+2. class ABACRule:
+   规则包装器，构造参数：name: str, evaluator: Callable, *, description: str = ""
+   evaluator 签名：(subject: dict, resource: dict, action: str, env: dict) -> bool
+   evaluate() 方法：调用 evaluator，捕获异常返回 False 并 warning
+
+3. class ABACEngine:
+   构造参数：*, clock: Callable[[], float] | None = None（默认 time.monotonic，测试可注入）
+
+   内置规则（构造时自动注册）：
+   - "time_window"：工作时段外拒绝，env["time_window_enabled"]=False 可关闭
+   - "sensitivity"：resource.sensitivity > subject.clearance 时拒绝
+   - "tenant_match"：subject.tenant_id != resource.tenant_id 时拒绝（缺失则放行）
+
+   方法：
+   - register_rule(name, evaluator, *, description="")：注册自定义规则
+   - remove_rule(name) -> bool：移除规则
+   - rules -> list[ABACRule]：属性，返回规则快照
+   - evaluate(subject_attrs, resource_attrs, action, env_attrs=None) -> bool:
+     遍历所有规则，任一返回 False 则返回 False；
+     规则执行前后各检查一次时钟，超时（>ABAC_TIMEOUT_SECONDS）则 warning 并返回 False
+
+4. def get_abac_engine() -> ABACEngine: 线程安全单例（双检锁）
+5. def reset_abac_engine() -> None: 测试用重置
+
+【约束】
+- 全规则 AND 逻辑
+- 超时 fail-secure：超时返回 False
+- 时钟可注入，消除测试时序抖动
+- register_rule/remove_rule 需加 threading.Lock 保护
+
+【输出】
+完整的 abac_engine.py 文件，中文 docstring，包含 __all__，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】field_masking.py
+================================================================================
+你是一名 Python 后端开发者。请实现 core/security/field_masking.py，
+即字段级脱敏器 FieldMasker。
+
+【背景】
+根据调用者角色，对响应数据执行 hide / mask / partial 三级脱敏，
+保护敏感字段不被越权查看。无外部依赖，纯标准库实现。
+
+【必须实现的接口】
+
+1. 脱敏动作常量：
+   - HIDE = "hide"（移除字段，key 不保留）
+   - MASK = "mask"（值替换为 "***"）
+   - PARTIAL = "partial"（保留首尾各 2 字符，中间替换为 *）
+
+2. MASKING_RULES: dict[str, dict[str, str]]
+   角色规则矩阵：
+   - viewer: budget/cost/price -> HIDE, contractor -> MASK, phone -> PARTIAL
+   - engineer: budget -> MASK, contractor -> PARTIAL, phone -> PARTIAL
+   - reviewer: budget -> MASK, phone -> PARTIAL
+   - admin: {}（全显，不脱敏）
+
+3. class FieldMasker:
+   构造参数：rules: dict | None = None（默认使用 MASKING_RULES）
+
+   方法：
+   - mask(data: Any, role: str) -> Any:
+     对 data 按 role 规则脱敏，返回副本（不修改原对象）。
+     递归处理 dict 和 list 嵌套。
+     - dict：遍历每个 key，命中 HIDE 则跳过；命中 MASK/PARTIAL 则替换值；
+       未命中规则则递归处理子结构
+     - list：递归处理每个元素
+     - 标量：原样返回
+     - 未知角色默认按 viewer 规则处理
+
+   辅助：
+   - _partial_mask(value: str) -> str：保留首尾各 2 字符，长度≤4 返回 "***"
+   - _HIDE_SENTINEL：哨兵对象，区分 None 和 hide 动作
+
+4. def get_field_masker() -> FieldMasker: 单例
+5. def reset_field_masker() -> None: 测试重置
+
+【约束】
+- 纯函数式：返回 copy.deepcopy(data)，不修改入参
+- 未知角色按 viewer 规则（最严格）
+- admin 返回深拷贝，大对象有性能开销，调用方按需使用
+
+【输出】
+完整的 field_masking.py 文件，中文 docstring，包含 __all__，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】sm2_signer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 core/security/sm2_signer.py，
+即国密 SM2 签名器。
+
+【背景】
+优先使用 gmssl 库实现 SM2 签名，缺少依赖或未配置密钥时自动降级为 HMAC-SHA256，
+保证签名链路始终可用。遵循 F8 原则：生产环境默认 SM2，开发环境保留 HMAC 降级。
+
+【依赖】
+- gmssl（可选，缺失时降级）
+- hashlib、hmac（标准库）
+
+【必须实现的接口】
+
+1. class SM2Signer:
+   构造参数：private_key: str = "", public_key: str = "", *, fallback_secret: str = ""
+
+   后端检测 _detect_backend() -> str:
+   - gmssl 已装 且 私钥/公钥均非空 -> "gmssl"
+   - 否则 -> "hmac"，记录 warning
+
+   属性：
+   - algorithm -> str："SM2" 或 "HMAC-SHA256"
+
+   方法：
+   - sign(data: bytes) -> str：
+     gmssl 后端：用 sm2.CryptSM2 签名，先做摘要，返回 hex 串；
+     异常则降级 HMAC
+     hmac 后端：hmac.new(fallback_secret, data, sha256).hexdigest()
+   - verify(data: bytes, signature: str) -> bool：
+     gmssl 后端：crypt.verify(signature, digest)；异常降级 HMAC
+     hmac 后端：hmac.compare_digest 比较
+   - _hmac_sign / _hmac_verify：HMAC 降级实现
+
+2. def generate_sm2_keypair() -> tuple[str, str]:
+   生成 SM2 密钥对，返回 (private_key_hex, public_key_hex)。
+   - 公钥格式："04" + x(64hex) + y(64hex) = 130 hex 字符
+   - 缺 gmssl 或异常时返回 ("", "") 并 warning
+
+3. def get_sm2_signer(private_key="", public_key="", fallback_secret="") -> SM2Signer:
+   单例工厂
+
+【约束】
+- gmssl 为可选依赖，缺失不阻断
+- SM2 公钥 130 hex 字符格式
+- 签名/验签异常必须降级，不抛出
+
+【输出】
+完整的 sm2_signer.py 文件，中文 docstring，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 所有单例类必须提供 reset_*() 函数供测试隔离
+3. RBAC 通过 policies.py 统一调度，禁止绕过它直接调用 ABAC
+4. 默认拒绝：权限/策略判定未命中规则时返回 False
+5. 降级不阻断：缺依赖、缺密钥、规则异常均降级或拒绝，不中断业务
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,122 @@
+================================================================================
+agents/compliance_agent/validators/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/compliance_agent/validators/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+文档校验子包：drawing + document。
+
+【依赖】
+- from agents.compliance_agent.validators.document_validator import DocumentValidator
+- from agents.compliance_agent.validators.drawing_validator import DrawingValidator
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】document_validator.py
+================================================================================
+你是一名 Python 后端开发者。请实现 document_validator.py。
+
+【背景】
+设计文档校验：必填字段 + 格式。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from common.constants import ViolationSeverity
+- from models.domain import Violation
+
+【关键常量】
+- _REQUIRED_FIELDS = ('project_name', 'design_unit', 'design_date', 'reviewer_signature')
+- _MIN_DOC_LENGTH = 100
+
+【必须实现的类】
+1. class DocumentValidator：设计文档元数据 + 文本长度校验。
+   方法：
+   - __init__(self) -> None
+   - async validate(self, doc_meta: dict[str, Any] | None, tenant_id: str) -> list[Violation]
+   - _check_required_fields(self, meta: dict[str, Any], tenant_id: str) -> list[Violation]
+   - _check_text_length(self, meta: dict[str, Any], tenant_id: str) -> list[Violation]
+   - _mk_violation(description: str, severity: str, tenant_id: str='low') -> Violation
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】drawing_validator.py
+================================================================================
+你是一名 Python 后端开发者。请实现 drawing_validator.py。
+
+【背景】
+图纸元数据校验：标题栏必填 + 图层命名 + 标注完整性。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import re
+- from typing import Any
+- from common.constants import ViolationSeverity
+- from models.domain import Violation
+
+【关键常量】
+- _REQUIRED_TITLE_FIELDS = ('project', 'drawing_no', 'revision', 'designer')
+- _VALID_LAYER_PREFIXES = ('STRU', 'ARCH', 'MEP', 'ELEC', 'PLUMB', 'HVAC')
+
+【必须实现的类】
+1. class DrawingValidator：图纸元数据校验器（首版占位）。
+   方法：
+   - __init__(self) -> None
+   - async validate(self, drawing_meta: dict[str, Any] | None, tenant_id: str) -> list[Violation]  # 对单张图纸元数据校验。
+   - async validate_batch(self, drawings: list[dict[str, Any]], tenant_id: str) -> list[Violation]  # 批量校验。 H19 修补（validator 层防御）：跳过非 dict 元素（str/None/数值）， 避免 ``_check_title_block`` 对非 dict 调用 ``.get`` 抛 AttributeError。agent 层已做归一化，这里保证公开入口同样健壮。
+   - _check_title_block(self, meta: dict[str, Any], tenant_id: str) -> list[Violation]
+   - _check_layers(self, meta: dict[str, Any], tenant_id: str) -> list[Violation]
+   - _check_annotations(self, meta: dict[str, Any], tenant_id: str) -> list[Violation]
+   - _mk_violation(description: str, severity: str, tenant_id: str='low') -> Violation
+
+【必须实现的函数】
+1. _layer_prefix(name: str) -> bool  # 检查图层名是否以合法前缀开头。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

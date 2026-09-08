@@ -1,0 +1,15 @@
+# 5c.5 预留：K8s ConfigMap — 非敏感环境配置注入。
+# 部署时由 CI/CD 渲染：将 .env 非 SECRET 字段（LOG_LEVEL, ENABLE_OTEL,
+# REDIS_URL, CHROMA_PATH, INFLUX_URL, GRAFANA_DASHBOARD_ID 等）打包为
+# ConfigMap，由 Deployment envFrom 引用。
+# 模板：
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: caai-config
+#   namespace: caai
+# data:
+#   LOG_LEVEL: "INFO"
+#   ENABLE_OTEL: "1"
+#   REDIS_URL: "redis://redis:6379/0"
+#   ...

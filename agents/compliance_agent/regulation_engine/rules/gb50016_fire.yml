@@ -1,0 +1,124 @@
+# GB 50016-2014 建筑设计防火规范 (2018年版)
+# 结构化规则 — 机器可判定
+
+rules:
+  - clause_id: "GB50016-2014-5.1.1-1"
+    title: "防火墙耐火极限不应低于 3h"
+    severity: critical
+    field: "fire_wall.fire_resistance_rating"
+    operator: ">="
+    value: 3.0
+    unit: "hour"
+    target_element: "fire_wall"
+    reason: "防火墙作为建筑分区的重要分隔构件，耐火极限不足将导致火势快速蔓延至相邻防火分区"
+    suggestion: "应选用耐火极限 ≥ 3h 的防火墙材料，如加气混凝土砌块 + 水泥砂浆面层"
+
+  - clause_id: "GB50016-2014-5.1.1-2"
+    title: "承重墙耐火极限不应低于 2h"
+    severity: high
+    field: "bearing_wall.fire_resistance_rating"
+    operator: ">="
+    value: 2.0
+    unit: "hour"
+    target_element: "bearing_wall"
+    reason: "承重墙承担竖向荷载，耐火时间不足会在火灾中过早失效导致结构倒塌"
+    suggestion: "承重墙应采用耐火极限 ≥ 2h 的材料，如钢筋混凝土墙、加气混凝土砌块墙"
+
+  - clause_id: "GB50016-2014-5.1.1-3"
+    title: "楼梯间墙体耐火极限不应低于 2h"
+    severity: high
+    field: "stairwell_wall.fire_resistance_rating"
+    operator: ">="
+    value: 2.0
+    unit: "hour"
+    target_element: "stairwell_wall"
+    reason: "疏散楼梯间是人员逃生的唯一竖向通道，墙体耐火不足会使烟火蔓延阻断逃生路线"
+    suggestion: "楼梯间墙体应采用耐火极限 ≥ 2h 的不燃材料砌筑"
+
+  - clause_id: "GB50016-2014-5.5.18"
+    title: "疏散楼梯净宽度不应小于 1.1m"
+    severity: high
+    field: "staircase.net_width"
+    operator: ">="
+    value: 1.1
+    unit: "m"
+    target_element: "staircase"
+    reason: "疏散楼梯宽度不足会造成疏散拥堵，延长逃生时间，增加人员伤亡风险"
+    suggestion: "疏散楼梯净宽度应 ≥ 1.1m，人员密集场所如商场、影院应适当加宽"
+
+  - clause_id: "GB50016-2014-5.5.18-2"
+    title: "疏散走道净宽度不应小于 1.4m（单面布房）/ 1.6m（双面布房）"
+    severity: medium
+    field: "corridor.net_width"
+    operator: ">="
+    value: 1.4
+    unit: "m"
+    target_element: "corridor"
+    reason: "疏散走道是连接房间与安全出口的通道，宽度过窄会阻碍快速疏散"
+    suggestion: "单面布房走道净宽 ≥ 1.4m，双面布房 ≥ 1.6m"
+
+  - clause_id: "GB50016-2014-5.5.17"
+    title: "安全出口间距不应大于 50m（高层）"
+    severity: high
+    field: "exit_spacing"
+    operator: "<="
+    value: 50.0
+    unit: "m"
+    target_element: "building"
+    reason: "安全出口间距过大将增加人员到达出口的步行距离，在火灾中增加中毒和烧伤风险"
+    suggestion: "高层民用建筑安全出口间距 ≤ 50m，单层或多层建筑可按规范适当放宽"
+
+  - clause_id: "GB50016-2014-6.4.1-1"
+    title: "防火门耐火等级不应低于所在墙体等级"
+    severity: critical
+    field: "fire_door.rating_compatible"
+    operator: "=="
+    value: true
+    unit: ""
+    target_element: "fire_door"
+    reason: "防火门是墙体上的可开启部件，若耐火等级低于墙体，将成为防火分区的薄弱环节"
+    suggestion: "防火门等级应匹配墙体耐火极限，如 3h 防火墙配甲级防火门"
+
+  - clause_id: "GB50016-2014-10.3.1"
+    title: "楼梯间及前室应设置应急照明"
+    severity: high
+    field: "stairwell.emergency_lighting"
+    operator: "=="
+    value: true
+    unit: ""
+    target_element: "stairwell"
+    reason: "火灾中正常照明可能断电，无应急照明会导致疏散人员迷失方向或踩伤"
+    suggestion: "疏散楼梯间、前室、走道均应设置消防应急照明灯具"
+
+  - clause_id: "GB50016-2014-7.3.5"
+    title: "消防电梯前室使用面积不应小于 6.0㎡"
+    severity: medium
+    field: "fire_elevator_lobby.area"
+    operator: ">="
+    value: 6.0
+    unit: "m2"
+    target_element: "fire_elevator_lobby"
+    reason: "前室过小会导致消防队员在火场内难以展开施救，耽误灭火时机"
+    suggestion: "消防电梯前室面积 ≥ 6.0㎡，与防烟楼梯间合用前室时 ≥ 10.0㎡"
+
+  - clause_id: "GB50016-2014-4.6.5"
+    title: "防烟分区面积不应大于 500㎡"
+    severity: medium
+    field: "smoke_compartment.area"
+    operator: "<="
+    value: 500.0
+    unit: "m2"
+    target_element: "smoke_compartment"
+    reason: "防烟分区过大将导致烟气扩散范围过大，影响人员疏散和消防扑救"
+    suggestion: "采用挡烟垂壁、隔墙或梁划分防烟分区，每个分区建筑面积 ≤ 500㎡"
+
+  - clause_id: "GB50016-2014-5.1.1-4"
+    title: "疏散走道楼板耐火极限不应低于 1.5h"
+    severity: high
+    field: "corridor.floor.fire_resistance_rating"
+    operator: ">="
+    value: 1.5
+    unit: "hour"
+    target_element: "floor"
+    reason: "疏散走道楼板是人员踩踏逃生的重要结构构件，耐火不足会在火灾中塌落"
+    suggestion: "疏散走道楼板应采用耐火极限 ≥ 1.5h 的钢筋混凝土结构"

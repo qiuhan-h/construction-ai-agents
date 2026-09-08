@@ -1,0 +1,126 @@
+================================================================================
+core/mcp/tools/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/mcp/tools/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+MCP 工具：计算 / 校验 / 分析。 首版实现为结构化空壳 + 占位算法；阶段三/四在 safety_audit_agent 等 calculators 目录中替换为真实算法（GB50009/GB50011 等）。
+
+【依赖】
+- from core.mcp.tools.analysis_tools import aggregate_risk, summarize_violations
+- from core.mcp.tools.calculation_tools import calculate_load, assess_risk, structural_check
+- from core.mcp.tools.validation_tools import validate_plan, validate_drawing, validate_document
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】analysis_tools.py
+================================================================================
+你是一名 Python 后端开发者。请实现 analysis_tools.py。
+
+【背景】
+MCP 分析工具：风险聚合 / 违规汇总。 首版为占位聚合，阶段四接 orchestrator 工作流后接真实数据。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+- from core.mcp.server import register_tool
+
+【必须实现的函数】
+1. async aggregate_risk(tenant_id: str, plan_id: str='', sources: list[dict[str, Any]] | None=None) -> dict[str, Any]
+2. async summarize_violations(tenant_id: str, violations: list[dict[str, Any]] | None=None) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】calculation_tools.py
+================================================================================
+你是一名 Python 后端开发者。请实现 calculation_tools.py。
+
+【背景】
+MCP 计算工具：荷载 / 风险评估 / 结构检查。 首版使用简化公式与占位常量；阶段三/四替换为符合国标的真实算法。 所有工具返回 dict，调用方应通过 MCPToolExecutionError 捕获失败。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+- from core.mcp.server import register_tool
+
+【必须实现的函数】
+1. async calculate_load(plan_id: str, dead_load_kpa: float=0.0, live_load_kpa: float=0.0, wind_pressure_kpa: float=0.0, snow_pressure_kpa: float=0.0) -> dict[str, Any]  # 结构荷载组合（简化）：q = 1.2*DL + 1.4*LL + 0.6*W + 0.7*S
+2. async assess_risk(plan_id: str, hazards: list[dict[str, Any]] | None=None) -> dict[str, Any]  # 危险源打分：score = sum(severity * likelihood)，分级阈值 5 / 10。
+3. async structural_check(plan_id: str, span_m: float=0.0, load_kpa: float=0.0) -> dict[str, Any]  # 首版空壳：根据跨度和荷载给出粗略合理性提示。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】validation_tools.py
+================================================================================
+你是一名 Python 后端开发者。请实现 validation_tools.py。
+
+【背景】
+MCP 校验工具：方案 / 图纸 / 文档一致性。 首版实现为占位校验：仅做必填字段检查与轻量元数据核验。 阶段三 safety_audit_agent 完善图纸解析与方案校验算法。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+- from core.mcp.server import register_tool
+
+【必须实现的函数】
+1. async validate_plan(plan_id: str, title: str='', risk_level: str='', hazards: list[dict[str, Any]] | None=None) -> dict[str, Any]
+2. async validate_drawing(drawing_id: str, file_uri: str='') -> dict[str, Any]
+3. async validate_document(document_id: str, size_bytes: int=0, mime_type: str='') -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

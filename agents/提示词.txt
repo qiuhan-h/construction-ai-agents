@@ -1,0 +1,91 @@
+================================================================================
+agents/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+agents 公共 API。 阶段二仅暴露抽象基类与注册装饰器；具体业务智能体 （safety_audit / compliance / site_monitor）在阶段三/四实装。
+
+【依赖】
+- from agents.base_agent import BaseAgent, register_agent
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】base_agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 base_agent.py。
+
+【背景】
+智能体抽象基类。 设计目标： - 业务智能体（safety_audit / compliance / site_monitor）通过继承 BaseAgent 获得"被 A2A 路由、被 MCP 调用、发事件"的统一能力； - 基类不依赖 core.llm / core.mcp / core.events 的具体实现（保持解耦）， 业务层按需 import； - 阶段二仅提供骨架与 A2A 接入骨架； 阶段三/四在子类中实现 handle / get_task / cancel_task 等业务方法。 约定： - 子类必须设置类属性 name（与 AgentName 枚举一致）； - 子类必须设置类属性 version； - 构造时必传 tenant_id（每个智能体实例绑定到一个租户）； - 子类通过 self.publish_event(...) 发事件，self.a2a 客户端调用其它智能体， self.mcp 客户端调用 MCP 工具/资源（按需注入，避免硬依赖）。
+
+【依赖】
+- from __future__ import annotations
+- import abc
+- import asyncio
+- import logging
+- from typing import Any
+- from common.exceptions import A2AError
+- from common.ids import task_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.agent_card import AgentCard, Capabilities, Skill
+- from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
+- from core.a2a.protocol import PROTOCOL_VERSION
+- from core.a2a.server import A2AAgentProtocol, get_registry
+
+【必须实现的类】
+1. class BaseAgent(A2AAgentProtocol, abc.ABC)：业务智能体抽象基类。 子类必填： name: str                与 AgentName 枚举一致 version: str             智能体版本 description: str         一句话简介 skills: list[Skill]      能力声明 子类按需重写： async handle(message, task) -> A2AMessage async get_task(task_id) -> Task | None async cancel_task(task_id, reason) -> bool def list_tasks() -> list[Task]
+   方法：
+   - __init__(self, tenant_id: str, a2a_url: str, card_path: str, metadata: dict[str, Any] | None) -> None
+   - async handle(self, message: A2AMessage, task: Task) -> A2AMessage  # 处理一条 A2A 消息；默认行为：把 message 原样回显（仅占位）。 子类应重写此方法实现具体业务逻辑。
+   - async get_task(self, task_id: str) -> Task | None
+   - async cancel_task(self, task_id: str, reason: str | None=None) -> bool
+   - list_tasks(self) -> list[Task]
+   - register(self) -> None  # 把本实例注册到全局 AgentRegistry（每租户一个实例）。
+   - unregister(self) -> None  # 从全局 AgentRegistry 注销。
+   - to_card_dict(self) -> dict[str, Any]  # 对外暴露 Agent Card（去除内部 metadata）。
+   - async new_task(self, message: A2AMessage) -> Task
+   - _instance_id(self) -> str
+
+【必须实现的函数】
+1. register_agent(cls: type['BaseAgent']) -> type['BaseAgent']  # 装饰器：把 BaseAgent 子类自动注册到全局 AgentRegistry。 使用： @register_agent class SafetyAuditAgent(BaseAgent): name = "safety_audit_agent" ...
+2. _echo_message(src: A2AMessage, agent_name: str, agent_version: str) -> A2AMessage  # 默认 handle 的回显实现（占位用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

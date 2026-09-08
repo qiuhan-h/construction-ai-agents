@@ -1,0 +1,154 @@
+================================================================================
+core/mcp/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/mcp/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+core.mcp 顶层公共 API。 公开导出： - 服务端：MCPServer, MCPService, get_mcp_service, build_fastapi_router - 客户端：MCPClient - 资源/工具/提示词注册器：register_resource, register_tool, register_prompt - 错误异常：MCPError, MCPResourceNotFoundError, MCPToolNotFoundError, MCPToolExecutionError, MCPProtocolVersionMismatchError, MCPPromptNotFoundError
+
+【依赖】
+- from core.mcp.client import MCPClient
+- from common.exceptions import MCPError, MCPPromptNotFoundError, MCPProtocolVersionMismatchError, MCPResourceNotFoundError, MCPToolExecutionError, MCPToolNotFoundError
+- from core.mcp.server import MCPService, MCPServer, build_fastapi_router, get_mcp_service, register_prompt, register_resource, register_tool, reset_mcp_service
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】client.py
+================================================================================
+你是一名 Python 后端开发者。请实现 client.py。
+
+【背景】
+MCP 客户端：通过 HTTP 调用对端 MCP 服务。 使用方式： from core.mcp.client import MCPClient client = MCPClient(base_url="http://10.0.0.10:9201") tools = await client.list_tools() out = await client.call_tool("calculation.load", {"plan_id": "plan_x"}) 设计要点： - 异步 httpx；失败按 4xx/5xx/超时映射到 MCPError 子类； - 6xxx 错误码透传，方便上层精确处理。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any
+- import httpx
+- from common.exceptions import A2ANetworkError, MCPError, MCPPromptNotFoundError, MCPProtocolVersionMismatchError, MCPResourceNotFoundError, MCPToolExecutionError, MCPToolNotFoundError
+- from common.ids import event_id
+- from common.timeutils import to_iso, utc_now
+- from core.mcp.server import JSONRPC_VERSION, MCP_PROTOCOL_VERSION
+
+【必须实现的类】
+1. class MCPClient：MCP HTTP 客户端。
+   方法：
+   - __init__(self, base_url: str, timeout_seconds: float, max_retries: int, backoff_seconds: float, client: httpx.AsyncClient | None) -> None
+   - async __aenter__(self) -> 'MCPClient'
+   - async __aexit__(self, exc_type, exc, tb) -> None
+   - async list_resources(self, prefix: str | None=None) -> list[dict[str, Any]]
+   - async read_resource(self, uri: str, **kwargs) -> dict[str, Any]
+   - async list_tools(self) -> list[dict[str, Any]]
+   - async call_tool(self, name: str, arguments: dict[str, Any] | None=None) -> dict[str, Any]
+   - async list_prompts(self) -> list[dict[str, Any]]
+   - async render_prompt(self, name: str, arguments: dict[str, Any] | None=None) -> dict[str, Any]
+   - _ensure_client(self) -> httpx.AsyncClient
+   - async _call(self, method: str, params: dict[str, Any]) -> dict[str, Any]
+   - _parse_response(self, resp: httpx.Response, method: str) -> dict[str, Any]
+   - _raise_for_error(self, err: dict[str, Any]) -> None
+
+【必须实现的函数】
+1. ping_info() -> dict[str, Any]  # 用于健康检查/握手。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】server.py
+================================================================================
+你是一名 Python 后端开发者。请实现 server.py。
+
+【背景】
+MCP 服务端：注册表 + JSON-RPC 处理器 + FastAPI 路由。 核心能力： - 资源（Resource）：通过 URI 寻址的只读数据（regulation://、standard://、case://） - 工具（Tool）：可调用的无副作用函数（load_calculator、validate_plan 等） - 提示词（Prompt）：可参数化的模板（safety_prompts） 所有注册项由装饰器完成；MCPServer 处理 JSON-RPC 2.0 over HTTP/SSE 入口。 阶段二只暴露 HTTP 端点；SSE 流式输出阶段四补。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import inspect
+- import logging
+- from dataclasses import dataclass, field
+- from typing import Any, Awaitable, Callable
+- from common.exceptions import AppException, MCPPromptNotFoundError, MCPResourceNotFoundError, MCPToolExecutionError, MCPToolNotFoundError
+- from common.ids import event_id
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class ResourceDescriptor
+1. class ToolDescriptor
+1. class PromptDescriptor
+1. class MCPService：MCP 注册中心 + 处理器。
+   方法：
+   - __init__(self) -> None
+   - register_resource(self, uri: str, name: str, description: str, mime_type: str, metadata: dict[str, Any] | None) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]
+   - add_resource(self, desc: ResourceDescriptor) -> None
+   - register_tool(self, name: str, description: str, input_schema: dict[str, Any] | None, metadata: dict[str, Any] | None) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]
+   - add_tool(self, desc: ToolDescriptor) -> None
+   - register_prompt(self, name: str, description: str, arguments: list[dict[str, Any]] | None) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]
+   - add_prompt(self, desc: PromptDescriptor) -> None
+   - list_resources(self, prefix: str | None=None) -> list[dict[str, Any]]
+   - list_tools(self) -> list[dict[str, Any]]
+   - list_prompts(self) -> list[dict[str, Any]]
+   - async read_resource(self, uri: str, **kwargs) -> dict[str, Any]
+   - async call_tool(self, name: str, arguments: dict[str, Any] | None=None) -> dict[str, Any]
+   - async render_prompt(self, name: str, arguments: dict[str, Any] | None=None) -> dict[str, Any]
+1. class MCPServer：MCP JSON-RPC 处理器（无 HTTP 依赖，单元测试可用）。
+   方法：
+   - __init__(self, service: MCPService | None=None) -> None
+   - async handle_raw(self, body: dict[str, Any]) -> dict[str, Any]  # 处理一条 JSON-RPC 帧，返回响应 dict。
+
+【必须实现的函数】
+1. get_mcp_service() -> MCPService
+2. reset_mcp_service() -> None  # 重置单例（仅测试使用）。
+3. _bootstrap_default_registry(service: MCPService) -> None  # 加载并执行 resources / tools / prompts 三个子包的顶层模块， 让它们的 @register_* 装饰器生效。
+4. register_resource(*args, **kwargs) -> Callable[..., Any]
+5. register_tool(*args, **kwargs) -> Callable[..., Any]
+6. register_prompt(*args, **kwargs) -> Callable[..., Any]
+7. _err(req_id: str, code: int, message: str) -> dict[str, Any]
+8. _infer_input_schema(fn: Callable[..., Any]) -> dict[str, Any]  # 根据函数签名推导简单 JSON Schema（首版）。
+9. build_fastapi_router()  # 构造 MCP FastAPI 路由：POST /mcp 为 JSON-RPC 端点。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

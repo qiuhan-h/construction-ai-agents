@@ -1,0 +1,22 @@
+# F4: .dockerignore — 排除不进镜像的文件，减小构建上下文 + 最终镜像体积
+.git/
+.gitignore
+.github/
+docs/
+tests/
+*.md
+!README.md
+.env
+.env.*
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+data/regulations/*.md
+data/test_*/
+.certs/
+.stage/

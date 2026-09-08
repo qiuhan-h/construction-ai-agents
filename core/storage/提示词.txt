@@ -1,0 +1,307 @@
+================================================================================
+core/storage/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/storage/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+core.storage：仓储层与对象存储适配。 子模块： - ``base``           Protocol / 异常 - ``local_storage``  本地文件系统存储（4d 占位；5b 待补） - ``object_storage`` 对象存储（OSS / MinIO；4d 占位；5b 待补） - ``sqlalchemy_repos`` SQLAlchemy ORM 业务仓储（5b.3 新增）
+
+【依赖】
+- from __future__ import annotations
+- from core.storage.base import BackendUnavailableError, Repository, RepositoryError
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】base.py
+================================================================================
+你是一名 Python 后端开发者。请实现 base.py。
+
+【背景】
+仓储协议与异常（5b.3 引入）。 设计： - ``Repository`` Protocol：所有仓储的最小契约（``add`` + ``get`` + ``list``）； - 不要求子类实现异步（业务仓储里多数是同步 SQLAlchemy 2.0 调用）； - ``BackendUnavailableError``：缺 SQLAlchemy 包时抛出，调用方可降级； - ``RepositoryError``：所有仓储异常的基类。 参考 5b.2 ``VectorStoreError`` / 5b.7 ``GeofenceHistoryStore`` 风格。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any, Protocol, runtime_checkable
+
+【必须实现的类】
+1. class RepositoryError(Exception)：所有仓储异常的基类。
+1. class BackendUnavailableError(RepositoryError)：期望的存储后端不可用（缺 SQLAlchemy / 缺表 等）。
+1. class Repository(Protocol)：仓储协议：CRUD 最小集。 各业务仓储按需扩展签名（``list(..., project_id=..., limit=..., offset=...)`` 等）， 但 ``add`` / ``get`` 是统一入口；不强制异步。
+   方法：
+   - add(self, item: dict[str, Any]) -> str  # 新增一条；返回持久化后的主键。
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None  # 按主键 + 租户取一条（找不到返回 None）。
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]  # 按租户列表查询，返回 (items, total)。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】local_storage.py
+================================================================================
+你是一名 Python 后端开发者。请实现 local_storage.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】object_storage.py
+================================================================================
+你是一名 Python 后端开发者。请实现 object_storage.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】sqlalchemy_repos.py
+================================================================================
+你是一名 Python 后端开发者。请实现 sqlalchemy_repos.py。
+
+【背景】
+SQLAlchemy ORM 业务仓储（5b.3 实做）。 设计： - 进程级单例 engine + SessionLocal（懒加载）； - ``get_session_scope()`` 同步上下文管理器：自动 commit/rollback/close； - ``DATABASE_URL`` 占位 → 回退 SQLite + 警告（与 5b.2 / 5b.7 一致的"无依赖可用"原则）； - 5 个业务仓储： - ``ReviewReportRepository``     审查报告 - ``ViolationRepository``        违规项 - ``RegulationRepository``       法规条文 - ``GeofenceRepository``         围栏定义 - ``GeofenceViolationRepository`` 围栏越界事件 - 5b.7 ``GeofenceHistoryStore`` ORM 实现 ``ORMGeofenceHistoryStore`` 也放在本文件 （避免循环依赖 + 集中所有 ORM 仓储入口）。 - 业务仓储以**纯 dict** 形式返回（与 4d 时期 reports_router 兼容）。 为什么不用 async： - FastAPI 路由已经跑在事件循环里，``run_in_executor`` 即可； - 5b.3 阶段 SQLAlchemy 2.0 同步会话 + 显式 session_scope 简单可靠； - 后续可在此基础上加 ``async_scoped_session``，5b.3 暂不引入。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- import threading
+- from contextlib import contextmanager
+- from typing import Any, Iterable, Iterator, Protocol, runtime_checkable
+- from common.timeutils import to_iso
+- from core.storage.base import BackendUnavailableError, Repository, RepositoryError
+- from models.database import Base, GeofenceTable, GeofenceViolationTable, RegulationTable, ReviewReportTable, ViolationTable
+
+【关键常量】
+- _FALLBACK_URL = 'sqlite:///./data/caai.db'
+- _PLACEHOLDER = '需要补充实际链接'
+
+【必须实现的类】
+1. class ReviewReportRepository(Repository)：审查报告 ORM 仓储（5b.3 替代 4d 时期 ``_REPORT_STORE``）。
+   方法：
+   - add(self, item: dict[str, Any]) -> str
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+   - count(self, tenant_id: str | None=None) -> int
+1. class ViolationRepository(Repository)：违规项 ORM 仓储。
+   方法：
+   - add(self, item: dict[str, Any]) -> str
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+1. class RegulationRepository(Repository)：法规条文 ORM 仓储。
+   方法：
+   - add(self, item: dict[str, Any]) -> str
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+   - find_by_code(self, tenant_id: str, code: str, version: str | None) -> list[dict[str, Any]]
+1. class GeofenceRepository(Repository)：地理围栏 ORM 仓储。
+   方法：
+   - add(self, item: dict[str, Any]) -> str
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+1. class GeofenceViolationRepository(Repository)：地理围栏越界事件 ORM 仓储。
+   方法：
+   - add(self, item: dict[str, Any]) -> str
+   - get(self, key: str, tenant_id: str | None) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+   - list_by_fence(self, tenant_id: str, fence_id: str, limit: int) -> list[dict[str, Any]]
+1. class _GeofenceHistoryStoreProto(Protocol)
+   方法：
+   - async record(self, violation: Any, tenant_id: str) -> str
+   - async list_since(self, tenant_id: str, since: Any, fence_id: str | None, device_id: str | None, limit: int) -> list[Any]
+   - count(self, tenant_id: str | None=None) -> int
+1. class ORMGeofenceHistoryStore：5b.7 ``GeofenceHistoryStore`` ORM 实现（5b.3 落地）。 - 与 ``InMemoryGeofenceHistoryStore`` 接口 100% 一致； - 4d ``Geofencing`` 通过 ``get_geofence_history_store()`` 工厂选择后端， 不需要改任何业务代码； - ``FenceViolation`` 来自 ``agents.site_monitor_agent.gis_monitoring.geofencing``， 与本仓储解耦。
+   方法：
+   - __init__(self) -> None
+   - async record(self, violation: Any, tenant_id: str) -> str
+   - async list_since(self, tenant_id: str, since: Any, fence_id: str | None, device_id: str | None, limit: int) -> list[Any]
+   - count(self, tenant_id: str | None=None) -> int
+
+【必须实现的函数】
+1. _resolve_database_url() -> str  # 解析 DATABASE_URL：占位 → 警告 + 退回 SQLite。
+2. _sqlalchemy_available() -> bool
+3. _init_engine() -> None  # 初始化进程级 engine + SessionLocal。
+4. _ensure_schema() -> None  # 开发环境用：``Base.metadata.create_all``。生产靠 Alembic 迁移。
+5. get_session_scope() -> Iterator[Any]  # 同步会话上下文管理器（自动 commit / rollback / close）。
+6. _to_iso(value: Any) -> str | None
+7. get_review_report_repository() -> ReviewReportRepository
+8. get_violation_repository() -> ViolationRepository
+9. get_regulation_repository() -> RegulationRepository
+10. get_geofence_repository() -> GeofenceRepository
+11. get_geofence_violation_repository() -> GeofenceViolationRepository
+12. reset_default_repositories() -> None  # 测试用：重置全部仓储单例 + 引擎（必须重启进程级 engine 才能连新库）。
+13. init_database_for_dev() -> None  # 开发用：Base.metadata.create_all 全部表。生产请走 Alembic 迁移。
+14. _report_to_dict(row: Any) -> dict[str, Any]
+15. _regulation_to_dict(row: Any) -> dict[str, Any]
+16. _geofence_to_dict(row: Any) -> dict[str, Any]
+17. _geofence_violation_to_dict(row: Any) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】tenant_middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tenant_middleware.py。
+
+【背景】
+租户 SQL 中间件（6b.2 多租户 ORM 自动注入）。 设计： - ``TenantContext`` 基于 contextvars 存储当前请求的 tenant_id； - ``TenantMiddleware.intercept_sql(sql, params)`` 用 sqlparse 解析 SELECT， 自动注入 ``WHERE tenant_id = ?``（或 ``AND tenant_id = ?``）； - SQLAlchemy ``before_cursor_execute`` 事件钩子自动调用 intercept_sql； - 无 sqlparse 时降级为字符串拼接（足够 SQLite 测试用）； - 无 tenant_id 时透传原 SQL（由上层 auth 依赖负责设置）。 约束： - 仅拦截 SELECT；INSERT/UPDATE/DELETE 由 ORM 模型的 default/context 处理； - 已含 tenant_id 条件的 SQL 不重复注入； - 参数以命名参数 ``:tenant_id`` / ``%s`` 形式追加到 params dict。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import re
+- import threading
+- from contextvars import ContextVar
+- from typing import Any
+
+【关键常量】
+- _PARAM_KEY = '_tenant_id'
+
+【必须实现的类】
+1. class TenantContext：请求级租户上下文（基于 contextvars，async 安全）。
+   方法：
+   - set_tenant_id(tenant_id: str | None) -> None
+   - get_tenant_id() -> str | None
+   - clear() -> None
+1. class TenantMiddleware：SQL 自动注入租户过滤中间件。
+   方法：
+   - __init__(self) -> None
+   - intercept_sql(self, sql: str, params: dict[str, Any] | None=None) -> tuple[str, dict[str, Any]]  # 对 SELECT 语句注入 WHERE tenant_id = :_tenant_id。 返回 (modified_sql, modified_params)； 无 tenant_id 或非 SELECT 或已含 tenant_id → 原样返回。
+   - register_engine(self, engine: Any) -> None  # 注册 SQLAlchemy before_cursor_execute 事件钩子。
+   - _involves_tenant_tables(sql: str) -> bool  # 检查 SQL 是否涉及租户表。
+   - _inject_with_sqlparse(sql: str, params: dict[str, Any]) -> str | None  # 用 sqlparse 精确注入 WHERE 子句。
+   - _inject_fallback(sql: str, params: dict[str, Any]) -> str  # 无 sqlparse 时的降级注入。
+
+【必须实现的函数】
+1. get_tenant_middleware() -> TenantMiddleware
+2. reset_tenant_middleware() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】tenant_repo.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tenant_repo.py。
+
+【背景】
+租户/计费仓储（6b.1 多租户 SaaS）。 设计（与 5b.3 ``sqlalchemy_repos`` 同一套"无依赖可用"原则）： - ``TenantRepository``      SQLAlchemy ORM 实现（tenants 扩展列 + usage_records + bills）； - ``InMemoryTenantRepository`` 进程内字典实现，缺 SQLAlchemy / 旧库表结构缺失时的降级后端； - ``get_tenant_repository()`` 工厂：优先 ORM（启动时探测，失败自动降级内存）， 支持 ``set_tenant_repository_override()`` 测试注入（与 auth override 同一模式）； - 仓储统一以 **dict** 为契约，服务层负责 dict ↔ Pydantic 模型转换。 注意： - 配额计数器 ``quota_used`` 为 JSON 列，SQLAlchemy 不追踪原地变更， 更新时必须**整体赋值新 dict**（本仓储 ``update_tenant`` 已如此处理）； - 时间列在 SQLite 下读回可能为 naive，统一经 ``common.timeutils`` 归一化。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class TenantRepository：租户 / 用量 / 账单 ORM 仓储（后端名 sqlalchemy）。
+   方法：
+   - create_tenant(self, data: dict[str, Any]) -> dict[str, Any]
+   - get_tenant(self, tenant_id: str) -> dict[str, Any] | None
+   - get_tenant_by_code(self, code: str) -> dict[str, Any] | None
+   - update_tenant(self, tenant_id: str, **fields) -> dict[str, Any] | None
+   - list_tenants(self, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+   - add_usage_record(self, data: dict[str, Any]) -> dict[str, Any]
+   - list_usage(self, tenant_id: str, metric: str | None, period: str | None, limit: int) -> list[dict[str, Any]]
+   - sum_usage(self, tenant_id: str, metric: str, period: str | None) -> float
+   - upsert_bill(self, data: dict[str, Any]) -> dict[str, Any]
+   - get_bill(self, tenant_id: str, bill_id: str) -> dict[str, Any] | None
+   - list_bills(self, tenant_id: str) -> list[dict[str, Any]]
+1. class InMemoryTenantRepository：进程内字典仓储：缺 SQLAlchemy / 表结构过旧时的降级后端。
+   方法：
+   - __init__(self) -> None
+   - create_tenant(self, data: dict[str, Any]) -> dict[str, Any]
+   - get_tenant(self, tenant_id: str) -> dict[str, Any] | None
+   - get_tenant_by_code(self, code: str) -> dict[str, Any] | None
+   - update_tenant(self, tenant_id: str, **fields) -> dict[str, Any] | None
+   - list_tenants(self, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]
+   - add_usage_record(self, data: dict[str, Any]) -> dict[str, Any]
+   - list_usage(self, tenant_id: str, metric: str | None, period: str | None, limit: int) -> list[dict[str, Any]]
+   - sum_usage(self, tenant_id: str, metric: str, period: str | None) -> float
+   - upsert_bill(self, data: dict[str, Any]) -> dict[str, Any]
+   - get_bill(self, tenant_id: str, bill_id: str) -> dict[str, Any] | None
+   - list_bills(self, tenant_id: str) -> list[dict[str, Any]]
+
+【必须实现的函数】
+1. _default_quota_used() -> dict[str, float]
+2. _iso_or_none(value: Any) -> str | None
+3. _probe_orm() -> bool  # 探测 ORM 后端是否可用（建表 + 简单查询）。 旧版 SQLite 文件缺 6b.1 新列时 ``create_all`` 不会自动 ALTER， 探测查询会抛 OperationalError → 返回 False，工厂降级内存后端。
+4. get_tenant_repository() -> Any  # 获取租户仓储单例：测试 override 优先，否则 ORM 探测后降级内存。
+5. set_tenant_repository_override(repo: Any | None) -> None  # 测试用：注入自定义仓储（如 InMemoryTenantRepository）；传 None 清除。
+6. reset_tenant_repository() -> None  # 测试用：清除 override 并重置单例（下次 get 重新探测）。
+7. _tenant_row_to_dict(row: Any) -> dict[str, Any]
+8. _usage_row_to_dict(row: Any) -> dict[str, Any]
+9. _bill_row_to_dict(row: Any) -> dict[str, Any]
+10. _is_unique_violation(exc: BaseException) -> bool
+11. _conflict(exc: BaseException, code: str | None) -> Exception
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

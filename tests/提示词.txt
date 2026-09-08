@@ -1,0 +1,77 @@
+================================================================================
+tests/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+construction-ai-agents 测试包。 子目录划分： - unit/: 单元测试 - integration/: 集成测试 - e2e/: 端到端测试 - orchestrator/: 编排器测试 - compliance_agent / safety_audit_agent / site_monitor_agent: 各业务智能体测试 共享 fixture 与 PYTHONPATH 设置见 ``conftest.py``。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】conftest.py
+================================================================================
+你是一名 Python 后端开发者。请实现 conftest.py。
+
+【背景】
+pytest 共享配置与 fixture。 职责： 1. 把项目根目录加入 ``sys.path`` / ``PYTHONPATH``，确保 ``agents`` / ``core`` / ``common`` / ``models`` / ``api`` 等平铺包可被测试直接 import； 2. 在 ``pytest-asyncio`` 可用时，强制 ``asyncio_mode = auto``（与 ``pyproject.toml`` 保持一致，避免 conftest 单独被加载时丢失该配置）； 3. 提供常用 mock fixture：鉴权上下文 / 事件总线 / 临时目录 / httpx mock。
+
+【依赖】
+- from __future__ import annotations
+- import os
+- import sys
+- from pathlib import Path
+- from typing import Any
+- import pytest
+
+【关键常量】
+- PROJECT_ROOT
+- _ROOT_STR
+- _EXISTING_PYTHONPATH
+
+【必须实现的函数】
+1. pytest_configure(config: pytest.Config) -> None  # 在 ``pytest-asyncio`` 可用时显式写入 ``asyncio_mode = auto``。 ``pyproject.toml`` 已声明该值；这里再次写入是为了让 conftest 在脱离 pyproject 上下文（例如被 IDE 单独加载）时仍生效。``addinivalue_line`` 会幂等叠加，不会覆盖既有配置导致冲突。
+2. auth_context()  # 返回一个具备管理员 scope 的 ``AuthContext`` mock 实例。 用例可通过 ``set_auth_override(auth_context)`` 注入到 FastAPI 依赖链中， 也可直接断言其字段。
+3. auth_override(auth_context)  # 把 ``auth_context`` 注入到全局 override，用例结束后自动复位。 适合需要走 ``get_auth_context`` 依赖的 FastAPI 路由测试。
+4. event_bus()  # 提供一个隔离的全局 ``EventBus``，用例前后均重置。 ``core.events`` 采用模块级单例 bus，直接复用会让历史订阅 / 计数器 在用例间串扰；这里在 yield 前后都调用 ``reset_event_bus()`` 以保证隔离。
+5. tmp_project_dir(tmp_path: Path) -> Path  # 返回一个临时目录 Path（基于 pytest 内建 ``tmp_path``）。 与 ``tmp_path`` 的区别在于命名更直观，便于在用例中表达「项目工作目录」 语义（例如让 agent 把产物写到该目录下）。
+6. httpx_mock()  # httpx HTTP mock fixture。 优先使用 ``respx``（功能更全，支持路由匹配）；缺失时降级为 ``httpx.MockTransport``，调用方通过设置 ``httpx_mock.handler`` 自定义响应。 用法（respx 可用时）:: def test_x(httpx_mock): httpx_mock.get("https://api/").respond(200, json={"ok": 1}) r = httpx.get("https://api/") assert r.json() == {"ok": 1} 用法（降级 MockTransport）:: def test_x(httpx_mock): def handler(request): return httpx.Response(200, json={"ok": 1}) httpx_mock.set_handler(handler) r = httpx.Client(transport=httpx_mock.transport).get("https://api/") assert r.json() == {"ok": 1}
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,621 @@
+================================================================================
+tools/verify/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tools/verify/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】verify_all.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_all.py。
+
+【背景】
+全量回归验收脚本（阶段六收尾）。 一键运行： 1. 全部 14 个 verify_stage 脚本（stage1 ~ 6d） 2. pytest 全套（tests/ 目录） 输出最终通过率报告 + 退出码（0 = 全通过）。 执行：python tools/verify_all.py
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TOOLS_DIR
+- VERIFY_SCRIPTS = ['verify_stage1.py', 'verify_stage2.py', 'verify_stage3.py', 'verify_stage4a.py'
+
+【必须实现的函数】
+1. run_verify_scripts() -> tuple[int, int, list[tuple[str, int, float]]]  # 运行全部 verify 脚本。返回 (passed, failed, details)。
+2. run_pytest() -> tuple[int, int, float]  # 运行 pytest 全套。返回 (exit_code, passed_count, elapsed)。
+3. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】verify_post_deploy.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_post_deploy.py。
+
+【背景】
+7d-3 上线后验证脚本。 用途：生产发布完成后，验证全部端点可用、无降级、性能基线达标。 验证项： 1. 健康检查：healthz + readyz（readyz 应非 degraded） 2. 核心端点：agents + mobile + bim + reports + orchestrator 3. RBAC：无 auth 拒绝 + 跨租户隔离 4. 性能基线：healthz < 200ms，agents < 500ms 5. 降级检查：readyz 子组件全部 ok 6. 审计日志：POST 请求生成审计记录 7. 指标端点：/metrics 可采集 用法： python tools/verify_post_deploy.py python tools/verify_post_deploy.py --base-url https://api.example.com  # 需要补充实际链接：真实域名 python tools/verify_post_deploy.py --token "Bearer prod-token"  # 需要补充实际链接：真实token
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. _run_local() -> int  # 本地降级模式验证（TestClient）。
+2. _run_remote(base_url: str, token: str) -> int  # 远程验证（生产环境）。 用法：python tools/verify_post_deploy.py --base-url https://api.example.com --token "Bearer xxx"
+3. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】verify_prod_config.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_prod_config.py。
+
+【背景】
+生产配置 fail-fast 校验（7a-2）。 用途：APP_ENV=prod 时，检查关键配置项是否仍为占位值； 有占位 → exit 1 + 错误清单；全部非占位 → exit 0。 APP_ENV != prod → 直接 exit 0（仅校验生产）。 验收标准（release_plan_stage7.md 7a-2）： - JWT 密钥仍为占位 → 拒绝启动 - DATABASE_URL / REDIS_URL / LLM_API_KEY 为空或占位 → 拒绝启动 - LLM_PROVIDER=mock 在 prod 下 → 警告（可选阻断） 用法： APP_ENV=prod python tools/verify_prod_config.py python tools/verify_prod_config.py          # 非 prod 直接通过
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- _PLACEHOLDER = '需要补充实际链接'
+
+【必须实现的函数】
+1. _is_placeholder(value: str) -> bool  # 判断字符串是否为占位值。
+2. _check_secret(secret_val: str) -> bool  # 检查 SecretStr 解包后的值是否为占位。
+3. main() -> int  # 主校验入口。返回 exit code（0=通过，1=失败）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】verify_stage1.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage1.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】verify_stage2.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage2.py。
+
+【背景】
+阶段二（A2A / MCP / 事件总线 / 路由层）代码自检。 覆盖： - core.a2a：协议版本、消息/任务、JSON-RPC 帧、Agent Card、注册表、客户端、中间件 - core.mcp：服务注册表、工具调用、资源读取、提示词渲染、客户端 - core.events：事件总线发布/订阅/历史/通配符 - agents.base_agent：智能体骨架（注册、handle、cancel） - api.schemas：ApiResponse / Page / AgentSummary 等 Pydantic 模型 - api.routers：FastAPI 路由构造（仅验证构造 + 启动不抛错） - 跨模块：完整 A2A 链路 + MCP 工具调用 + 事件发布/订阅
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- _ROOT
+- ROOT
+
+【必须实现的函数】
+1. check(name: str, fn)
+2. t_common_a2a_mcp()
+3. t_ids_phase2()
+4. t_a2a_protocol()
+5. t_a2a_message_and_task()
+6. t_a2a_serializers()
+7. t_a2a_agent_card()
+8. t_a2a_registry_and_server()
+9. t_a2a_client_middleware()
+10. t_mcp_registration()
+11. t_mcp_call_tool()  # 注意：不调用 reset_mcp_service()，否则会丢失装饰器时注册的条目。
+12. t_mcp_render_prompt()
+13. t_mcp_read_resource()
+14. t_mcp_client()  # 客户端构造与基本协议（不实际发 HTTP）。
+15. t_event_bus()
+16. t_base_agent()
+17. t_api_schemas()
+18. t_routers_construct()
+19. t_scripts_apps()
+20. t_integration_a2a_mcp_events()  # A2A 智能体处理一条消息时通过 MCP 工具算荷载并发布事件。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】verify_stage3.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage3.py。
+
+【背景】
+阶段三（safety_audit_agent 全流程）自检。 覆盖： - calculators: load_calculator / risk_assessor / structural_analyzer - knowledge_base: vector_store / case_retriever / standard_loader - parsers: spec_parser / plan_parser / drawing_parser - outputs: report_signer / recommendation_engine / report_generator - prompts: 3 个模板注册 - agent: SafetyAuditAgent 端到端（A2A + 事件 + 签章） - mcp_handlers: safety.search_case / safety.match_regulation 注册 - a2a_handlers: 路由构造 - langchain_agent: 适配层（langchain 缺失时降级） 执行：python verify_stage3.py
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TEST_FILE
+
+【必须实现的函数】
+1. check(name: str, fn) -> None
+2. t_subprocess_test_agent()  # 直接执行 tests/safety_audit_agent/test_agent.py 并透传结果。
+3. t_agents_module_importable()
+4. t_sign_report_content_module_helper()  # 模块级便捷函数签名正确。
+5. t_inheritance_to_base_agent()  # SafetyAuditAgent 必须继承自 agents.base_agent.BaseAgent。
+6. t_skill_metadata_defined()  # skills 元数据完整（用于 Agent Card 暴露）。
+7. t_idempotent_register()  # 重复 import prompts 不会抛错（已用 overwrite=True 兜底）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】verify_stage4a.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage4a.py。
+
+【背景】
+阶段四·子阶段 4a（compliance_agent）自检。 委派 tests/compliance_agent/test_agent.py（18 项端到端）+ 自身新增 6 项： - 顶层 import 全部通过 - ComplianceAgent 继承 BaseAgent - Skill 元数据完整（4 个） - 与阶段一/二/三无回归 - 目录树 100% 一致 - 文档 architecture.md §8.1 交付记录 执行：python verify_stage4a.py
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TEST_FILE
+
+【必须实现的函数】
+1. check(name: str, fn) -> None
+2. t_top_imports()
+3. t_inheritance_baseagent()
+4. t_skill_metadata()
+5. t_subprocess_test_agent()
+6. t_docs_section8_exists()
+7. t_tree_consistent()
+8. _run_verify(stage: str) -> None
+9. t_stage1_no_regression()
+10. t_stage2_no_regression()
+11. t_stage3_no_regression()
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】verify_stage4b.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage4b.py。
+
+【背景】
+阶段四·子阶段 4b（site_monitor_agent）自检。 执行：python verify_stage4b.py 委派 tests/site_monitor_agent/test_agent.py（22 项端到端）+ 自身 6 项： - 顶层 import 全部通过 - SiteMonitorAgent 继承 BaseAgent - Skill 元数据完整（3 个：alert_judge / daily_report / bim_progress_sync） - 阶段一/二/三/4a 自检无回归 - 目录树 100% 一致 - 文件清单 100% 非 0 字节（委派 scan_stage4b.py） 退出码：0 = 全部 PASS；非 0 = 有 FAIL。
+
+【依赖】
+- from __future__ import annotations
+- import os
+- import subprocess
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TEST_FILE
+- SCAN_FILE
+
+【必须实现的函数】
+1. check(name: str, fn) -> None
+2. t_top_imports() -> None
+3. t_inheritance_baseagent() -> None
+4. t_skill_metadata() -> None
+5. t_agent_name_and_version() -> None
+6. t_subprocess_test_agent() -> None
+7. t_scan_stage4b() -> None
+8. _run_verify(stage: str) -> None  # 运行 verify_stage{N}.py；脚本已统一改为跨平台路径。 沙箱里应可正常调用。
+9. t_stage1_no_regression() -> None
+10. t_stage2_no_regression() -> None
+11. t_stage3_no_regression() -> None
+12. t_stage4a_no_regression() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 10】verify_stage4c.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage4c.py。
+
+【背景】
+4c 阶段验收：跑自检 + 端到端冒烟，输出可读报告。 退出码： - 0  全部通过 - 1  有失败 运行：python tools/verify_stage4c.py
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import importlib
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. run_self_test() -> tuple[int, str]  # 调用 tests/orchestrator/test_orchestrator.py 的 main()，返回 (rc, output)。
+2. smoke_e2e() -> tuple[int, str]  # 端到端冒烟：EventBus → Orchestrator → Workflow → AgentManager → Timeline。
+3. smoke_service_registry() -> tuple[int, str]  # 确认所有 6 个 system action 都注册成功。
+4. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 11】verify_stage4d.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage4d.py。
+
+【背景】
+4d 阶段验收：跑文件扫描 + pytest + 端到端冒烟 + 关键 API 探针。 退出码： - 0  全部通过 - 1  有失败 运行：python tools/verify_stage4d.py
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. run_scan() -> tuple[int, str]
+2. run_pytest() -> tuple[int, str]
+3. smoke_app_health() -> tuple[int, str]
+4. smoke_api_business() -> tuple[int, str]
+5. smoke_scripts() -> tuple[int, str]
+6. smoke_start_worker() -> tuple[int, str]
+7. main() -> int
+8. _summary(results: list[tuple[str, int, str]], elapsed: float) -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 12】verify_stage4e.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage4e.py。
+
+【背景】
+4e 阶段验收：跑文件扫描 + dashboard 单测 + 端到端冒烟 + API 形状探针。 退出码： - 0  全部通过 - 1  有失败 运行：python tools/verify_stage4e.py
+
+【依赖】
+- from __future__ import annotations
+- import os
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. run_scan() -> tuple[int, str]
+2. run_pytest_dashboard() -> tuple[int, str]
+3. smoke_dashboard_api() -> tuple[int, str]
+4. smoke_streamlit_utils() -> tuple[int, str]
+5. smoke_dashboard_render() -> tuple[int, str]
+6. main() -> int
+7. _summary(results: list[tuple[str, int, str]], elapsed: float) -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 13】verify_stage5.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage5.py。
+
+【背景】
+5 阶段动态验收框架：跑文件扫描 + 5a smoke + 5b/5c smoke（占位待实做）。 设计： - [A] scan_stage5.py 子进程（必须 PASS，4e precondition + 5a 当前状态） - [B] pytest_5a（5a 单测，待 5a 实做时填充 → 当前 SKIP） - [C] smoke_5a_pages（5 个 page + 4 组件 render() 可解析 + render 离线构造） - [D] smoke_5b_prod（占位：5b 实做后接 ChromaDB / PDF / ORM / 通知渠道 / IFC / LangChain） - [E] smoke_5c_obs_deploy（占位：5c 实做后接 OTel / Prometheus / Dockerfile / CI / RBAC / SM2） 子阶段灵活选择：--only 5a / 5b / 5c 退出码： - 0  选定子阶段全部通过（或仅 SKIP） - 1  存在失败 运行： python tools/verify_stage5.py                # 全跑 python tools/verify_stage5.py --only 5a       # 只跑 5a python tools/verify_stage5.py --skip-scan    # 跳过 scan 子项
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import os
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. run_scan(only: str | None=None, strict: bool=False) -> tuple[int, str]
+2. run_pytest_5a() -> tuple[int, str]
+3. smoke_5a_pages() -> tuple[int, str]
+4. smoke_5b_prod() -> tuple[int, str]
+5. smoke_5c_obs_deploy() -> tuple[int, str]
+6. main() -> int
+7. _summary(results: list[tuple[str, int, str]], elapsed: float) -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 14】verify_stage6a.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage6a.py。
+
+【背景】
+阶段六·子阶段 6a 验收：业务算法升级 + 真实 LLM 注入。 验收项： - [A] scan_stage6a 文件清单全部就位 - [B] 6a.1 GB 规则结构化：RuleChecker 加载 ≥50 条、5 本国标各 ≥10、不合规文档检出 Violation - [C] 6a.2 GB50009 荷载组合 + GB50010 结构校核 + 标准知识库 - [D] 6a.3 LLM 注入：settings.llm_provider=mock、injector 四 provider 降级、chains 走 LCEL、 chains/__init__.py 无 FakeListLLM、双语 prompts - [E] 回归：verify_stage1/2/3 无回归（全套 1-5 见 Task 14） 执行：python verify_stage6a.py 退出码：0 = 全部通过；非 0 = 有失败项。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import subprocess
+- import sys
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TOOLS_DIR
+- PASSED = 0
+- FAILED = 0
+
+【必须实现的函数】
+1. check(name: str, ok: bool, detail: str='') -> None
+2. check_scan() -> None
+3. check_rules() -> None
+4. check_gb_algorithms() -> None
+5. check_llm_injection() -> None
+6. check_regression() -> None
+7. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 15】verify_stage6b.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage6b.py。
+
+【背景】
+阶段六·子阶段 6b 验收：多租户 SaaS + ABAC + 字段脱敏 + 租户中间件。 验收项： - [A] scan_stage6b 文件清单全部就位 - [B] 6b.1 租户注册：trial 30 天 + quota=0；配额 101 次→429；升级 pro；计费账单 - [C] 6b.2 ABAC：时间窗/敏感度/超时 - [D] 6b.2 FieldMasker：viewer hide budget / admin 全显 - [E] 6b.2 TenantMiddleware：SELECT 注入 WHERE tenant_id - [F] 6b.2 AuthContext：role 字段（dev→admin / JWT→claim） - [G] 回归：verify_stage1/2/3 无回归（全套 1-5+6a 见 Task 14） 执行：python verify_stage6b.py 退出码：0 = 全部通过；非 0 = 有失败项。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import subprocess
+- import sys
+- from datetime import datetime, timezone
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- TOOLS_DIR
+- PASSED = 0
+- FAILED = 0
+
+【必须实现的函数】
+1. check(name: str, ok: bool, detail: str='') -> None
+2. check_scan() -> None
+3. check_tenant_saas() -> None
+4. check_abac() -> None
+5. check_field_masker() -> None
+6. check_tenant_middleware() -> None
+7. check_auth_role() -> None
+8. check_regression() -> None
+9. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 16】verify_stage6c.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage6c.py。
+
+【背景】
+阶段六·子阶段 6c 验收：移动端 API + 内嵌应用 + 响应式 Streamlit 页面。 验收项： - [A] scan_stage6c 文件清单全部就位 - [B] 6c.1 移动端 API：3 端点 200 + dashboard < 5KB（TR-8.1） - [C] 6c.1 移动端 Schema：字段精简（TR-8.4） - [D] 6c.1 钉钉/企微内嵌：OAuth state/timestamp 防重放 + mock 降级（TR-8.2/8.3/8.5） - [E] 6c.2 API 客户端移动端方法（TR-9.2） - [F] 6c.2 移动端页面注册（TR-9.1） - [G] 6c.2 响应式 CSS + 卡片组件（TR-9.3/9.4/9.5/9.6） - [H] 回归：verify_stage1/2/3 + 6a + 6b 无回归 执行：python verify_stage6c.py 退出码：0 = 全部通过；非 0 = 有失败项。
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- import time
+- from pathlib import Path
+- from unittest.mock import patch
+
+【关键常量】
+- ROOT
+- TOOLS_DIR
+- PASSED = 0
+- FAILED = 0
+
+【必须实现的函数】
+1. check(name: str, ok: bool, detail: str='') -> None
+2. check_scan() -> None
+3. check_mobile_api() -> None
+4. check_mobile_schemas() -> None
+5. check_embedded_apps() -> None
+6. check_api_client_methods() -> None
+7. check_page_registration() -> None
+8. check_responsive_css_and_cards() -> None
+9. check_regression() -> None
+10. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 17】verify_stage6d.py
+================================================================================
+你是一名 Python 后端开发者。请实现 verify_stage6d.py。
+
+【背景】
+阶段六·子阶段 6d 验收：Dockerfile.edge + BIM 连接器 API。 验收项： - [A] scan_stage6d 文件清单全部就位 - [B] BIM API 端点：3 端点 200（TR-10.1/10.2/10.3） - [C] BIM Schema 字段精简（TR-10.4） - [D] Dockerfile.edge 多阶段 + healthcheck + EDGE_MODE + 非 root（TR-10.5） - [E] BIM 连接器降级：缺凭据 → mock 不报错（TR-10.6） - [F] 进度偏差检测：delayed/ahead 计数 + ProgressTracker（TR-10.7） - [G] 回归：verify_stage1/2/3 + 6a + 6b + 6c 无回归 执行：python verify_stage6d.py 退出码：0 = 全部通过；非 0 = 有失败项。
+
+【依赖】
+- from __future__ import annotations
+- import subprocess
+- import sys
+- from pathlib import Path
+- from unittest.mock import patch
+
+【关键常量】
+- ROOT
+- TOOLS_DIR
+- PASSED = 0
+- FAILED = 0
+
+【必须实现的函数】
+1. check(name: str, ok: bool, detail: str='') -> None
+2. check_scan() -> None
+3. check_bim_api() -> None
+4. check_bim_schemas() -> None
+5. check_dockerfile_edge() -> None
+6. check_bim_degradation() -> None
+7. check_progress_tracker() -> None
+8. check_regression() -> None
+9. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

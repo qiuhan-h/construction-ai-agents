@@ -1,0 +1,120 @@
+================================================================================
+services/embedded_apps/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 services/embedded_apps/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+内嵌应用集成（6c.1）：钉钉 ISV + 企业微信应用。 设计： - 钉钉/企微 SDK 缺失时降级为 mock（httpx 直连或本地 mock）； - OAuth 免登：钉钉 ``oauth_callback`` 校验 state + timestamp 防重放； - 推送通知：通过 httpx 直连 API，SDK 缺失返回 True（mock 降级）。
+
+【依赖】
+- from __future__ import annotations
+- from services.embedded_apps.dingtalk_app import DingTalkApp, get_dingtalk_app
+- from services.embedded_apps.wecom_app import WeComApp, get_wecom_app
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】dingtalk_app.py
+================================================================================
+你是一名 Python 后端开发者。请实现 dingtalk_app.py。
+
+【背景】
+钉钉 ISV 内嵌应用（6c.1）。 功能： - ``oauth_callback(code, state, timestamp)`` 免登回调： * state 与 session 中预存的 expected_state 一致 → 否则 403； * timestamp 与当前时间差 >300s → 403（防重放）； * 通过后用 code 换 userid（httpx 直连或 mock 降级）； - ``push_notification(user_ids, title, content)`` 工作通知推送。 降级策略： - 钉钉 SDK（dingtalk-sdk）缺失 → httpx 直连 OAuth API； - httpx 缺失 → mock 返回固定 userid。
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import hmac
+- import logging
+- import threading
+- import time
+- from typing import Any
+- from fastapi import HTTPException, status
+
+【关键常量】
+- OAUTH_STATE_TTL = 300
+
+【必须实现的类】
+1. class DingTalkApp：钉钉 ISV 内嵌应用。
+   方法：
+   - __init__(self, app_key: str, app_secret: str, agent_id: str, corp_id: str) -> None
+   - generate_state(self, session_id: str) -> str  # 生成 OAuth state 并存入 session。
+   - oauth_callback(self, code: str, state: str, timestamp: float, session_id: str, expected_state: str | None) -> dict[str, Any]  # 钉钉 OAuth 回调：校验 state + timestamp → 换 userid。 - state mismatch → HTTPException 403（TR-8.2）； - timestamp 过期（>300s）→ HTTPException 403（TR-8.3）； - 通过后返回 ``{"userid": "...", "name": "..."}``。
+   - _exchange_code_for_userid(self, code: str) -> str  # 用 authCode 换 userid。
+   - push_notification(self, user_ids: list[str], title: str, content: str) -> bool  # 推送工作通知。
+
+【必须实现的函数】
+1. get_dingtalk_app() -> DingTalkApp
+2. reset_dingtalk_app() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】wecom_app.py
+================================================================================
+你是一名 Python 后端开发者。请实现 wecom_app.py。
+
+【背景】
+企业微信内嵌应用（6c.1）。 功能： - ``push_notification(user_ids, title, content)`` 应用消息推送； - ``oauth_callback(code)`` 网页授权换 userid。 降级策略： - wechatpy 缺失 → httpx 直连企业微信 API； - httpx 缺失 → mock 返回 True（TR-8.5）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+
+【必须实现的类】
+1. class WeComApp：企业微信应用。
+   方法：
+   - __init__(self, corp_id: str, agent_id: str, secret: str) -> None
+   - push_notification(self, user_ids: list[str], title: str, content: str) -> bool  # 推送应用消息。 wechatpy 缺失时 → httpx 直连 → mock 降级返回 True（TR-8.5）。
+   - oauth_callback(self, code: str) -> dict[str, Any]  # 网页授权回调：用 code 换 userid。
+
+【必须实现的函数】
+1. get_wecom_app() -> WeComApp
+2. reset_wecom_app() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

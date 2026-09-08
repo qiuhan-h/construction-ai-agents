@@ -1,0 +1,201 @@
+================================================================================
+core/langchain/tools/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/langchain/tools/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+LangChain 业务工具子包（5b.6 实做，依 shu_zhuang_tu.txt 规约）。 子包结构（对齐 ``shu_zhuang_tu.txt`` 第 193-198 行）:: tools/ ├── __init__.py           本文件：适配层 + 工厂注册表 ├── calculation.py        计算工具（荷载/风险/结构校核） ├── document_parse.py     文档解析工具（方案/图纸/文档校验） ├── gis_tools.py          GIS 工具（geofence/空间监测） └── vector_search.py     向量检索工具（5b.2 ChromaDB 接入） 设计（5b.6 边界）： - 本 ``__init__.py`` 只做"工具适配 + 注册表 + LangChain 接入"， 具体业务工具实现在子模块（``calculation`` / ``document_parse`` / ``gis_tools`` / ``vector_search``）； - 业务工具统一协议 ``BusinessTool``：``name`` / ``description`` / ``async run(**kwargs)``； - ``MCPToolAdapter``：把 MCP 服务端注册的工具适配为 ``BusinessTool``； 缺 MCP service 单例时降级为 ``MockTool``（返回结构化空壳，便于离线测试）； - ``LangChainToolAdapter``：把 ``BusinessTool`` 进一步包装成 LangChain ``Tool`` / ``BaseTool``； 缺 langchain SDK 时降级为字典结构体（``{"name","description","run"}``）。 - ``get_tool(name)``：按名取单例；``register_tool``：注册自定义工具。 不依赖： - 不重复实现 MCP 工具业务逻辑（业务逻辑在 ``core/mcp/tools/*``）； - 不引入额外第三方包（langchain 在调用时再 import；缺包不抛 ImportError）； - 不接向量库（向量库在 5b.2，由 ``vector_search`` 子模块注入）。 入口约定（5b.6 推荐）:: from core.langchain.tools import get_tool, to_langchain_tool biz = get_tool("calculation.load") lc_tool = to_langchain_tool(biz)
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import inspect
+- import logging
+- import threading
+- from typing import Any, Callable, Protocol, runtime_checkable
+
+【必须实现的类】
+1. class BusinessTool(Protocol)：业务工具统一协议（与 LangChain Tool 解耦）。
+   方法：
+   - async run(self, **kwargs) -> dict[str, Any]  # 执行工具，返回结构化 dict。
+1. class MockTool：不依赖 MCP service 的兜底业务工具。 返回结构化空壳，让上游链 / Dashboard "上线即可用"。 真实 MCP 工具调用由 ``MCPToolAdapter`` 提供。
+   方法：
+   - __init__(self, name: str, description: str='') -> None
+   - async run(self, **kwargs) -> dict[str, Any]
+1. class MCPToolAdapter：把 MCP 工具适配为 ``BusinessTool``。 - 调用 ``MCPService.call_tool(name, args)``； - service 不可用 / 工具未注册 → 降级 ``MockTool``； - ``run`` 永不抛 ``MCPToolExecutionError``，由调用方按 ``mock`` 字段区分。
+   方法：
+   - __init__(self, name: str, description: str='') -> None
+   - async run(self, **kwargs) -> dict[str, Any]
+1. class LangChainToolAdapter：把 ``BusinessTool`` 包装为 LangChain ``BaseTool``。 缺 langchain SDK 时**绝不抛 ImportError**——返回一个最小 dict 结构体， 让上游链 / 测试可以离线构造；属性 / 接口保持一致。 用法（业务链 / 测试 / Streamlit）:: from core.langchain.tools import get_tool, to_langchain_tool biz = get_tool("calculation.load") lc_tool = to_langchain_tool(biz) # lc_tool 可直接喂给 LangChain AgentExecutor
+   方法：
+   - __init__(self, business_tool: BusinessTool) -> None
+   - langchain_tool(self) -> Any  # 返回 LangChain ``Tool`` / ``BaseTool`` 实例；缺 SDK 时为 None。
+   - as_dict(self) -> dict[str, Any]  # 最小结构体（缺 SDK / 测试 / Streamlit 离线构造用）。
+
+【必须实现的函数】
+1. _mcp_service_safe() -> Any | None  # 惰性获取 MCP service 单例；不可用时返回 None。
+2. _langchain_available() -> bool
+3. to_langchain_tool(business_tool: BusinessTool) -> Any  # 便捷入口：``BusinessTool`` → LangChain Tool。 返回类型： - langchain SDK 可用 → ``BaseTool`` 实例； - 不可用 → ``dict`` 结构体（含 ``run`` 协程方法）。
+4. register_tool(name: str, factory: _ToolFactory) -> None  # 注册自定义业务工具工厂（5b.6 公共扩展点）。 子模块（calculation/document_parse/gis_tools/vector_search） 在 import 时调用本函数完成默认注册。
+5. _ensure_default_registry() -> None  # 惰性填充默认注册表（避免 import 时强依赖 MCP service）。 触发子模块 import：子模块各自调用 ``register_tool`` 注册白名单工具。
+6. get_tool(name: str, use_cache: bool) -> BusinessTool  # 按 name 获取业务工具。 - 默认白名单：``calculation.*`` / ``validation.*`` / ``analysis.aggregate_risk`` / ``vector.search`` / ``vector.upsert``； - 自定义工具需先 ``register_tool``； - 永不抛 ``ModuleNotFoundError``；MCP 不可用时降级 ``MockTool``。
+7. get_business_tools() -> dict[str, BusinessTool]  # 返回平台稳定的业务工具集合（含白名单 + 自定义注册）。
+8. list_tools() -> list[str]  # 返回已注册的工具名（按字典序）。
+9. reset_default_tools() -> None  # 重置单例 cache（测试用）。
+10. langchain_available() -> bool  # 暴露给业务层 / 健康检查。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】calculation.py
+================================================================================
+你是一名 Python 后端开发者。请实现 calculation.py。
+
+【背景】
+计算工具适配模块（5b.6 实做，对齐 shu_zhuang_tu.txt 第 195 行）。 职责： - 把 ``core/mcp/tools/calculation_tools.py`` 注册的 MCP 工具适配为 ``BusinessTool``； - 不重复实现业务逻辑（荷载/风险/结构校核算法在 MCP 工具内）； - 缺 MCP service 时降级 ``MockTool``。 注册工具名（白名单）： - ``calculation.load``              结构荷载组合（DL + LL + W + S） - ``calculation.risk``              危险源打分 → 风险等级（low/medium/high） - ``calculation.structural_check``  结构最小校核（跨度/荷载合理性）
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.tools import MCPToolAdapter, register_tool
+
+【关键常量】
+- _DESC_LOAD = '结构荷载组合（恒载 + 活载 + 风载 + 雪载）→ q = 1.2DL + 1.4LL + 0.6W + 0.7S'
+- _DESC_RISK = '基于危险源打分评估风险等级（low < 5 / medium < 10 / high >= 10）'
+- _DESC_STRUCT = '结构最小校核：跨度 / 荷载合理性 + 高危专项论证阈值检查'
+
+【必须实现的函数】
+1. _register() -> None  # 注册 calculation.* 系列业务工具（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】document_parse.py
+================================================================================
+你是一名 Python 后端开发者。请实现 document_parse.py。
+
+【背景】
+文档解析工具适配模块（5b.6 实做，对齐 shu_zhuang_tu.txt 第 196 行）。 职责： - 把 ``core/mcp/tools/validation_tools.py`` 注册的 MCP 工具适配为 ``BusinessTool``； - 不重复实现业务逻辑（方案/图纸/文档校验算法在 MCP 工具内）； - 缺 MCP service 时降级 ``MockTool``。 注册工具名（白名单）： - ``validation.plan``      施工方案必填字段 + 一致性校验 - ``validation.drawing``   图纸基础元数据校验（file_uri 协议 + 文件存在） - ``validation.document``  通用文档完整性校验（size / mime_type）
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.tools import MCPToolAdapter, register_tool
+
+【关键常量】
+- _DESC_PLAN = '施工方案校验：title 非空 + risk_level 枚举 + hazards 至少 1 条'
+- _DESC_DRAWING = '图纸校验：file_uri 必须是 file:// 或 http(s)://'
+- _DESC_DOCUMENT = '文档校验：size_bytes > 0 + mime_type 非空'
+
+【必须实现的函数】
+1. _register() -> None  # 注册 validation.* 系列业务工具（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】gis_tools.py
+================================================================================
+你是一名 Python 后端开发者。请实现 gis_tools.py。
+
+【背景】
+GIS 工具适配模块（5b.6 实做，对齐 shu_zhuang_tu.txt 第 197 行）。 职责： - 把 ``core/mcp/tools/analysis_tools.py`` 注册的 MCP 工具适配为 ``BusinessTool``； - 桥接 site_monitor_agent 的 GIS 集成（geofence / 空间监测 / 风险热图）； - 不重复实现业务逻辑（聚合/汇总算法在 MCP 工具内）； - 缺 MCP service 时降级 ``MockTool``。 注册工具名（白名单）： - ``analysis.aggregate_risk``  多源风险聚合（塔吊 + 高支模 + 深基坑 ...）
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.tools import MCPToolAdapter, register_tool
+
+【关键常量】
+- _DESC_AGGREGATE = '多源风险聚合：合并塔吊/高支模/深基坑等危险源 → 综合风险评分'
+
+【必须实现的函数】
+1. _register() -> None  # 注册 analysis.* 系列业务工具（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】vector_search.py
+================================================================================
+你是一名 Python 后端开发者。请实现 vector_search.py。
+
+【背景】
+向量检索工具适配模块（5b.6 实做，对齐 shu_zhuang_tu.txt 第 198 行）。 职责： - 把 5b.2 ChromaDB 向量库适配为 ``BusinessTool``； - 桥接 LangChain 业务链与 ``core/vector_store/`` 真实向量库； - 缺 ChromaDB 客户端时降级 ``MockTool``。 注册工具名（白名单）： - ``vector.search``    向量相似度检索（top-k 法规 / 案例） - ``vector.upsert``    向量入库（法规文本 → embedding → ChromaDB） 依赖： - ``core/vector_store/factory.get_vector_store(backend="chroma")`` 在调用时惰性 import；缺 chromadb 包时返回 InMemoryVectorStore 兜底。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from core.langchain.tools import MockTool, register_tool
+
+【关键常量】
+- _DESC_SEARCH = '向量相似度检索：top-k 法规 / 案例匹配（基于 5b.2 ChromaDB）'
+- _DESC_UPSERT = '向量入库：法规 / 案例文本 → embedding → ChromaDB upsert'
+
+【必须实现的类】
+1. class _VectorSearchTool：向量检索业务工具（包装 5b.2 ChromaDB）。
+   方法：
+   - __init__(self) -> None
+   - _ensure_store(self) -> Any | None  # 惰性初始化向量库客户端；失败返回 None（触发 Mock 降级）。
+   - async run(self, **kwargs) -> dict[str, Any]  # 调用 ``store.query(tenant_id, text, top_k, filter)``。 对齐 5b.2 ``VectorStore`` 协议（``base.py:58-83``）——不存在的 ``store.search(...)`` 已弃用。
+1. class _VectorUpsertTool：向量入库业务工具（包装 5b.2 ChromaDB）。
+   方法：
+   - __init__(self) -> None
+   - _ensure_store(self) -> Any | None
+   - async run(self, **kwargs) -> dict[str, Any]  # 调用 ``store.upsert(records: list[VectorRecord]) -> int``。 对齐 5b.2 ``VectorStore`` 协议——不再使用 chromadb 原生参数签名。
+
+【必须实现的函数】
+1. _register() -> None  # 注册 vector.* 系列业务工具（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

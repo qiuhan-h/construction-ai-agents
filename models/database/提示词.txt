@@ -1,0 +1,292 @@
+================================================================================
+models/database/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 models/database/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+数据库模型（SQLAlchemy ORM）：导入本包即完成全部表元数据注册。
+
+【依赖】
+- from models.database.audit_models import InspectionTable, ReviewReportTable, ViolationTable
+- from models.database.base import Base, enum_column
+- from models.database.billing_models import BillTable, UsageRecordTable
+- from models.database.security_audit_log import SecurityAuditLogTable
+- from models.database.geofence_models import GeofenceTable, GeofenceViolationTable
+- from models.database.monitor_models import AlertTable, SensorDeviceTable
+- from models.database.project_models import ConstructionPlanTable, ProjectTable, TenantTable
+- from models.database.regulation_models import CaseTable, RegulationTable, StandardTable
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】audit_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 audit_models.py。
+
+【背景】
+审查域表模型：审查记录 / 违规项 / 审查报告。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+- from sqlalchemy.orm import Mapped, mapped_column, relationship
+- from common.constants import AgentName, AuditConclusion, InspectionStatus, ReportStatus, ViolationSeverity, ViolationStatus
+- from common.ids import inspection_id, report_id, violation_id
+- from common.timeutils import utc_now
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin, enum_column
+
+【必须实现的类】
+1. class InspectionTable(TenantMixin, IDMixin, Base)：审查记录表。
+1. class ViolationTable(TenantMixin, IDMixin, TimestampMixin, Base)：违规项表。 regulation_version 落库为可追溯快照：审查类违规项该列必须非空 （应用层以 RegulationVersionMissingError 强制约束）。
+1. class ReviewReportTable(TenantMixin, IDMixin, TimestampMixin, Base)：审查报告表（签章后正文不可变）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】base.py
+================================================================================
+你是一名 Python 后端开发者。请实现 base.py。
+
+【背景】
+SQLAlchemy 2.0 声明式基类与公共 Mixin。 约定： - 主键为字符串 ID（common.ids 生成的 ULID），不暴露自增序列； - 所有时间列为 UTC（DateTime(timezone=True)）； - 枚举列以字符串值存储（native_enum=False），跨数据库可移植； - 命名规范统一约束索引/约束名，保证 Alembic 生成确定性迁移。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from enum import Enum
+- from typing import Any
+- from sqlalchemy import DateTime, Enum as SAEnum, MetaData, String
+- from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+- from common.ids import new_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class Base(DeclarativeBase)：全平台 ORM 模型基类。
+1. class IDMixin：字符串主键（ULID），默认前缀 obj_，各表用 default 覆盖。
+1. class TimestampMixin
+1. class TenantMixin：多租户隔离：业务表统一携带 tenant_id 并建索引。
+
+【必须实现的函数】
+1. enum_column(enum_cls: type[Enum], **kwargs) -> Any  # 构造以字符串值存储的枚举列（避免依赖数据库原生 ENUM 类型）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】billing_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 billing_models.py。
+
+【背景】
+计费域表模型（6b.1 多租户 SaaS）：用量流水 + 月度账单。 设计： - ``usage_records`` 用量流水：每次 API 调用 / 存储上报 / 并发槽位占用 追加一条（metric + amount + period），计费按月聚合； - ``bills`` 月度账单：(tenant_id, period) 唯一，mock 计费为套餐固定月费， ``usage`` 列快照出账时的用量计数； - 与既有表一致：字符串 ULID 主键、UTC 时间、枚举以字符串存储； - 不建物理外键到 tenants，跨表关联由应用层按 tenant_id 过滤（与 project_models 的多租户约定一致）。
+
+【依赖】
+- from __future__ import annotations
+- from sqlalchemy import JSON, DateTime, Float, String, UniqueConstraint
+- from sqlalchemy.orm import Mapped, mapped_column
+- from common.ids import new_id
+- from common.timeutils import utc_now
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin
+
+【必须实现的类】
+1. class UsageRecordTable(TenantMixin, IDMixin, TimestampMixin, Base)：用量流水表（6b.1）。 metric 取值：``api_calls``（调用次数，amount 为增量）/ ``storage_gb``（存储量，amount 为上报瞬时值 GB）/ ``agent_concurrency``（并发槽位，amount 为 +1/-1）。 period 为账期 ``yyyy-mm``（UTC），便于按月聚合出账。
+1. class BillTable(IDMixin, TimestampMixin, Base)：月度账单表（6b.1 mock 计费：套餐固定月费）。
+
+【必须实现的函数】
+1. bill_id_factory() -> str  # 账单 ID 工厂（bill_ 前缀）。
+2. usage_record_id_factory() -> str  # 用量流水 ID 工厂（usg_ 前缀）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】geofence_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 geofence_models.py。
+
+【背景】
+地理围栏域表模型（5b.3 新增）：围栏定义 / 越界事件。 设计： - 围栏几何用 JSON 列存 GeoJSON（不引入 PostGIS 依赖；可移植 SQLite/PG）； - 越界事件有独立的状态机（OPEN / ACKNOWLEDGED / RESOLVED 等）， 字段对齐 ``ViolationStatus``。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String
+- from sqlalchemy.orm import Mapped, mapped_column
+- from common.constants import FenceSource, GeofenceType, ViolationStatus
+- from common.ids import geofence_id, geofence_violation_id
+- from common.timeutils import utc_now
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin, enum_column
+
+【必须实现的类】
+1. class GeofenceTable(TenantMixin, IDMixin, TimestampMixin, Base)：地理围栏定义表。
+1. class GeofenceViolationTable(TenantMixin, IDMixin, Base)：地理围栏越界事件表。 与 4d 时期 ``FenceViolation`` 的区别： - 持久化（含 tenant_id / 状态机 / 业务字段）； - 与 5b.7 ``GeofenceHistoryStore.record/list_since`` 接口契约一致。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】monitor_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 monitor_models.py。
+
+【背景】
+监控域表模型：告警事件 / 传感器设备台账。 高频原始传感数据不落关系库（走 core/timeseries 时序库）， 此处只存低频、需长期检索的事件与台账。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String, Text
+- from sqlalchemy.orm import Mapped, mapped_column
+- from common.constants import AlertLevel, AlertStatus
+- from common.ids import alert_id
+- from common.timeutils import utc_now
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin, enum_column
+
+【必须实现的类】
+1. class AlertTable(TenantMixin, IDMixin, Base)：告警事件表。
+1. class SensorDeviceTable(TenantMixin, IDMixin, TimestampMixin, Base)：传感器设备台账（与 IoT 集成模块共用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】project_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 project_models.py。
+
+【背景】
+项目域表模型：租户 / 项目 / 施工方案。 设计：tenant_id 是租户隔离键（非物理外键）， 跨租户关联由应用层按 tenant_id 过滤完成，避免跨租户级联删除。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
+- from sqlalchemy.orm import Mapped, mapped_column, relationship
+- from common.constants import PlanStatus, PlanType, ProjectStatus, SubscriptionPlan, TenantStatus
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin, enum_column
+
+【必须实现的类】
+1. class TenantTable(IDMixin, TimestampMixin, Base)：租户表。租户自身的 id 即主键。 6b.1 多租户 SaaS 扩展列： - ``plan``             订阅套餐（trial/starter/pro/enterprise） - ``trial_expires_at`` 试用期到期时间（UTC）；付费套餐为 NULL - ``quota_used``       配额用量计数器（JSON），键见 ``_DEFAULT_QUOTA_USED``
+1. class ProjectTable(TenantMixin, IDMixin, TimestampMixin, Base)：项目表。
+1. class ConstructionPlanTable(TenantMixin, IDMixin, TimestampMixin, Base)：施工方案表。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】regulation_models.py
+================================================================================
+你是一名 Python 后端开发者。请实现 regulation_models.py。
+
+【背景】
+法规域表模型（5b.3 新增）：法规条文 / 标准 / 案例。 设计： - 与现有 ``models/domain/regulation.py``（Pydantic）解耦，本模块只负责 持久化形态； - 每条记录 ``tenant_id + (code, version[, article])`` 唯一； - 关键词 / 引用法规用 JSON 列存储，避免关联表复杂度。
+
+【依赖】
+- from __future__ import annotations
+- from sqlalchemy import JSON, String, Text, UniqueConstraint
+- from sqlalchemy.orm import Mapped, mapped_column
+- from common.ids import case_id, regulation_id, standard_id
+- from models.database.base import Base, IDMixin, TenantMixin, TimestampMixin
+
+【必须实现的类】
+1. class RegulationTable(TenantMixin, IDMixin, TimestampMixin, Base)：法规条文表。
+1. class StandardTable(TenantMixin, IDMixin, TimestampMixin, Base)：标准表（GB / JGJ 等强制 / 推荐性标准）。
+1. class CaseTable(TenantMixin, IDMixin, TimestampMixin, Base)：案例表（历史审查 / 复盘记录）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】security_audit_log.py
+================================================================================
+你是一名 Python 后端开发者。请实现 security_audit_log.py。
+
+【背景】
+安全审计日志表模型（7a-5 安全加固）。 记录 API 请求的审计轨迹：tenant_id + actor + action + resource。 用于生产环境的合规审计与安全追溯。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from sqlalchemy import JSON, DateTime, Integer, String
+- from sqlalchemy.orm import Mapped, mapped_column
+- from common.timeutils import utc_now
+- from models.database.base import Base, IDMixin, TenantMixin
+
+【必须实现的类】
+1. class SecurityAuditLogTable(TenantMixin, IDMixin, Base)：安全审计日志表。 字段说明： - tenant_id：租户 ID（来自 TenantMixin） - actor：操作者标识（用户 ID 或 system） - action：操作类型（如 login / create / update / delete / export） - resource：请求资源路径（如 /api/v1/agents/xxx） - method：HTTP 方法（GET / POST / PUT / DELETE） - status_code：响应状态码 - ip：客户端 IP - detail：附加详情（JSON，如请求体摘要、变更前后快照）
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

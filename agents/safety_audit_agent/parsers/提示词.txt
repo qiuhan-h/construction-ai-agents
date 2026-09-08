@@ -1,0 +1,160 @@
+================================================================================
+agents/safety_audit_agent/parsers/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/safety_audit_agent/parsers/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+施工安全审核智能体：文档解析层。 阶段三覆盖： - spec_parser.py   国标/行标条文（按章节切分 → 灌入向量库） - plan_parser.py   施工方案（Markdown / DOCX → 结构化字段） - drawing_parser.py 图纸元数据（IFC/标题栏首版；阶段四完善）
+
+【依赖】
+- from agents.safety_audit_agent.parsers.drawing_parser import DrawingMetadata, DrawingParser
+- from agents.safety_audit_agent.parsers.plan_parser import PlanFields, PlanParser
+- from agents.safety_audit_agent.parsers.spec_parser import SpecChunk, SpecParser
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】drawing_parser.py
+================================================================================
+你是一名 Python 后端开发者。请实现 drawing_parser.py。
+
+【背景】
+图纸元数据解析（首版）。 输入：IFC 文件（*.ifc）或标题栏文本。 输出：DrawingMetadata（图纸元数据）。 阶段三实现： - 纯文本标题栏：正则抽取 project / drawing_no / revision / designer； - IFC：ifcopenshell 未安装时，仅做文件存在性校验 + 头部 IPTS 文本抽取。 完整几何解析留到阶段四。
+
+【依赖】
+- from __future__ import annotations
+- import re
+- from dataclasses import dataclass, field
+- from pathlib import Path
+- from typing import Any
+
+【关键常量】
+- _PROJECT_RE
+- _DRAWING_NO_RE
+- _REVISION_RE
+- _DESIGNER_RE
+
+【必须实现的类】
+1. class DrawingMetadata：图纸元数据。
+1. class DrawingParser：图纸解析器（首版：标题栏 + IFC 头部）。
+   方法：
+   - parse_file(self, path: str | Path) -> DrawingMetadata
+   - parse_text(self, text: str, file_path: str) -> DrawingMetadata
+   - _parse_text(self, p: Path) -> DrawingMetadata
+   - _parse_ifc(self, p: Path) -> DrawingMetadata  # IFC：抽取头部 IPTS 文本（含 FILE_DESCRIPTION / FILE_NAME 等）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】plan_parser.py
+================================================================================
+你是一名 Python 后端开发者。请实现 plan_parser.py。
+
+【背景】
+施工方案解析（plan_parser）。 输入：方案文件（Markdown / DOCX / TXT）。DOCX 解析需 python-docx， 未安装时降级为文本读取。 输出：PlanFields 结构化字段： - project_name - stage - hazards: list[{name, ...}] - materials: list[str] - loads: dict（dead/live/wind/snow 等） 首版实现：基于 Markdown 段落 + 简单关键字匹配。
+
+【依赖】
+- from __future__ import annotations
+- import re
+- from dataclasses import dataclass, field
+- from pathlib import Path
+- from typing import Any
+
+【关键常量】
+- _MATERIAL_PATTERN
+- _LOAD_PATTERN
+
+【必须实现的类】
+1. class PlanFields：方案结构化字段。
+1. class PlanParser：施工方案解析器。
+   方法：
+   - parse_text(self, text: str, project_name: str | None) -> PlanFields
+   - parse_file(self, path: str | Path, project_name: str | None) -> PlanFields
+
+【必须实现的函数】
+1. _extract_project_name(text: str) -> str | None
+2. _extract_stage(text: str) -> str | None
+3. _extract_hazards(text: str) -> list[dict[str, Any]]
+4. _extract_materials(text: str) -> list[str]
+5. _extract_loads(text: str) -> dict[str, float]  # 从文本中提取 D / L / W / S 数值（kN/m²）。
+6. _read_docx(p: Path) -> str  # 读取 DOCX 文本（需 python-docx；不可用时抛 AgentParseError）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】spec_parser.py
+================================================================================
+你是一名 Python 后端开发者。请实现 spec_parser.py。
+
+【背景】
+规范条文解析（spec_parser）。 输入：国标/行标的纯文本（Markdown / TXT）。 输出：按章节切分的 SpecChunk 列表。 切分规则： - 一级章节以 `# 1` / `## 1.1` / `## 第N章` 等开头； - 单 chunk 不超过 max_chars（默认 1000 字）； - 保留章节标题作为元数据。
+
+【依赖】
+- from __future__ import annotations
+- import re
+- from dataclasses import dataclass, field
+- from typing import Any
+
+【关键常量】
+- _SECTION_PATTERN
+
+【必须实现的类】
+1. class SpecChunk：一条规范片段。
+1. class SpecParser：规范条文解析器。
+   方法：
+   - parse(self, text: str, code: str, version: str, max_chars: int) -> list[SpecChunk]  # 按章节切分；返回 SpecChunk 列表。
+
+【必须实现的函数】
+1. _split_sections(text: str) -> list[tuple[str, str]]  # 切出 (章节标题, 正文) 列表。
+2. _split_long(text: str, max_chars: int) -> list[str]  # 超长正文按 max_chars 硬切。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

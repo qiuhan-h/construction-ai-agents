@@ -1,0 +1,234 @@
+================================================================================
+agents/site_monitor_agent/bim_integration/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/site_monitor_agent/bim_integration/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+BIM 集成子包：BIM API + IFC 解析 + 进度跟踪。 5b.5 起： - ``BIMConnector``         — 4c mock 客户端（兼容保留） - ``BIMRealConnector``     — 5b.5 真实 APS / BIM360 客户端（缺凭据降级） - ``IFCParser``             — 4c mock 解析器 - ``IFCRealParser``        — 5b.5 真实 ifcopenshell 解析器 - ``ProgressItem`` / ``ProgressTracker`` — 进度对比 + 偏差告警
+
+【依赖】
+- from agents.site_monitor_agent.bim_integration.bim_connector import BIMConnector
+- from agents.site_monitor_agent.bim_integration.bim_real_connector import BIMRealConnector, make_bim_real_connector
+- from agents.site_monitor_agent.bim_integration.ifc_parser import IFCParser
+- from agents.site_monitor_agent.bim_integration.ifc_real_parser import IFCRealParser
+- from agents.site_monitor_agent.bim_integration.progress_tracker import ProgressItem, ProgressTracker
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】bim_connector.py
+================================================================================
+你是一名 Python 后端开发者。请实现 bim_connector.py。
+
+【背景】
+BIM API 客户端（首版 mock，阶段五接真实 BIM 平台）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+
+【必须实现的类】
+1. class BIMConnector：BIM 模型 / 构件查询客户端（首版全部返回 mock 数据）。
+   方法：
+   - __init__(self, base_url: str='https://bim.example.com/api', token: str | None=None, tenant_id: str='tnt') -> None
+   - async get_project_tree(self, project_id: str) -> list[dict]  # 获取项目构件树。真实平台不可用/失败 → 降级 mock（K2 修复）。
+   - async get_element(self, element_id: str) -> dict  # 获取构件详情。真实平台不可用/失败 → 降级 mock（K2 修复）。
+   - _mock_element(self, element_id: str) -> dict
+   - _mock_project_tree(self, project_id: str) -> list[dict]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】bim_real_connector.py
+================================================================================
+你是一名 Python 后端开发者。请实现 bim_real_connector.py。
+
+【背景】
+BIM 真实客户端：Autodesk Platform Services (Forge / BIM360)（5b.5）。 设计： - 接 Autodesk Platform Services (APS，原 Forge) BIM360 API； - OAuth 2.0 ``client_credentials`` 派发 token，自动刷新（默认 1h TTL）； - 提供与 4c ``BIMConnector`` 兼容的接口（``get_project_tree`` / ``get_element``） + 扩展 ``list_elements`` / ``download_ifc``； - 缺 ``client_id`` / ``client_secret`` / ``hub_id`` / ``project_id`` → **降级 Mock** + 警告（与 ``bim_connector.py`` 行为一致）； - 网络错 / 非 2xx → 降级 Mock（不抛异常给上游）。 参考： - https://aps.autodesk.com/developer-guide - https://aps.autodesk.com/en/docs/oauth/v2/developers_guide/overview/ - https://aps.autodesk.com/en/docs/data/v2/reference/http/projects-GET/ - https://aps.autodesk.com/en/docs/model-derivative/v2
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import json
+- import logging
+- import time
+- import urllib.error
+- import urllib.parse
+- import urllib.request
+- from typing import Any
+
+【关键常量】
+- _APS_AUTH_ENDPOINT = 'https://developer.api.autodesk.com/authentication/v2/token'
+- _APS_DEFAULT_BASE = 'https://developer.api.autodesk.com'
+- _DEFAULT_SCOPE = 'data:read bucket:read'
+- _TOKEN_REFRESH_AHEAD = 60
+
+【必须实现的类】
+1. class BIMRealConnector：Autodesk Platform Services (BIM360 / Forge) 真实客户端。 与 4c ``BIMConnector`` 兼容（``get_project_tree`` / ``get_element``）+ 扩展方法。 缺凭据 / 网络失败时降级 Mock，保证上游 ``ProgressTracker`` 可离线运行。
+   方法：
+   - __init__(self, client_id: str | None, client_secret: str | None, hub_id: str | None, project_id: str | None, base_url: str, scope: str, timeout: float, force_mock: bool) -> None
+   - _has_credentials(self) -> bool
+   - _mock_project_tree(self, project_id: str) -> list[dict]  # 与 4c ``BIMConnector._mock_project_tree`` 行为兼容。
+   - _mock_element(self, element_id: str) -> dict
+   - async _ensure_token(self) -> str | None  # 获取 / 刷新 access token；失败返回 None（触发 Mock 降级）。
+   - async get_project_tree(self, project_id: str | None=None) -> list[dict]  # 获取项目构件树。 APS 路径：``GET /data/v1/projects/{project_id}/topFolders`` 降级：缺凭据 / 网络错 → 返回 ``_mock_project_tree``。
+   - async get_element(self, element_id: str) -> dict  # 获取单个构件详情（兼容 4c ``BIMConnector.get_element``）。 APS 路径：``GET /modelderivative/v2/designdata/{urn}/metadata/{guid}`` 本方法首版接受 ``urn:element_id`` 形式的 ``element_id``，便于传 URN + GUID。
+   - async list_elements(self, project_id: str | None, type_filter: str | None, limit: int=None) -> list[dict]  # 列出项目构件（5b.5 扩展，给 ProgressTracker 用）。 APS 路径：``GET /data/v1/projects/{project_id}/items``
+   - async download_ifc(self, project_id: str | None=None, item_id: str | None=None, out_path: str | None=None) -> bytes  # 下载 IFC 文件内容（5b.5 扩展，给 ifc_real_parser 用）。 APS 路径：``GET /data/v1/projects/{project_id}/items/{item_id}/tip``（顶版本） 缺凭据 / 失败 → 返回空 bytes（调用方应检测后走 Mock）。
+   - is_mock_mode(self) -> bool  # 暴露给健康检查 / Dashboard：当前是否走 Mock 模式。
+
+【必须实现的函数】
+1. _is_placeholder(value: Any) -> bool  # 判断是否占位（与 base_channel.is_placeholder 同义，避免循环导入）。
+2. _http_post_form(url: str, form: dict[str, str], timeout: float, headers: dict[str, str] | None) -> tuple[int, str]  # 标准库 POST application/x-www-form-urlencoded。返回 (status, body)。
+3. _http_get_json(url: str, access_token: str, timeout: float, headers: dict[str, str] | None) -> tuple[int, Any]  # 标准库 GET，返回 (status, parsed_json_or_text)。
+4. make_bim_real_connector(client_id: str | None, client_secret: str | None, hub_id: str | None, project_id: str | None, **kwargs) -> BIMRealConnector  # 工厂函数（与 ``BIMConnector`` 一致的构造风格）。 全部参数未显式传入时，从 ``config.settings``（.env 的 APS_* 变量）读取； 凭据缺失 / 占位时由 ``BIMRealConnector`` 内部自动降级 mock。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】ifc_parser.py
+================================================================================
+你是一名 Python 后端开发者。请实现 ifc_parser.py。
+
+【背景】
+IFC 文件解析。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+
+【必须实现的类】
+1. class IFCParser：IFC 解析（ifcopenshell 缺失时降级 mock）。
+   方法：
+   - __init__(self) -> None
+   - parse(self, file_path: str) -> dict  # 解析 IFC 文件 → 简化 dict。
+   - _to_dict(element: Any) -> dict
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】ifc_real_parser.py
+================================================================================
+你是一名 Python 后端开发者。请实现 ifc_real_parser.py。
+
+【背景】
+IFC 真实解析器（5b.5）。 设计： - 优先用 ``ifcopenshell`` 打开 .ifc 文件； - ``ifcopenshell`` 缺失 → 走 **Mock 模式**（与 4c ``IFCParser`` 行为兼容）； - 提取 3 类信息： 1. **空间结构**（``IfcProject`` / ``IfcSite`` / ``IfcBuilding`` / ``IfcBuildingStorey`` / ``IfcSpace``） 2. **构件**（``IfcElement`` 子类，按类型分类） 3. **几何**（``Representation`` 简化：取 ``IfcExtrudedAreaSolid`` 的 depth） - 返回结构化 dict（与 4c ``IFCParser.parse()`` 兼容 + 扩展字段）。 - 顶层 ``parse_ifc_file()`` 便利函数（verify_stage5 探针通过）。 为什么不用 4c ``IFCParser``： - 4c 是首版 mock 演示，只取 ``GlobalId`` / ``Name``； - 5b.5 要给进度对比（``ProgressTracker``）提供更丰富的几何 / 空间信息。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from typing import Any, Iterable
+
+【必须实现的类】
+1. class IFCRealParser：IFC 真实解析器。 使用方式： parser = IFCRealParser() result = parser.parse("model.ifc") # 或者： result = parse_ifc_file("model.ifc")
+   方法：
+   - __init__(self, force_mock: bool) -> None
+   - is_mock(self) -> bool
+   - parse(self, file_path: str) -> dict[str, Any]  # 解析 IFC 文件。 返回： { "file_path": str, "schema": str | None, "structure": [...],   # IfcProject/Site/Building/Storey/Space "elements": [...],    # IfcWall/Slab/Beam/Column/... "by_type": {type: count}, "count": int, "warning": str | None, }
+   - parse_bytes(self, content: bytes, source_name: str) -> dict[str, Any]  # 从字节流解析（用于上传场景）。
+   - _iter_type(self, model: Any, types: Iterable[str]) -> Iterable[Any]
+   - _structure_to_dict(self, inst: Any) -> dict[str, Any]
+   - _element_to_dict(self, inst: Any) -> dict[str, Any]
+   - _from_model(self, model: Any, source_name: str) -> dict[str, Any]
+   - _mock_result(file_path: str, warning: str | None) -> dict[str, Any]
+
+【必须实现的函数】
+1. _ifcopenshell_available() -> bool
+2. _safe_str(value: Any, default: str='') -> str
+3. _extract_depth(element: Any) -> float | None  # 提取 ``IfcExtrudedAreaSolid.Depth`` 作为构件高度/厚度的近似。
+4. parse_ifc_file(file_path: str, force_mock: bool) -> dict[str, Any]  # 便利函数：单次解析。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】progress_tracker.py
+================================================================================
+你是一名 Python 后端开发者。请实现 progress_tracker.py。
+
+【背景】
+进度跟踪：BIM 构件计划 vs 实际 vs 偏差告警。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from dataclasses import dataclass, field
+- from datetime import date
+- from typing import Any
+- from common.constants import AlertLevel
+- from models.domain import Alert
+
+【必须实现的类】
+1. class ProgressItem：进度项。
+   方法：
+   - to_dict(self) -> dict
+1. class ProgressTracker：进度跟踪 + 偏差检测 → 告警。
+   方法：
+   - __init__(self, deviation_threshold: float=10.0) -> None
+   - compute(self, plan: list[dict], actual: list[dict]) -> list[ProgressItem]  # 合并计划与实际，计算偏差。 plan / actual 每个 dict 含 element_id, name, pct(0-100)。 缺失的实际进度按 0% 计。
+   - deviation_alerts(self, items: list[ProgressItem], tenant_id: str, project_id: str) -> list[Alert]  # 偏差超阈值 → 告警。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

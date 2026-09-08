@@ -1,0 +1,216 @@
+================================================================================
+agents/safety_audit_agent/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/safety_audit_agent/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+施工安全审核智能体（safety_audit_agent）。 公开 API： - SafetyAuditAgent        主类（A2A BaseAgent 子类） - SafetyAuditLangChainAgent   LangChain 风格入口 - SafetyAuditMCPHandler   MCP 业务处理器 - build_a2a_router        构造 FastAPI A2A 路由 - install()               一次性安装 MCP 工具并返回 handler 使用： from agents.safety_audit_agent import SafetyAuditAgent, make_safety_audit_agent from agents.safety_audit_agent.mcp_handlers import install agent = make_safety_audit_agent(tenant_id="tnt_x") install()  # 把 safety.search_case / safety.match_regulation 注册到 MCP
+
+【依赖】
+- from agents.safety_audit_agent.agent import SafetyAuditAgent, make_safety_audit_agent
+- from agents.safety_audit_agent.langchain_agent import SafetyAuditLangChainAgent
+- from agents.safety_audit_agent.prompts import PROMPT_DRAWING_REVIEW, PROMPT_PLAN_REVIEW, PROMPT_REPORT_DRAFT
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】a2a_handlers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 a2a_handlers.py。
+
+【背景】
+施工安全审核智能体的 A2A 处理器：注册与路由挂载。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from common.exceptions import A2AAgentNotFoundError
+- from core.a2a.server import A2AServer, AgentRegistry, get_registry, reset_registry
+- from agents.safety_audit_agent.agent import SafetyAuditAgent
+
+【必须实现的函数】
+1. register_safety_audit_agent(agent: SafetyAuditAgent, registry: AgentRegistry | None=None) -> AgentRegistry  # 把 SafetyAuditAgent 注册到 AgentRegistry。
+2. build_a2a_router(agent: SafetyAuditAgent, registry: AgentRegistry | None=None)  # 构造 A2A 路由（FastAPI Router）。 使用方式： app.include_router(build_a2a_router(agent), prefix="/api/v1/a2a")
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agent.py。
+
+【背景】
+施工安全审核智能体主类（SafetyAuditAgent）。 流程： 1) 解析 A2A message.parts 拿到 plan 文本 / drawing 路径 / hazards / loads； 2) 解析方案（plan_parser）→ 拿到 PlanFields； 3) 计算（load_calculator / risk_assessor / structural_analyzer）； 4) 检索（case_retriever）； 5) 整改建议（recommendation_engine）； 6) 生成报告（report_generator → Markdown + 结构化 ReviewReport）； 7) 签章（report_signer → HMAC-SHA256）； 8) 事件发布： - 任意 CRITICAL 风险 → TOPIC_ALERT_TRIGGERED - 报告签章完成 → TOPIC_REPORT_SIGNED - 审查完成 → TOPIC_INSPECTION_COMPLETED 9) 返回 A2A reply（text=总结 / file=Markdown / data=report_id+signature）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from common.constants import AgentName, ReportStatus
+- from common.exceptions import AgentParseError
+- from common.ids import event_id, message_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.agent_card import Skill
+- from core.a2a.message import A2AMessage, MessagePart, Task
+- from agents.base_agent import BaseAgent, register_agent
+- from agents.safety_audit_agent.calculators import HazardInput, LECAssessor, LoadCalculator, LoadInputs, LoadResult, RiskAssessment, RiskLevel, StructuralAnalyzer
+- from agents.safety_audit_agent.knowledge_base import CaseRetriever, StandardLoader
+- from agents.safety_audit_agent.parsers import PlanParser
+- from agents.safety_audit_agent.outputs import RecommendationEngine, ReportArtifacts, ReportGenerator, sign_report_content
+- from agents.safety_audit_agent.prompts import PROMPT_PLAN_REVIEW, PROMPT_REPORT_DRAFT, list_prompts as _list_safety_prompts
+
+【必须实现的类】
+1. class SafetyAuditAgent(BaseAgent)：施工安全审核智能体。
+   方法：
+   - __init__(self, tenant_id: str, a2a_url: str, card_path: str, metadata: dict[str, Any] | None, signer_secret: str | None, auto_register: bool) -> None
+   - async handle(self, message: A2AMessage, task: Task) -> A2AMessage  # 处理一条 A2A 消息并返回审查结果。
+   - _extract_payload(self, message: A2AMessage) -> dict[str, Any]  # 从 A2AMessage 提取业务字段。 期望 message.metadata 至少包含： project_id: str plan_id: str （可选）plan_text / drawing_meta / hazards / loads
+   - async _run_review(self, payload: dict[str, Any]) -> ReportArtifacts
+   - _build_reply(self, artifacts: ReportArtifacts, src: A2AMessage) -> A2AMessage
+   - _error_reply(self, src: A2AMessage, reason: str) -> A2AMessage
+   - async _publish_event_safe(self, topic: str, payload: dict[str, Any]) -> None
+
+【必须实现的函数】
+1. make_safety_audit_agent(tenant_id: str, a2a_url: str, signer_secret: str | None) -> SafetyAuditAgent
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】langchain_agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 langchain_agent.py。
+
+【背景】
+施工安全审核智能体的 LangChain 风格入口（最小可用版）。 设计： - 不强制依赖 langchain 包；如未安装，__init__ 时降级为纯包装 handle()； - 启用时：构造简单 LLMChain（prompt + llm + output_parser 占位）； - 业务侧统一通过 .run(message) 调用；底层仍走 SafetyAuditAgent.handle()， 保证与 A2A 路径行为一致。 阶段四将替换为完整 LangChain Agent（含工具调用、记忆、流式）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from core.a2a.message import A2AMessage, Task
+- from common.constants import AgentName
+- from agents.safety_audit_agent.agent import SafetyAuditAgent
+
+【必须实现的类】
+1. class SafetyAuditLangChainAgent：LangChain 风格的安全审核智能体入口（包装 SafetyAuditAgent）。
+   方法：
+   - __init__(self, base_agent: SafetyAuditAgent) -> None
+   - async run(self, message: A2AMessage, task: Task) -> A2AMessage  # 统一入口：直接走 SafetyAuditAgent.handle()。
+   - base_agent(self) -> SafetyAuditAgent
+   - has_langchain(self) -> bool
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】mcp_handlers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mcp_handlers.py。
+
+【背景】
+施工安全审核智能体的 MCP 处理器：对外暴露资源/工具/提示词桥接。 设计： - 资源：read_resource 转发到 core.mcp.server； - 工具：call_tool 包成"安全搜索案例 / 安全匹配法规"等业务接口； - 提示词：render_prompt 直接复用 core.mcp.prompts.safety.audit。 注意：本文件不重复注册 MCP 项；它包装 core.mcp.server 已有能力， 为其他智能体（compliance / site_monitor / orchestrator）提供业务语义入口。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from common.exceptions import AgentError, AgentParseError
+- from core.mcp.server import MCPService, get_mcp_service, register_prompt as _register_prompt_global
+- from agents.safety_audit_agent.knowledge_base import CaseRetriever, StandardLoader
+- from agents.safety_audit_agent.prompts import PROMPT_PLAN_REVIEW
+
+【必须实现的类】
+1. class SafetyAuditMCPHandler：安全审核智能体的 MCP 业务处理器（包 core.mcp 现有能力）。
+   方法：
+   - __init__(self, service: MCPService | None=None) -> None
+   - async read_regulation(self, code: str, version: str, tenant_id: str) -> dict[str, Any]  # 按 regulation://{code}/{version} 读法规。
+   - async read_standard(self, code: str, version: str, tenant_id: str) -> dict[str, Any]
+   - async search_cases(self, tenant_id: str, query: str, top_k: int) -> dict[str, Any]
+   - async match_regulation(self, tenant_id: str, query: str, codes: list[str] | None) -> dict[str, Any]  # 按 query 匹配法规（多租户隔离）。codes 为可选限制范围。
+   - async render_plan_review_prompt(self, project: str, stage: str, hazards: str='', loads: str='') -> dict[str, Any]  # 直接调用 core.llm.get_prompt_manager().render() 渲染。
+
+【必须实现的函数】
+1. register_safety_tools(service: MCPService | None=None) -> None  # 把 safety_audit_agent 业务工具注册到 MCP 服务。
+2. install() -> SafetyAuditMCPHandler  # 安装 safety_audit_agent 的 MCP 工具，返回 handler。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】prompts.py
+================================================================================
+你是一名 Python 后端开发者。请实现 prompts.py。
+
+【背景】
+施工安全审核智能体的专用提示词模板。 注意： - 模板通过 core.llm.prompt_manager.PromptManager.register 注册； - 命名空间 "safety." 前缀，与 core.llm 默认模板区分； - 阶段三提供 3 个模板：plan_review / drawing_review / report_draft。 - 模块被 import 时会自动注册（_register_all）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from core.llm import PromptTemplate, get_prompt_manager
+
+【必须实现的函数】
+1. _register_all() -> None
+2. list_prompts() -> list[str]  # 返回已注册的安全审核专用模板名。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

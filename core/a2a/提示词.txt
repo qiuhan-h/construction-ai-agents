@@ -1,0 +1,337 @@
+================================================================================
+core/a2a/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/a2a/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+core.a2a 公共 API。 公开导出： - 协议：PROTOCOL_VERSION, A2AMethod, A2AErrorCode, make_error, check_protocol_version - 消息：A2AMessage, MessagePart, Task, TaskState, Artifact, assert_valid_transition - 序列化：JSONRPCRequest, JSONRPCResponse, decode_request, encode_response - 名片：AgentCard, Skill, Capabilities - 服务端：A2AServer, AgentRegistry, get_registry, reset_registry, build_fastapi_router - 客户端：A2AClient, build_message - 中间件：logging_middleware, auth_middleware, RateLimiter
+
+【依赖】
+- from core.a2a.agent_card import AgentCard, Capabilities, Skill
+- from core.a2a.client import A2AClient, build_message
+- from core.a2a.message import A2AMessage, Artifact, MessagePart, Task, TaskState, assert_valid_transition, is_valid_transition
+- from core.a2a.middleware import RateLimiter, auth_middleware, logging_middleware, timing_middleware
+- from core.a2a.protocol import A2AErrorCode, A2AMethod, PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS, check_protocol_version, make_error
+- from core.a2a.serializers import JSONRPCError, JSONRPCRequest, JSONRPCResponse, decode_request, encode_response, make_error_response, make_success_response
+- from core.a2a.server import A2AAgentProtocol, A2AServer, AgentRegistry, build_fastapi_router, get_registry, reset_registry
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】agent_card.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agent_card.py。
+
+【背景】
+智能体名片（Agent Card）：能力声明 + 元数据 + 端点。 A2A Discovery 流程： 1. 客户端 GET <base_url><card_path>（默认 /agent.json） 2. 返回 AgentCard JSON 3. 客户端缓存（TTL 来自 config/a2a_config.yaml）
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+- from common.ids import new_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.protocol import PROTOCOL_VERSION
+
+【必须实现的类】
+1. class Skill(BaseModel)：智能体的一个具体能力。
+1. class Capabilities(BaseModel)：智能体能力集合。
+1. class AgentCard(BaseModel)：智能体名片（A2A Discovery 端点返回）。
+   方法：
+   - card_url(self) -> str
+   - to_public_dict(self) -> dict[str, Any]  # 对外发布时序列化（去除敏感元数据）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】client.py
+================================================================================
+你是一名 Python 后端开发者。请实现 client.py。
+
+【背景】
+A2A 客户端：异步 HTTP 调用对端 A2A 服务。 使用方式： from core.a2a.client import A2AClient client = A2AClient(base_url="http://10.0.0.10:9101", agent_name="safety_audit_agent") result = await client.send_message(message, wait=True) 设计要点： - httpx.AsyncClient 复用，连接池与超时走 BaseURL； - 失败分类：网络 → A2ANetworkError；4xx → A2AMessageInvalidError； 5xx → A2AError(A2A_CALL_FAILED)；超时 → A2ATimeoutError； - 对端 4xx 中带 50004/50005/50006 等专用码的，映射到具体子类。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any
+- import httpx
+- from common.exceptions import A2AError, A2AMessageInvalidError, A2ANetworkError, A2AProtocolVersionMismatchError, A2ATaskNotFoundError, A2ATimeoutError
+- from common.ids import message_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.message import A2AMessage
+- from core.a2a.protocol import PROTOCOL_VERSION
+- from core.a2a.serializers import JSONRPCRequest, decode_request, encode_request
+
+【必须实现的类】
+1. class A2AClient：A2A 客户端（单目标 agent 绑定）。
+   方法：
+   - __init__(self, base_url: str, agent_name: str, timeout_seconds: float, max_retries: int, backoff_seconds: float, protocol_version: str, client: httpx.AsyncClient | None) -> None
+   - async __aenter__(self) -> 'A2AClient'
+   - async __aexit__(self, exc_type, exc, tb) -> None
+   - async discover(self) -> dict[str, Any]  # 获取对端 Agent Card（GET /a2a/{agent}/agent.json）。
+   - async send_message(self, message: A2AMessage, wait: bool) -> dict[str, Any]
+   - async get_task(self, task_id: str) -> dict[str, Any]
+   - async cancel_task(self, task_id: str, reason: str | None=None) -> dict[str, Any]
+   - async list_tasks(self) -> dict[str, Any]
+   - async _call_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]
+   - async _post_with_retry(self, url: str, body: dict[str, Any]) -> dict[str, Any]
+   - async _get(self, url: str) -> dict[str, Any]
+   - _ensure_client(self) -> httpx.AsyncClient
+   - _parse_response(self, resp: httpx.Response) -> dict[str, Any]
+   - _raise_for_error(self, err: dict[str, Any]) -> None
+
+【必须实现的函数】
+1. build_message(tenant_id: str, text: str, role: str, metadata: dict[str, Any] | None) -> A2AMessage  # 快速构造一条用户消息。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】message.py
+================================================================================
+你是一名 Python 后端开发者。请实现 message.py。
+
+【背景】
+A2A 消息结构（Message / Part / Task / Artifact）。 设计要点： - 业务数据（payload）通过 dict 透传，平台不解析其具体语义； - 任务状态机：PENDING -> RUNNING -> COMPLETED/FAILED/CANCELLED 非法迁移抛 TaskStateConflictError； - 时间字段一律 UTC ISO-8601。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from enum import Enum
+- from typing import Any
+- from pydantic import BaseModel, ConfigDict, Field
+- from common.exceptions import TaskStateConflictError
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class TaskState(str, Enum)
+1. class MessagePart(BaseModel)
+   方法：
+   - to_payload(self) -> dict[str, Any]
+1. class A2AMessage(BaseModel)：A2A 消息体（业务载荷由 parts 列表承载）。
+1. class Artifact(BaseModel)
+1. class Task(BaseModel)：A2A 任务：智能体处理消息的运行实例。
+   方法：
+   - transition(self, new_state: TaskState, error: dict[str, Any] | None) -> None  # 按状态机迁移；失败抛 TaskStateConflictError。
+   - is_terminal(self) -> bool
+
+【必须实现的函数】
+1. is_valid_transition(src: TaskState, dst: TaskState) -> bool
+2. assert_valid_transition(src: TaskState, dst: TaskState) -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 middleware.py。
+
+【背景】
+A2A 中间件：鉴权 / 日志 / 追踪 / 限流插槽。 每个中间件签名： async def mw(req: JSONRPCRequest, agent_name: str) -> None 异常直接抛出，server 会转为 A2A 错误响应。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import time
+- from collections import deque
+- from typing import Awaitable, Callable
+- from core.a2a.serializers import JSONRPCRequest
+
+【必须实现的类】
+1. class RateLimiter：基于滑动窗口的简单限流器（按 agent_name 维度）。
+   方法：
+   - __init__(self, max_requests: int=100, window_seconds: float=60.0) -> None
+   - middleware(self) -> Middleware
+
+【必须实现的函数】
+1. async logging_middleware(req: JSONRPCRequest, agent_name: str) -> None  # 记录 A2A 请求的方法/智能体/ID，便于排障。
+2. async timing_middleware(req: JSONRPCRequest, agent_name: str) -> None  # 打印请求到达时间（与耗时统计一起使用可挂 trace）。
+3. async auth_middleware(req: JSONRPCRequest, agent_name: str) -> None  # 默认放行；阶段四在此校验 Authorization / JWT。 严格模式下应： from common.exceptions import AuthenticationError token = req.params.get("auth_token") if not token or not verify_jwt(token): raise AuthenticationError("A2A 调用未认证")
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】protocol.py
+================================================================================
+你是一名 Python 后端开发者。请实现 protocol.py。
+
+【背景】
+A2A 协议核心定义（版本、方法、错误码、消息帧）。 协议设计原则（与 Google A2A 思路对齐，便于后续替换 SDK）： - JSON-RPC 2.0 风格帧：{ jsonrpc, id, method, params } / { result } / { error } - 显式协议版本协商；版本不兼容立即失败（50004） - 错误码统一映射到 common.error_codes（5xxx 段）
+
+【依赖】
+- from __future__ import annotations
+- from enum import Enum
+- from typing import Any
+- from common.error_codes import ErrorCodes
+
+【必须实现的类】
+1. class A2AMethod(str, Enum)
+1. class A2AErrorCode：A2A 错误码常量集合（与 common.error_codes 对应）。
+
+【必须实现的函数】
+1. make_error(code: A2AErrorCode | ErrorCodes, message: str | None=None, data: dict[str, Any] | None=None) -> dict[str, Any]  # 构造 A2A JSON-RPC 标准 error 字段。
+2. check_protocol_version(peer_version: str | None) -> None  # 检查对端协议版本是否兼容；不兼容则抛出异常。 兼容规则：peer_version 主版本号必须命中 SUPPORTED_PROTOCOL_VERSIONS。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】serializers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 serializers.py。
+
+【背景】
+A2A JSON-RPC 帧的序列化与反序列化。 帧结构： 请求  { jsonrpc, id, method, params } 成功  { jsonrpc, id, result } 错误  { jsonrpc, id, error: { code, message, data? } } 关键约束： - 严格校验必填字段；缺失或类型不符抛 A2AMessageInvalidError； - 协议版本字段 protocol_version 用于服务端握手； - 不做隐式字段丢弃，extra 字段经 strict 模式抛错。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from pydantic import BaseModel, ConfigDict, Field, ValidationError as PydanticValidationError
+- from common.exceptions import A2AMessageInvalidError
+- from core.a2a.message import A2AMessage
+- from core.a2a.protocol import JSONRPC_VERSION, PROTOCOL_VERSION
+
+【必须实现的类】
+1. class JSONRPCRequest(BaseModel)
+1. class JSONRPCError(BaseModel)
+1. class JSONRPCResponse(BaseModel)
+1. class SendMessageParams(BaseModel)
+1. class GetTaskParams(BaseModel)
+1. class CancelTaskParams(BaseModel)
+
+【必须实现的函数】
+1. encode_request(req: JSONRPCRequest) -> dict[str, Any]  # 将 JSONRPCRequest 编码为 dict（用于 HTTP body）。
+2. decode_request(data: dict[str, Any]) -> JSONRPCRequest  # 解析 HTTP body 为 JSONRPCRequest；非法抛 A2AMessageInvalidError。
+3. encode_response(resp: JSONRPCResponse) -> dict[str, Any]
+4. make_success_response(req_id: str, result: Any) -> JSONRPCResponse
+5. make_error_response(req_id: str, error: JSONRPCError) -> JSONRPCResponse
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】server.py
+================================================================================
+你是一名 Python 后端开发者。请实现 server.py。
+
+【背景】
+A2A 服务端：挂载到 FastAPI 应用上，处理 JSON-RPC 请求。 端点： GET  /a2a/{agent_name}/agent.json    获取指定智能体的 Agent Card POST /a2a/{agent_name}/{method}      调用智能体方法 设计要点： - AgentRegistry 单例管理已注册的 BaseAgent； - 中间件链（auth/trace/rate_limit）由 middleware.py 提供插槽； - 同步等待（wait=true）仅用于小任务，大任务走 task_id 异步查询。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any, Callable, Awaitable
+- from common.exceptions import A2AAgentNotFoundError, A2AMessageInvalidError
+- from common.ids import task_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.message import A2AMessage, Task, TaskState
+- from core.a2a.protocol import A2AMethod, PROTOCOL_VERSION, make_error
+- from core.a2a.serializers import CancelTaskParams, GetTaskParams, JSONRPCError, JSONRPCRequest, SendMessageParams, decode_request, encode_response, make_error_response, make_success_response
+
+【必须实现的类】
+1. class A2AAgentProtocol：A2A 视角下智能体需具备的能力（协议层抽象）。
+   方法：
+   - async handle(self, message: A2AMessage, task: Task) -> A2AMessage
+   - async get_task(self, task_id: str) -> Task | None
+   - async cancel_task(self, task_id: str, reason: str | None=None) -> bool
+   - list_tasks(self) -> list[Task]
+1. class AgentRegistry：进程内单例：按 name 索引智能体。
+   方法：
+   - __init__(self) -> None
+   - register(self, agent: A2AAgentProtocol) -> None
+   - unregister(self, name: str) -> None
+   - get(self, name: str) -> A2AAgentProtocol
+   - list_agents(self) -> list[A2AAgentProtocol]
+   - async create_task(self, agent_name: str, message: A2AMessage) -> Task
+   - get_task(self, task_id: str) -> Task
+   - list_tasks(self) -> list[Task]
+1. class A2AServer：A2A 服务端：将 JSON-RPC 帧分发到对应智能体。
+   方法：
+   - __init__(self, registry: AgentRegistry | None=None) -> None
+   - add_middleware(self, fn: Callable[[JSONRPCRequest, str], Awaitable[None]]) -> None  # 注册请求级中间件（按注册顺序执行）。
+   - async handle_raw(self, agent_name: str, body: dict[str, Any]) -> dict[str, Any]  # FastAPI 入口：处理原始请求体并返回 JSON-RPC 响应。
+   - get_card(self, agent_name: str) -> dict[str, Any]
+   - async _dispatch(self, agent_name: str, req: JSONRPCRequest) -> Any
+
+【必须实现的函数】
+1. get_registry() -> AgentRegistry
+2. reset_registry() -> None  # 重置注册表（仅供测试使用）。
+3. _validate_params(model_cls: type, params: Any) -> Any
+4. _to_artifact(message: A2AMessage) -> Any
+5. make_error_payload(message: str, exc: Exception) -> dict[str, Any]
+6. build_fastapi_router()  # 构造 FastAPI 路由（懒加载，避免启动时强依赖 fastapi）。 使用方式： from core.a2a.server import build_fastapi_router app.include_router(build_fastapi_router(), prefix="/a2a")
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

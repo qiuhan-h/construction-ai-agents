@@ -1,0 +1,167 @@
+================================================================================
+agents/safety_audit_agent/outputs/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/safety_audit_agent/outputs/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+施工安全审核智能体：报告输出层。
+
+【依赖】
+- from agents.safety_audit_agent.outputs.recommendation_engine import Recommendation, RecommendationEngine, RecommendationSet, Severity
+- from agents.safety_audit_agent.outputs.report_generator import ReportArtifacts, ReportGenerator
+- from agents.safety_audit_agent.outputs.report_signer import ReportSigner, SignInfo, default_signer, sign_report_content, verify_signature
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】recommendation_engine.py
+================================================================================
+你是一名 Python 后端开发者。请实现 recommendation_engine.py。
+
+【背景】
+整改建议生成器。 根据风险等级 + 相似案例 + 法规版本，生成整改建议列表。 - CRITICAL：必须停工 + 通知人工复核（同时触发 TOPIC_ALERT_TRIGGERED） - HIGH：限时整改 + 复查 - MEDIUM：提示建议 - LOW/NEGLIGIBLE：存档备查
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from dataclasses import dataclass, field
+- from enum import Enum
+- from typing import Any
+- from agents.safety_audit_agent.calculators.risk_assessor import RiskAssessment, RiskLevel
+
+【必须实现的类】
+1. class Severity(str, Enum)：整改建议严重程度。
+1. class Recommendation：一条整改建议。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class RecommendationSet：整改建议集合。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class RecommendationEngine：整改建议生成器。
+   方法：
+   - from_risk(self, assessment: RiskAssessment) -> RecommendationSet  # 基于风险评估生成建议。
+   - merge(self, primary: RecommendationSet, others: list[RecommendationSet]) -> RecommendationSet  # 合并多来源建议（primary 优先），按严重度降序。
+
+【必须实现的函数】
+1. _sev_rank(sev: Severity) -> int
+2. _detail_for(item) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】report_generator.py
+================================================================================
+你是一名 Python 后端开发者。请实现 report_generator.py。
+
+【背景】
+审查报告生成器。 输入： - plan_fields: PlanFields - load_result: LoadResult | None - risk_assessment: RiskAssessment | None - related_cases: list[CaseHit] - related_regulations: list[dict] (regulation 摘要) - recommendations: RecommendationSet 输出： - 结构化 ReviewReport（models.domain.ReviewReport） - Markdown 文本 结论映射： - 任意 CRITICAL 风险或 max_level == CRITICAL → FAIL - max_level == HIGH 或 requires_alert → CONDITIONAL_PASS - 其余 → PASS
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass, field
+- from typing import Any
+- from common.constants import AgentName, AuditConclusion, ReportStatus, ViolationSeverity
+- from common.ids import inspection_id, report_id
+- from common.timeutils import utc_now
+- from models.domain import Inspection, ReviewReport, Violation
+- from agents.safety_audit_agent.calculators.load_calculator import LoadResult
+- from agents.safety_audit_agent.calculators.risk_assessor import RiskAssessment, RiskLevel
+- from agents.safety_audit_agent.knowledge_base.case_retriever import CaseHit
+- from agents.safety_audit_agent.parsers.plan_parser import PlanFields
+- from agents.safety_audit_agent.outputs.recommendation_engine import RecommendationSet, Severity
+
+【必须实现的类】
+1. class ReportArtifacts：报告生成产物。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class ReportGenerator：审查报告生成器。
+   方法：
+   - __init__(self, agent: AgentName) -> None
+   - generate(self, tenant_id: str, project_id: str, plan_id: str, plan_fields: PlanFields, load_result: LoadResult | None, risk_assessment: RiskAssessment | None, related_cases: list[CaseHit] | None, related_regulations: list[dict[str, Any]] | None, recommendations: RecommendationSet | None) -> ReportArtifacts
+   - _conclude(recommendations: RecommendationSet, risk_assessment: RiskAssessment | None) -> AuditConclusion
+   - _render_markdown(plan_fields: PlanFields, load_result: LoadResult | None, risk_assessment: RiskAssessment | None, related_cases: list[CaseHit], related_regulations: list[dict[str, Any]], recommendations: RecommendationSet, conclusion: AuditConclusion, regulation_versions: dict[str, str]) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】report_signer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 report_signer.py。
+
+【背景】
+报告电子签章（首版：HMAC-SHA256 + 租户密钥 + 内容指纹）。 设计： - 签名内容 = SHA-256(content) + tenant_id + signed_at； - 用 HMAC-SHA256(secret, ...) 计算签名指纹（hex 编码）； - 阶段四接真实 CA / 国密 SM2。 使用： signer = ReportSigner(secret="your-tenant-key") info = signer.sign(content="<markdown>", tenant_id="tnt_x") assert verify_signature(content, tenant_id, signed_at, signature, secret)
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import hmac
+- from dataclasses import dataclass
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class SignInfo：签章结果。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class ReportSigner：报告签章器（HMAC-SHA256）。
+   方法：
+   - __init__(self, secret: str, signer: str) -> None
+   - sign(self, content: str, tenant_id: str) -> SignInfo  # 对报告内容签章。
+   - verify(self, content: str, tenant_id: str, signed_at: str, signature: str) -> bool  # 验证签章是否一致。
+
+【必须实现的函数】
+1. default_signer(secret: str | None=None) -> ReportSigner
+2. reset_default_signer() -> None
+3. sign_report_content(content: str, tenant_id: str, secret: str | None=None) -> SignInfo  # 便捷：对内容签章（使用默认签章器）。
+4. verify_signature(content: str, tenant_id: str, signed_at: str, signature: str, secret: str | None=None) -> bool  # 便捷：验证签章。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

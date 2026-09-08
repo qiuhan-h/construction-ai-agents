@@ -1,0 +1,343 @@
+================================================================================
+services/notification_channels/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 services/notification_channels/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+notification_channels 包级 re-export。
+
+【依赖】
+- from services.notification_channels import base_channel, dingtalk_channel, dingtalk_real_channel, sms_aliyun_channel, sms_tencent_channel, wecom_channel, wecom_real_channel
+- from services.notification_channels.base_channel import BaseChannel, HTTPError, NotifierError, compute_dingtalk_sign, get_channel, http_post_form, http_post_json, is_placeholder, list_channels, register_channel, reset_channel_registry
+- from services.notification_channels.dingtalk_channel import DingTalkChannel
+- from services.notification_channels.dingtalk_real_channel import DingTalkRealChannel
+- from services.notification_channels.sms_aliyun_channel import SmsAliyunChannel
+- from services.notification_channels.sms_channel import SMSChannel
+- from services.notification_channels.sms_tencent_channel import SmsTencentChannel
+- from services.notification_channels.wecom_channel import WeComChannel
+- from services.notification_channels.wecom_real_channel import WeComRealChannel
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】base_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 base_channel.py。
+
+【背景】
+通知渠道抽象基类 + 注册表（5b.4 升级）。 设计： - ``BaseChannel.send`` 仍是抽象方法，真实 / Mock 实现各自提供； - 通用 ``_http_post_json`` / ``_http_post_form`` 工具：标准库 ``urllib``， 沙箱无需 httpx； - 缺凭据 / 缺依赖 / 网络失败 → 一律 **降级到 Mock** + 警告日志； 保证 ``send`` 永不抛 ``NotifierError``（业务方可安心异步调用）。
+
+【依赖】
+- from __future__ import annotations
+- import base64
+- import hashlib
+- import hmac
+- import json
+- import logging
+- import socket
+- import ssl
+- import time
+- import urllib.error
+- import urllib.parse
+- import urllib.request
+- from abc import ABC, abstractmethod
+- from typing import Any
+
+【关键常量】
+- _PLACEHOLDER = '需要补充实际链接'
+
+【必须实现的类】
+1. class HTTPError(Exception)：HTTP 工具内部错误（与 NotifierError 区分）。
+1. class BaseChannel(ABC)：通知渠道抽象基类。
+   方法：
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str  # 返回 message_id；缺凭据 / 网络错 → 降级 Mock + 警告。
+   - supports(self, severity: str, event_type: str) -> bool
+   - _mock_message_id(self, prefix: str) -> str  # 生成 mock 消息 ID。
+   - _log_mock(self, message: str) -> None
+1. class NotifierError(Exception)：通知渠道失败（业务层可捕获；Mock 模式不会抛）。
+
+【必须实现的函数】
+1. http_post_json(url: str, payload: dict[str, Any], timeout: float, headers: dict[str, str] | None) -> tuple[int, str]  # POST JSON。返回 (status_code, body_text)。 - 超时 / 网络错 → 抛 ``HTTPError``，由调用方决定降级或上抛； - 仅做 2xx 状态识别，不解析业务响应（业务层自行 JSON.loads）。
+2. http_post_form(url: str, form: dict[str, str], timeout: float, headers: dict[str, str] | None) -> tuple[int, str]  # POST application/x-www-form-urlencoded（阿里云 SMS 用）。
+3. http_post_raw_json(url: str, raw_body: bytes, timeout: float, headers: dict[str, str] | None) -> tuple[int, str]  # POST 原始 JSON 字节流（P0-6 修补：腾讯云 SMS 签名同源用）。 与 ``http_post_json`` 区别：直接接收已序列化的字节流，不在内部重新 ``json.dumps``，保证签名计算的 ``hashed_payload`` 与实际请求体 字节序列完全一致。否则腾讯云 v3 验签必失败。
+4. compute_dingtalk_sign(secret: str, timestamp_ms: int | None=None) -> str  # 钉钉机器人加签：HMAC-SHA256(timestamp + "\n" + secret, secret) → base64。
+5. is_placeholder(value: Any) -> bool  # 判断是否占位（None / 空 / 平台标准占位串）。
+6. register_channel(cls: type[BaseChannel]) -> type[BaseChannel]  # 装饰器：注册通知渠道。
+7. get_channel(name: str) -> BaseChannel
+8. list_channels() -> list[str]
+9. reset_channel_registry() -> None  # 测试用：清空注册表。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】dingtalk_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 dingtalk_channel.py。
+
+【背景】
+钉钉机器人 webhook 渠道（首版 mock）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import secrets
+- from services.notification_channels.base_channel import BaseChannel, register_channel
+
+【必须实现的类】
+1. class DingTalkChannel(BaseChannel)
+   方法：
+   - __init__(self, settings: object | None=None) -> None
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】dingtalk_real_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 dingtalk_real_channel.py。
+
+【背景】
+钉钉机器人真实渠道（5b.4）。 设计： - 走钉钉自定义机器人 webhook（POST JSON）； - 支持「加签」模式：``secret`` 非空时，URL 自动追加 ``timestamp`` + ``sign``； - 缺 webhook / 占位 → **降级 Mock** + 警告； - 网络错 / 非 2xx → 降级 Mock（不抛 ``NotifierError``，业务可安心调用）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from services.notification_channels.base_channel import BaseChannel, HTTPError, compute_dingtalk_sign, http_post_json, is_placeholder, register_channel
+
+【必须实现的类】
+1. class DingTalkRealChannel(BaseChannel)：钉钉真实发送渠道。
+   方法：
+   - __init__(self, webhook: str | None, secret: str | None, timeout: float, force_mock: bool) -> None
+   - is_configured(self) -> bool  # 是否具备真实发送凭据。
+   - _has_credentials(self) -> bool
+   - _build_url(self) -> str  # 根据 secret 决定是否追加 timestamp+sign。
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】sms_aliyun_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 sms_aliyun_channel.py。
+
+【背景】
+阿里云短信（SMS）真实渠道（5b.4）。 设计： - 走阿里云短信服务 v1.0 RPC API（``dysmsapi.aliyuncs.com``）； - 自行计算 ``Signature``：参数排序 + URL 编码 + HMAC-SHA1 + base64； （不依赖 ``aliyun-python-sdk-core``，沙箱无该包也能跑） - 缺 access_key_id / access_key_secret / phone / sign_name / template_code → **降级 Mock** + 警告； - 网络错 / 非 2xx → 降级 Mock（不抛 ``NotifierError``）。 参考： - https://help.aliyun.com/zh/sms/developer-reference/api-dysmsapi
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import hmac
+- import json
+- import logging
+- import time
+- import uuid
+- from typing import Any
+- from urllib.parse import quote
+- from services.notification_channels.base_channel import BaseChannel, HTTPError, http_post_form, is_placeholder, register_channel
+
+【关键常量】
+- _ALIYUN_SMS_ENDPOINT = 'https://dysmsapi.aliyuncs.com/'
+- _DEFAULT_REGION = 'cn-hangzhou'
+- _SMS_VERSION = '2017-05-25'
+- _SMS_ACTION = 'SendSms'
+
+【必须实现的类】
+1. class SmsAliyunChannel(BaseChannel)：阿里云短信真实发送渠道。
+   方法：
+   - __init__(self, access_key_id: str | None, access_key_secret: str | None, sign_name: str | None, template_code: str | None, phone: str | None, region: str, endpoint: str, timeout: float, force_mock: bool) -> None
+   - _has_credentials(self) -> bool
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【必须实现的函数】
+1. _percent_encode(s: str) -> str  # 阿里云签名算法的特殊 URL 编码（保留 ``*`` ``-`` ``.`` ``_``，其他字符 %XX）。 普通 ``urllib.parse.quote`` 会把 ``~`` 编码为 ``%7E``，不符合阿里云规范。
+2. _sign_aliyun_sms(params: dict[str, str], access_key_secret: str) -> str  # 按阿里云 v1 RPC API 签名算法计算 Signature（P0-6 修补）。 阿里云 ``SendSms``（dysmsapi.aliyuncs.com，Version=2017-05-25）规定 ``Signature = base64(HMAC-SHA1(key, StringToSign))``，再 percent-encode 后作为参数发送。旧实做返回 ``h.digest().hex()`` 是错的——hex 会让 阿里云服务端验签必然失败（``SignatureDoesNotMatch``）。 步骤： 1. 按 key 升序排序（排除 Signature 自身）； 2. 拼成 ``k1=v1&k2=v2`` 形式，``=`` 与 ``&`` 同样做 percent-encode； 3. 首尾加 ``POST&`` + percent_encode("/") + ``&`` + percent_encode(canonicalized)； 4. HMAC-SHA1（key = ``{access_key_secret}&``）→ **base64**（不是 hex）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】sms_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 sms_channel.py。
+
+【背景】
+短信渠道（首版 mock；阶段五接阿里云/腾讯云 SMS API）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import secrets
+- from services.notification_channels.base_channel import BaseChannel, NotifierError, register_channel
+
+【必须实现的类】
+1. class SMSChannel(BaseChannel)
+   方法：
+   - __init__(self, settings: object | None=None) -> None
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】sms_tencent_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 sms_tencent_channel.py。
+
+【背景】
+腾讯云短信（SMS）真实渠道（5b.4）。 设计： - 走腾讯云短信服务 v3 API（``sms.tencentcloudapi.com``）； - 自行计算 ``Authorization``（TC3-HMAC-SHA256 签名算法）： 参数排序 + canonical request + HMAC-SHA256； （不依赖 ``tencentcloud-sdk-python``，沙箱无该包也能跑） - 缺 secret_id / secret_key / app_id / sign_name / template_id / phone → **降级 Mock** + 警告； - 网络错 / 非 2xx / 业务 ``Error`` 非空 → 降级 Mock（不抛 ``NotifierError``）。 参考： - https://cloud.tencent.com/document/api/382/55981 - https://cloud.tencent.com/document/api/213/30654（签名算法）
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import hmac
+- import json
+- import logging
+- import time
+- from datetime import datetime, timezone
+- from typing import Any
+- from services.notification_channels.base_channel import BaseChannel, HTTPError, http_post_json, http_post_raw_json, is_placeholder, register_channel
+
+【关键常量】
+- _TENCENT_SMS_HOST = 'sms.tencentcloudapi.com'
+- _TENCENT_SMS_ENDPOINT
+- _TENCENT_SMS_ACTION = 'SendSms'
+- _TENCENT_SMS_VERSION = '2021-01-11'
+- _DEFAULT_REGION = 'ap-guangzhou'
+- _DEFAULT_SERVICE = 'sms'
+
+【必须实现的类】
+1. class SmsTencentChannel(BaseChannel)：腾讯云短信真实发送渠道。
+   方法：
+   - __init__(self, secret_id: str | None, secret_key: str | None, app_id: str | None, sign_name: str | None, template_id: str | None, phone: str | None, region: str, endpoint: str, timeout: float, force_mock: bool) -> None
+   - _has_credentials(self) -> bool
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【必须实现的函数】
+1. _sha256_hex(data: bytes | str) -> str  # SHA256 哈希，返回小写 hex。
+2. _hmac_sha256(key: bytes, msg: str) -> bytes  # HMAC-SHA256，返回 bytes（用于签名链派生）。
+3. _sign_tencent_v3(secret_id: str, secret_key: str, service: str, host: str, action: str, payload: str, timestamp: int | None, region: str) -> str  # 腾讯云 v3 TC3-HMAC-SHA256 签名。 参考：https://cloud.tencent.com/document/api/213/30654 步骤： 1. 拼接 CanonicalRequest； 2. 拼接 StringToSign； 3. 派生 Signature = HMAC_SHA256(derived_key, StringToSign)； 4. 组装 Authorization 头。 Args: payload: 请求 body 的 JSON 字符串（必须与实际发送的 bytes 一致）。 timestamp: UTC 秒；None 则取当前时间。 region: 可选，腾讯云 region（ap-guangzhou 等），影响 CredentialScope 不影响签名算法。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】wecom_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 wecom_channel.py。
+
+【背景】
+企业微信机器人 webhook 渠道（首版 mock）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import secrets
+- from services.notification_channels.base_channel import BaseChannel, register_channel
+
+【必须实现的类】
+1. class WeComChannel(BaseChannel)
+   方法：
+   - __init__(self, settings: object | None=None) -> None
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】wecom_real_channel.py
+================================================================================
+你是一名 Python 后端开发者。请实现 wecom_real_channel.py。
+
+【背景】
+企业微信真实渠道（5b.4）。 设计： - 走企业微信群机器人 webhook（POST JSON）； - 支持「文本」「Markdown」两种消息类型（默认 Markdown）； - 缺 webhook / 占位 → **降级 Mock** + 警告； - 网络错 / 非 2xx → 降级 Mock（不抛 ``NotifierError``）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from services.notification_channels.base_channel import BaseChannel, HTTPError, http_post_json, is_placeholder, register_channel
+
+【必须实现的类】
+1. class WeComRealChannel(BaseChannel)：企业微信真实发送渠道。
+   方法：
+   - __init__(self, webhook: str | None, timeout: float, force_mock: bool) -> None
+   - _has_credentials(self) -> bool
+   - async send(self, tenant_id: str, title: str, body: str, severity: str, **meta) -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

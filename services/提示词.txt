@@ -1,0 +1,580 @@
+================================================================================
+services/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 services/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+services 包级 re-export。 公开 API： - TaskQueue / get_task_queue           任务队列（Celery + mock 降级） - celery_app                           Celery 应用（worker 入口） - HumanReviewService / Repository      人工复核 - DocumentService                      文档服务 - NotificationService / channels       多渠道通知 - DataIngestionService                 IoT / 文件 / API 数据接入 - ServiceRegistry                      system 动作路由
+
+【依赖】
+- from services.data_ingestion import APIRecord, DataIngestionService, FileArtifact, IngestionRepository, SensorPoint, get_data_ingestion_service, reset_data_ingestion_service
+- from services.document_service import DocumentMeta, DocumentService, get_document_service, reset_document_service
+- from services.human_review_repository import HumanReviewRepository, HumanReviewRow
+- from services.human_review_service import HumanReviewService, get_human_review_service, reset_human_review_service
+- from services.notification_service import NotificationService, get_notification_service, reset_notification_service
+- from services.service_registry import ServiceRegistry, get_service, is_registered, list_services, register_service, unregister_service
+- from services.task_queue import TaskQueue, get_task_queue, reset_task_queue
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】billing_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 billing_service.py。
+
+【背景】
+计费服务（6b.1 多租户 SaaS，mock 实现）。 职责： - 用量流水记录（``record_usage``），与配额计数器互补： 计数器管"限流"，流水管"出账聚合"； - 月度账单（``generate_bill``）：按账期 ``yyyy-mm``（UTC） upsert， mock 计费 = 套餐固定月费（trial 0 元），usage 列快照出账时用量； - 账单查询（``get_bill`` / ``list_bills``）。 定价（CNY/月，mock，可在配置化阶段替换）： trial=0、starter=299、pro=999、enterprise=4999
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from common.constants import SubscriptionPlan
+- from common.exceptions import NotFoundError
+- from common.timeutils import from_iso, utc_now
+- from models.domain.billing import Bill, UsageRecord, current_period
+
+【必须实现的类】
+1. class BillingService：用量流水 + mock 月费账单。
+   方法：
+   - __init__(self, repo: Any | None=None) -> None
+   - repo(self) -> Any
+   - async record_usage(self, tenant_id: str, metric: str, amount: float, detail: dict[str, Any] | None, period: str | None) -> UsageRecord  # 追加一条用量流水（不改变配额计数器）。
+   - async generate_bill(self, tenant_id: str, period: str | None) -> Bill  # 生成（或重算）指定账期账单：mock 金额 = 套餐固定月费。
+   - async get_bill(self, tenant_id: str, bill_id: str) -> Bill | None
+   - async list_bills(self, tenant_id: str) -> list[Bill]
+
+【必须实现的函数】
+1. plan_price(plan: str) -> float  # 套餐月费（未知套餐按 0 处理，避免误收费）。
+2. _usage_to_model(row: dict[str, Any]) -> UsageRecord
+3. _bill_to_model(row: dict[str, Any]) -> Bill
+4. get_billing_service() -> BillingService
+5. reset_billing_service() -> None  # 测试用：重置单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】celery_app.py
+================================================================================
+你是一名 Python 后端开发者。请实现 celery_app.py。
+
+【背景】
+Celery 应用实例（4d start_worker.py 引用）。 broker / backend 走配置；首版可仅内存 mock（broker='memory://'）。 autodiscover_tasks(["services"]) 自动发现 services/ 下的 @app.task 函数。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from typing import Any
+
+【必须实现的函数】
+1. _build_celery_app() -> Any  # 构造 Celery 实例；broker 未配置时使用 memory://。
+2. get_celery_app() -> Any  # 获取 Celery 应用单例。
+3. reset_celery_app() -> None  # 重置单例（测试用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】data_ingestion.py
+================================================================================
+你是一名 Python 后端开发者。请实现 data_ingestion.py。
+
+【背景】
+数据接入服务（IoT / 文件 / API 三类数据规范化）。 设计原则（O1, O6）： - 对外：3 个统一入口（ingest_iot / ingest_file / ingest_api）； - 对内：把异构数据归一化 → 写"传感器点 / 文件指纹 / API 记录"三类轻量模型； - 4c 首版：内存仓储 + mock TSDB；4c+ 可在仓储层切到 InfluxDB / OSS / HTTPClient； - 多租户：所有入口必传 tenant_id；规则触发通过 ServiceRegistry。
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import logging
+- import threading
+- from dataclasses import dataclass, field
+- from datetime import datetime
+- from typing import Any
+- from common.ids import new_id
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class SensorPoint：单条 IoT 传感器读数（已规范化）。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class FileArtifact：文件类数据（图纸/法规 PDF/项目报告等）。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class APIRecord：第三方 API 拉取的标准化记录。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+1. class IngestionRepository：3 类数据统一仓储（线程安全）。
+   方法：
+   - __init__(self) -> None
+   - add_point(self, p: SensorPoint) -> str
+   - add_file(self, f: FileArtifact) -> str
+   - add_api(self, r: APIRecord) -> str
+   - list_points(self, tenant_id: str, project_id: str | None=None) -> list[SensorPoint]
+   - list_files(self, tenant_id: str, project_id: str | None=None) -> list[FileArtifact]
+   - list_api(self, tenant_id: str) -> list[APIRecord]
+   - count(self) -> dict[str, int]
+1. class DataIngestionService：数据接入服务（3 类入口）。
+   方法：
+   - __init__(self, repo: IngestionRepository | None=None) -> None
+   - repo(self) -> IngestionRepository
+   - async ingest_iot(self, tenant_id: str, project_id: str, sensor_id: str, metric: str, value: float, unit: str, ts: datetime | None, quality: str, raw: dict | None) -> SensorPoint  # 接入一条 IoT 读数。
+   - async ingest_file(self, tenant_id: str, project_id: str, kind: str, filename: str, content: bytes, storage_key: str | None) -> FileArtifact  # 接入一个文件（计算 fingerprint + 索引）。
+   - async ingest_api(self, tenant_id: str, endpoint: str, payload: dict) -> APIRecord  # 接入一条 API 拉取记录。
+   - async bulk_ingest_iot(self, tenant_id: str, project_id: str, points: list[dict]) -> list[SensorPoint]  # 批量接入 IoT 点。
+   - stats(self, tenant_id: str | None=None) -> dict[str, Any]  # 租户维度的统计。
+
+【必须实现的函数】
+1. get_data_ingestion_service() -> DataIngestionService
+2. reset_data_ingestion_service() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】document_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 document_service.py。
+
+【背景】
+文档服务：上传/下载/列表（首版 mock，4c+ 接 storage）。
+
+【依赖】
+- from __future__ import annotations
+- import hashlib
+- import logging
+- import secrets
+- from dataclasses import dataclass, field
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class DocumentMeta：文档元数据。
+   方法：
+   - to_dict(self) -> dict
+1. class DocumentService：文档服务（mock 模式：内存存储 + 假 storage_key）。
+   方法：
+   - __init__(self) -> None
+   - async upload(self, tenant_id: str, project_id: str, file: bytes, filename: str) -> str  # 上传并返回 storage_key。
+   - async download(self, storage_key: str) -> bytes
+   - async get_meta(self, storage_key: str) -> DocumentMeta | None
+   - async list_by_project(self, tenant_id: str, project_id: str) -> list[DocumentMeta]
+   - async delete(self, storage_key: str) -> bool
+
+【必须实现的函数】
+1. get_document_service() -> DocumentService
+2. reset_document_service() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】human_review_repository.py
+================================================================================
+你是一名 Python 后端开发者。请实现 human_review_repository.py。
+
+【背景】
+人工复核仓储（4c 首版内存，4c+ 接 DB）。 设计原则（O5）： - 多租户硬隔离：list_pending / get 必须传 tenant_id； - 接口签名 4c 稳定，4c+ 可在 add/get 内部加 SQLAlchemy 实现。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from dataclasses import dataclass, field
+- from datetime import datetime
+- from typing import Any
+- from common.ids import new_id
+- from common.timeutils import to_iso, utc_now
+
+【必须实现的类】
+1. class HumanReviewRow：人工复核请求行。
+   方法：
+   - to_dict(self) -> dict
+1. class HumanReviewRepository：人工复核表仓储。
+   方法：
+   - __init__(self, session_factory: Any | None=None) -> None
+   - add(self, row: HumanReviewRow) -> str
+   - update(self, request_id: str, status: str, reviewer: str, comment: str, tenant_id: str | None) -> bool  # 更新复核状态。 约束： - tenant_id 校验：跨租户访问视为不存在（返回 False）； - 状态机：只有 ``pending`` 可迁移到 ``approved`` / ``rejected``， 终态不可逆，防止已 approved 被改回 rejected。
+   - get(self, request_id: str, tenant_id: str | None) -> HumanReviewRow | None
+   - list_pending(self, tenant_id: str) -> list[HumanReviewRow]
+   - list_by_tenant(self, tenant_id: str) -> list[HumanReviewRow]
+   - count(self) -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】human_review_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 human_review_service.py。
+
+【背景】
+人工复核服务（编排器 / 业务侧统一入口）。 设计原则（O5）： - 多租户硬隔离：create / list_pending / approve / reject 全部带 tenant_id 校验； - 仓储层为 HumanReviewRepository（4c 内存 / 4c+ DB）； - 异步：所有调用通过 asyncio.to_thread 包装，避免阻塞事件循环。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any
+- from common.ids import new_id
+- from services.human_review_repository import HumanReviewRepository, HumanReviewRow
+
+【必须实现的类】
+1. class HumanReviewService：人工复核业务服务。
+   方法：
+   - __init__(self, repo: HumanReviewRepository | None=None) -> None
+   - repo(self) -> HumanReviewRepository
+   - async create(self, tenant_id: str, task_id: str, reason: str, context: dict) -> str  # 创建复核请求，返回 request_id。
+   - async get(self, request_id: str, tenant_id: str | None) -> HumanReviewRow | None
+   - async list_pending(self, tenant_id: str) -> list[HumanReviewRow]
+   - async list_by_tenant(self, tenant_id: str) -> list[HumanReviewRow]
+   - async approve(self, request_id: str, reviewer: str, tenant_id: str, comment: str) -> bool  # 批准复核请求，强制 tenant_id 校验 + 状态机约束。
+   - async reject(self, request_id: str, reviewer: str, tenant_id: str, comment: str) -> bool  # 驳回复核请求，强制 tenant_id 校验 + 状态机约束。
+
+【必须实现的函数】
+1. get_human_review_service() -> HumanReviewService  # 获取默认人工复核服务（单例）。
+2. reset_human_review_service() -> None  # 重置单例（测试用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】notification_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 notification_service.py。
+
+【背景】
+通知聚合：按 tenant_id + 严重度路由渠道。 设计原则（O4, O5）： - 渠道可插拔（@register_channel 装饰器注册）； - 严重度 → 渠道映射可被 severity_map 覆盖； - 多租户：所有调用带 tenant_id，仅作标识用，租户隔离由渠道层实施。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from services.notification_channels.base_channel import BaseChannel, get_channel
+
+【必须实现的类】
+1. class NotificationService：通知聚合服务。
+   方法：
+   - __init__(self, channels: list[BaseChannel] | None=None, severity_map: dict[str, list[str]] | None=None) -> None
+   - channels(self) -> list[BaseChannel]
+   - severity_map(self) -> dict[str, list[str]]
+   - _default_channels(self) -> list[BaseChannel]  # 按 .env / Settings 自动选择真实通道；凭据缺失降级 mock。 真实通道实例化后覆盖 ``name`` 为路由名（dingtalk / wecom / sms）， 与 ``DEFAULT_SEVERITY_CHANNELS`` 的路由键保持一致。
+   - _build_sms_channel(s: Any, _configured) -> BaseChannel  # 凭据齐全返回真实短信通道（路由名 sms），否则返回 mock SMSChannel。
+   - async send(self, tenant_id: str, event_type: str, severity: str, title: str, body: str, channels: list[str] | None, **meta) -> list[str]  # 按 severity 路由；返回已发送的 message_id 列表。
+
+【必须实现的函数】
+1. get_notification_service() -> NotificationService
+2. reset_notification_service() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】pdf_exporter.py
+================================================================================
+你是一名 Python 后端开发者。请实现 pdf_exporter.py。
+
+【背景】
+报告 PDF 导出（5b.1）。 设计： - 双路径： - **reportlab** 真路径：仅当 reportlab + 中文字体都齐备时启用； - **Markdown 兜底**：缺包时导出 ``.md`` 字节流，HTTP 路由层 （``api/routers/reports_router.py``）根据 ``?format=`` 自动选 ``application/pdf`` 或 ``text/markdown`` Content-Type。 - ``PDFExporter`` 是无状态服务，可并发；不依赖 ORM / DB。 - 字体策略：默认从 ``services/reportlab_assets/fonts/`` 找 ``*.ttf``； 沙箱 / dev 没放字体时走``Helvetica``（无中文支持，但保证 PDF 不抛错）。 - ``export(report_id, title, markdown, **meta)`` → ``bytes`` + 后缀。 为什么不用 weasyprint： - weasyprint 强依赖 cairo / pango / glib，Docker 镜像层 +150MB； - reportlab 纯 Python，wheels 易装，国产化 Linux 兼容性更好； - 业务对 PDF 排版无强版式需求 → platypus 简单流式即可。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import io
+- import logging
+- import re
+- from dataclasses import dataclass
+- from pathlib import Path
+- from typing import Any, Literal
+
+【关键常量】
+- _ASSETS_DIR
+- _FONTS_DIR
+- _HEADING_RE
+- _FENCE_RE
+
+【必须实现的类】
+1. class ExportResult：PDF / Markdown 导出结果。
+1. class PDFExporter：报告导出器。
+   方法：
+   - __init__(self, font_path: str | None) -> None
+   - _register_font(self) -> None
+   - can_export_pdf(self) -> bool
+   - async export(self, report_id: str, title: str, markdown: str, meta: dict[str, Any] | None, force_format: ExportFormat | None) -> ExportResult  # 导出报告。 参数： - ``report_id``     — 报告 ID（用于文件名） - ``title``         — 报告标题 - ``markdown``      — 报告 Markdown 原文 - ``meta``          — 任意附加元信息（创建人 / 时间 / 项目等） - ``force_format``  — ``"pdf"`` 强制 PDF 路径（缺包时抛错）； ``"md"`` 强制 Markdown； ``None`` 按能力自动选。
+   - _export_pdf(self, report_id: str, title: str, markdown: str, meta: dict[str, Any]) -> ExportResult
+   - _export_markdown(self, report_id: str, title: str, markdown: str, meta: dict[str, Any], warning: str | None=None) -> ExportResult
+
+【必须实现的函数】
+1. _reportlab_available() -> bool
+2. _find_cjk_font() -> str | None  # 从 reportlab_assets/fonts/ 找 .ttf / .otf；找不到返回 None。
+3. _esc(text: str) -> str  # reportlab Paragraph XML 转义。
+4. _md_to_blocks(md: str) -> list[dict[str, str]]  # 极简 Markdown → block 列表（够报告导出用，不覆盖完整 GFM）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 10】quota_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 quota_service.py。
+
+【背景】
+配额与限流服务（6b.1 多租户 SaaS）。 职责： - 维护各套餐配额表 ``PLAN_QUOTAS``（-1 表示不限量）； - API 调用计数（``consume``，累计增量）、存储上报（``report_storage``， 瞬时 gauge）、智能体并发槽位（``acquire_slot`` / ``release_slot``）； - 超额抛 ``QuotaExceededError``（错误码 30004，HTTP 429）； - 试用到期 / 租户停用 → 拒绝服务（429 trial_expired / 403 suspended）； - 每次用量同步追加 ``usage_records`` 流水，供 billing 按月聚合。 设计约定： - 服务方法为 async（与项目其他 service 一致），内部仓储调用为同步； - 配额计数器权威来源是租户 ``quota_used`` JSON 字段，更新时整体赋值； - 无外部依赖：仓储层自动 ORM → 内存降级。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from common.constants import SubscriptionPlan, TenantStatus
+- from common.exceptions import NotFoundError, QuotaExceededError, TenantSuspendedError
+- from common.timeutils import from_iso, utc_now
+- from models.domain.billing import current_period
+
+【关键常量】
+- UNLIMITED
+- METRIC_API_CALLS = 'api_calls'
+- METRIC_STORAGE_GB = 'storage_gb'
+- METRIC_CONCURRENCY = 'agent_concurrency'
+
+【必须实现的类】
+1. class QuotaService：配额检查 / 计数 / 并发槽位。
+   方法：
+   - __init__(self, repo: Any | None=None) -> None
+   - repo(self) -> Any
+   - async snapshot(self, tenant_id: str) -> dict[str, Any]  # 返回租户配额快照：used / limit / remaining（remaining=None 表示不限量）。
+   - async check(self, tenant_id: str, metric: str=METRIC_API_CALLS, amount: float=1.0) -> bool  # 仅检查是否允许（不变更计数）。trial 到期 / 停用 / 超额 → False。
+   - async consume(self, tenant_id: str, metric: str, amount: float=METRIC_API_CALLS, detail: dict[str, Any] | None=1.0) -> dict[str, Any]  # 消耗配额（累计增量，默认 api_calls +1）。 超额 / 试用到期 / 停用 → 抛异常（API 层映射 429 / 403）； 成功后写入用量流水并返回本次计数结果。
+   - async acquire_slot(self, tenant_id: str) -> dict[str, Any]  # 申请一个智能体并发槽位（agent_concurrency +1），超额 → 429。
+   - async release_slot(self, tenant_id: str) -> dict[str, Any]  # 释放一个并发槽位（agent_concurrency -1，最低 0，不做限额拦截）。
+   - async report_storage(self, tenant_id: str, used_gb: float) -> dict[str, Any]  # 上报当前存储用量（GB，瞬时值）；超套餐上限 → 429。
+   - _load_tenant(self, tenant_id: str) -> dict[str, Any]
+   - _guard_metric(metric: str) -> None
+   - _guard_status(tenant: dict[str, Any]) -> None
+   - _guard_trial(tenant: dict[str, Any]) -> None
+   - _guard_limit(tenant: dict[str, Any], metric: str, amount: float, gauge: bool) -> None
+
+【必须实现的函数】
+1. plan_quota(plan: str) -> dict[str, float]  # 返回套餐配额表（未知套餐按 trial 处理，fail-secure 取最小额度）。
+2. is_unlimited(value: float) -> bool
+3. get_quota_service() -> QuotaService
+4. reset_quota_service() -> None  # 测试用：重置单例（仓储 override 由 core.storage.tenant_repo 负责）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 11】service_registry.py
+================================================================================
+你是一名 Python 后端开发者。请实现 service_registry.py。
+
+【背景】
+服务注册表（Service Registry）：system 动作的统一调度入口。 设计原则（O3, O4）： - 编排器工作流中 `kind=system` 的节点，统一通过 `ServiceRegistry.dispatch(action, params, tenant_id)` 调用； - 注册用 `@register_service("services.notify")` 装饰器，action 全名命名； - 注册器自身只是路由，不做业务逻辑，4c 首版允许 handler 为空（返回 ack=False）。 Action 命名约定（与 4c plan 对齐）： - `services.notify`         → 通知聚合（按 severity 路由渠道） - `services.human_review`   → 人工复核请求创建 - `services.document.upload`→ 文档上传 - `services.ingest.iot`     → IoT 数据写入 TSDB - `services.ingest.file`    → 文件类数据（图纸/法规）入库 - `services.ingest.api`     → 第三方 API 数据规范化
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import inspect
+- import logging
+- from typing import Any, Awaitable, Callable
+
+【必须实现的类】
+1. class ServiceRegistry：服务注册表（静态方法门面）。
+   方法：
+   - dispatch(action: str, params: dict | None=None, tenant_id: str='') -> Any  # 分发 action；返回 handler 的返回值（异步时通过 asyncio 桥接）。 - handler 是 async：返回 coroutine，调用方需 await； - handler 不存在：返回 _NotHandled（await 安全，可直接 await）； - handler 同步：返回 asyncio.to_thread 包装的 coroutine。
+   - is_registered(action: str) -> bool
+   - reset() -> None  # 重置注册表（测试用）。
+1. class _NotHandled：handler 未注册的占位返回值。 H1 修正：实现 ``__await__`` 使其 await 安全， 避免 ``await dispatch(...)`` 在 handler 未注册时抛 TypeError。
+   方法：
+   - __init__(self, action: str, params: dict | None, tenant_id: str) -> None
+   - __await__(self)  # await _NotHandled → 返回 self.to_dict()。
+   - to_dict(self) -> dict
+
+【必须实现的函数】
+1. register_service(action: str) -> Callable[[ServiceHandler], ServiceHandler]  # 装饰器：注册服务 action 处理器。 使用： @register_service("services.notify") async def _notify(params, tenant_id): ...
+2. unregister_service(action: str) -> bool
+3. list_services() -> list[str]
+4. get_service(action: str) -> ServiceHandler | None
+5. is_registered(action: str) -> bool
+6. async _service_notify(params: dict, tenant_id: str) -> dict  # 通知聚合 dispatch（按 severity 路由到具体渠道）。
+7. async _service_human_review(params: dict, tenant_id: str) -> dict  # 创建人工复核请求。
+8. async _service_document_upload(params: dict, tenant_id: str) -> dict  # 文档上传：bytes 走 params["file"]，filename 必填。
+9. async _service_ingest_iot(params: dict, tenant_id: str) -> dict  # IoT 传感器数据接入（4c mock：仅返回规范化结果）。
+10. async _service_ingest_file(params: dict, tenant_id: str) -> dict  # 文件类数据接入（4c mock：返回文件指纹）。
+11. async _service_ingest_api(params: dict, tenant_id: str) -> dict  # 第三方 API 数据接入（4c mock：返回规范化字段）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 12】task_queue.py
+================================================================================
+你是一名 Python 后端开发者。请实现 task_queue.py。
+
+【背景】
+Celery 异步任务封装。 设计原则（O3）： - task_queue 是 TaskScheduler 与 Celery 之间的桥梁； - celery_app 未启动 / broker 不可达 → 自动降级为 mock 模式（返回 mock-* id）； - get_status / cancel 在 mock 模式也走"已 done"路径。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import secrets
+- import threading
+- from typing import Any
+
+【必须实现的类】
+1. class TaskQueue：Celery 任务队列封装（自带 mock 降级）。
+   方法：
+   - __init__(self, broker_url: str | None=None, backend_url: str | None=None) -> None
+   - is_mock(self) -> bool
+   - async submit(self, name: str, args: list, kwargs: dict | None, priority: int, run_id: str | None, tenant_id: str, idempotency_key: str=None) -> str  # 提交到 Celery / 返回 mock id。 若传入 ``idempotency_key`` 且此前已用同 key 提交过，直接复用旧 task_id， 避免上游重试触发重复 SMS / 通知等副作用。
+   - owner_of(self, task_id: str) -> str | None  # 查询任务所属租户，未记录返回 None。
+   - async get_status(self, task_id: str) -> dict  # 查询任务状态。
+   - async cancel(self, task_id: str) -> bool  # 取消任务。
+
+【必须实现的函数】
+1. get_task_queue() -> TaskQueue  # 获取默认任务队列（单例）。
+2. reset_task_queue() -> None  # 重置单例（测试用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 13】tenant_service.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tenant_service.py。
+
+【背景】
+租户管理服务（6b.1 多租户 SaaS）。 职责： - 自助注册：trial 套餐 30 天试用期 + 初始配额（quota_used 归零）； - 套餐升级：trial/starter/pro/enterprise，升级后状态机 trial → active； - 状态机：trial → active → suspended → closed（closed 为终态）； - 配额查询：委托 ``QuotaService``（snapshot / check）。 约定： - 全部方法 async（与项目其他 service 一致）； - 仓储层自动 ORM → 内存降级，无外部依赖可跑； - 不改动既有智能体 / API 逻辑；租户上下文注入在 Task 6 中间件完成。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from datetime import timedelta
+- from typing import Any
+- from common.constants import SubscriptionPlan, TenantStatus
+- from common.exceptions import NotFoundError, TenantConflictError, ValidationError
+- from common.timeutils import from_iso, utc_now
+- from models.domain.tenant import Tenant, default_quota_used
+
+【关键常量】
+- TRIAL_DAYS = 30
+- _PAID_PLANS = {SubscriptionPlan.STARTER.value, SubscriptionPlan.PRO.value, SubscriptionPlan.EN
+
+【必须实现的类】
+1. class TenantService：租户注册 / 查询 / 升级 / 停用 / 注销。
+   方法：
+   - __init__(self, repo: Any | None=None) -> None
+   - repo(self) -> Any
+   - async register(self, name: str, code: str, contact: str | None, phone: str | None) -> Tenant  # 自助注册新租户：trial 套餐 + 30 天试用 + 初始零配额。
+   - async get(self, tenant_id: str) -> Tenant | None
+   - async get_by_code(self, code: str) -> Tenant | None
+   - async list(self, limit: int, offset: int) -> tuple[list[Tenant], int]
+   - async upgrade_plan(self, tenant_id: str, plan: str) -> Tenant  # 升级到付费套餐（starter/pro/enterprise）。 - trial/active/suspended → 目标套餐 + status=active + 清除试用到期； - closed（已注销）→ 409 冲突； - 目标为 trial 或未知套餐 → 400 参数错误。
+   - async suspend(self, tenant_id: str) -> Tenant  # 停用租户（trial/active → suspended）。
+   - async close(self, tenant_id: str) -> Tenant  # 注销租户（任意非 closed 状态 → closed，终态）。
+   - async check_quota(self, tenant_id: str, metric: str='api_calls', amount: float=1.0) -> bool
+   - async quota_snapshot(self, tenant_id: str) -> dict[str, Any]
+   - _require_tenant(self, tenant_id: str) -> dict[str, Any]
+   - _validate_paid_plan(plan: str) -> SubscriptionPlan
+
+【必须实现的函数】
+1. _to_model(row: dict[str, Any]) -> Tenant  # 仓储 dict → 领域 Tenant 模型。
+2. get_tenant_service() -> TenantService
+3. reset_tenant_service() -> None  # 测试用：重置单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,124 @@
+# GB 50011-2010 建筑抗震设计规范 (2016年版)
+# 结构化规则 — 机器可判定
+
+rules:
+  - clause_id: "GB50011-2010-6.1.2"
+    title: "框架结构抗震等级应与设防烈度匹配"
+    severity: critical
+    field: "frame.seismic等级匹配"
+    operator: "=="
+    value: true
+    unit: ""
+    target_element: "frame"
+    reason: "抗震等级与设防烈度不匹配会导致结构在地震中超出设计预期发生破坏"
+    suggestion: "根据设防烈度、房屋高度和类别按规范表 6.1.2 确定框架抗震等级"
+
+  - clause_id: "GB50011-2010-6.3.6"
+    title: "柱轴压比不应大于 0.65（一级框架）"
+    severity: high
+    field: "column.axial_load_ratio"
+    operator: "<="
+    value: 0.65
+    unit: ""
+    target_element: "column"
+    reason: "轴压比过大将导致柱延性降低，地震中易发生脆性剪切破坏"
+    suggestion: "一级抗震框架柱轴压比 ≤ 0.65，二级 ≤ 0.75，三级 ≤ 0.85"
+
+  - clause_id: "GB50011-2010-6.3.1"
+    title: "梁净跨与截面高度之比不应小于 4.0"
+    severity: high
+    field: "beam.clear_span_to_depth_ratio"
+    operator: ">="
+    value: 4.0
+    unit: ""
+    target_element: "beam"
+    reason: "梁净跨高比过小（短梁）在地震中易发生剪切破坏，延性较差"
+    suggestion: "梁净跨高比 ≥ 4.0，避免形成短梁，如无法避免应按短梁特殊配筋"
+
+  - clause_id: "GB50011-2010-6.5.1"
+    title: "抗震墙厚度不应小于 200mm（一级抗震）"
+    severity: medium
+    field: "seismic_wall.thickness"
+    operator: ">="
+    value: 200
+    unit: "mm"
+    target_element: "seismic_wall"
+    reason: "抗震墙过薄会导致刚度不足，在地震中变形过大甚至失稳"
+    suggestion: "一级抗震墙厚度 ≥ 200mm，二、三级 ≥ 160mm"
+
+  - clause_id: "GB50011-2010-3.3.2"
+    title: "场地类别为 I1 类时应满足抗震措施下限"
+    severity: medium
+    field: "site_category"
+    operator: "not_in"
+    value: ["I1", "I0"]
+    unit: ""
+    target_element: "site"
+    reason: "软弱场地会放大地震动效应，不宜作为抗震建筑场地"
+    suggestion: "建筑场地应避开 IV 类软弱场地，I1 类场地抗震措施应按规范下限调整"
+
+  - clause_id: "GB50011-2010-3.4.3"
+    title: "平面长宽比不应大于 4"
+    severity: high
+    field: "building.plan_aspect_ratio"
+    operator: "<="
+    value: 4.0
+    unit: ""
+    target_element: "building"
+    reason: "平面过长会导致端部振幅放大（鞭梢效应），扭转反应加剧"
+    suggestion: "平面应规则对称，长宽比 ≤ 4，必要时设置防震缝"
+
+  - clause_id: "GB50011-2010-3.4.3-2"
+    title: "相邻层刚度比不应小于 0.8"
+    severity: high
+    field: "building.stiffness_ratio"
+    operator: ">="
+    value: 0.8
+    unit: ""
+    target_element: "building"
+    reason: "层间刚度突变会导致地震中刚度薄弱层集中变形和破坏"
+    suggestion: "竖向抗侧力构件宜上下连续贯通，相邻层刚度比 ≥ 0.8"
+
+  - clause_id: "GB50011-2010-6.3.3"
+    title: "梁端纵向受拉钢筋率不应大于 2.5%"
+    severity: medium
+    field: "beam.tension_steel_ratio"
+    operator: "<="
+    value: 2.5
+    unit: "%"
+    target_element: "beam"
+    reason: "受拉钢筋率过高会导致梁端混凝土压碎先于钢筋屈服，延性不足"
+    suggestion: "梁端纵向受拉钢筋率 ≤ 2.5%，同时不应小于规范最小配筋率"
+
+  - clause_id: "GB50011-2010-6.3.7"
+    title: "柱纵向钢筋配筋率应在 0.5% ~ 3% 之间"
+    severity: high
+    field: "column.longitudinal_steel_ratio"
+    operator: "in"
+    value: [0.5, 3.0]
+    unit: "%"
+    target_element: "column"
+    reason: "配筋率过低会导致柱承载力不足，过高则延性降低并增加脆性破坏风险"
+    suggestion: "柱全部纵向钢筋配筋率 ≥ 0.5%（HRB400），且不应大于 3%"
+
+  - clause_id: "GB50011-2010-6.3.9"
+    title: "柱节点核心区箍筋不应小于 8@150"
+    severity: medium
+    field: "column.joint_stirrup"
+    operator: ">="
+    value: "8@150"
+    unit: ""
+    target_element: "column_joint"
+    reason: "节点核心区是梁柱交汇的受力关键部位，箍筋不足会导致节点剪切破坏"
+    suggestion: "节点核心区箍筋应满足最小配箍率要求，且间距 ≤ 150mm"
+
+  - clause_id: "GB50011-2010-3.1.3"
+    title: "抗震设防分类应按建筑重要性正确划分"
+    severity: critical
+    field: "building.seismic_classification"
+    operator: "in"
+    value: ["甲类", "乙类", "丙类", "丁类"]
+    unit: ""
+    target_element: "building"
+    reason: "抗震设防分类错误会导致重要公共建筑抗震措施不足，造成不必要的人员伤亡"
+    suggestion: "按《建筑工程抗震设防分类标准》GB 50223 正确划分甲、乙、丙、丁四类"

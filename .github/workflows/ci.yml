@@ -1,0 +1,26 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,observability,security,langchain,vector,geo,frontend,tsdb]"
+      - run: ruff check .
+        name: lint (ruff)
+      - run: mypy core/ agents/ services/ api/
+        name: type-check (mypy)
+      - run: PYTHONPATH=. pytest tests -q --cov=.
+        name: pytest
+      - run: PYTHONPATH=. python tools/scan/scan_stage5.py
+        name: scan_stage5
+      - run: PYTHONPATH=. python tools/verify/verify_stage5.py
+        name: verify_stage5

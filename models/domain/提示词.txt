@@ -1,0 +1,281 @@
+================================================================================
+models/domain/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 models/domain/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+领域模型（Pydantic）：与持久化解耦的业务实体。
+
+【依赖】
+- from models.domain.alert import Alert, GeoPoint
+- from models.domain.billing import Bill, UsageRecord
+- from models.domain.inspection import Inspection
+- from models.domain.plan import ConstructionPlan
+- from models.domain.project import Project
+- from models.domain.report import ReviewReport
+- from models.domain.tenant import QUOTA_METRICS, Tenant, default_quota_used
+- from models.domain.violation import Violation
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】alert.py
+================================================================================
+你是一名 Python 后端开发者。请实现 alert.py。
+
+【背景】
+告警领域模型（现场监控智能体的输出单元）。 高频原始传感器数据走时序库（core/timeseries）， 此处只保存低频、需长期检索的告警事件。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field
+- from common.constants import AlertLevel, AlertStatus
+- from common.ids import alert_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class GeoPoint(BaseModel)：经纬度坐标（GCJ-02，与国内地图服务对齐）。
+1. class Alert(BaseModel)：一条告警事件。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】billing.py
+================================================================================
+你是一名 Python 后端开发者。请实现 billing.py。
+
+【背景】
+计费域模型（6b.1 多租户 SaaS）：用量流水 + 月度账单。 与 ``models.database.billing_models`` 的 ORM 表一一对应； 服务层以本模块的 Pydantic 模型为业务契约，仓储层负责 dict ↔ ORM 转换。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from typing import Any
+- from pydantic import BaseModel, Field
+- from common.constants import SubscriptionPlan
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class UsageRecord(BaseModel)：用量流水记录。
+1. class Bill(BaseModel)：月度账单（6b.1 mock：套餐固定月费）。
+
+【必须实现的函数】
+1. current_period(now: datetime | None=None) -> str  # 当前账期标识（UTC，``yyyy-mm``）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】inspection.py
+================================================================================
+你是一名 Python 后端开发者。请实现 inspection.py。
+
+【背景】
+审查/检查记录领域模型。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field
+- from common.constants import AgentName, AuditConclusion, InspectionStatus
+- from common.ids import inspection_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class Inspection(BaseModel)：一次审查任务（由某个智能体执行）。 生命周期：PENDING -> RUNNING -> COMPLETED/FAILED； COMPLETED 时 conclusion 必达（三值之一）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】plan.py
+================================================================================
+你是一名 Python 后端开发者。请实现 plan.py。
+
+【背景】
+施工方案领域模型（安全审核智能体的主要输入）。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field
+- from common.constants import PlanStatus, PlanType
+- from common.ids import plan_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class ConstructionPlan(BaseModel)：专项施工方案。 attachments 存储文件存储键（core/storage），不直接存磁盘路径， 以便在本地存储/对象存储之间切换。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】project.py
+================================================================================
+你是一名 Python 后端开发者。请实现 project.py。
+
+【背景】
+项目领域模型。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field
+- from common.constants import ProjectStatus
+- from common.ids import project_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class Project(BaseModel)：工程项目（数据隔离粒度：tenant_id + id）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】report.py
+================================================================================
+你是一名 Python 后端开发者。请实现 report.py。
+
+【背景】
+审查报告领域模型。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field, model_validator
+- from common.constants import AgentName, AuditConclusion, ReportStatus
+- from common.ids import report_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class ReviewReport(BaseModel)：审查报告（安全审核/合规校验的正式输出物）。 regulation_versions: {法规ID: 版本} 快照，保证报告结论可追溯； signature: 由 report_signer 生成的电子签章指纹，status 升到 SIGNED 后 content 不得再修改（改则须重新签章）。
+   方法：
+   - _validate_regulation_versions(self) -> 'ReviewReport'
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】tenant.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tenant.py。
+
+【背景】
+多租户模型：多个项目/施工单位并发使用时的数据隔离单元。 6b.1 多租户 SaaS 扩展： - ``plan``             订阅套餐（trial/starter/pro/enterprise） - ``trial_expires_at`` 试用期到期时间（UTC）；付费套餐为 None - ``quota_used``       配额用量计数器： * api_calls          周期内 API 调用累计次数 * storage_gb        当前存储用量（瞬时值，GB） * agent_concurrency 当前智能体并发占用（瞬时值） - 配额上限由 ``services.quota_service.plan_quota(plan)`` 给出， 领域模型不反向依赖服务层。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from typing import Any
+- from pydantic import BaseModel, Field
+- from common.constants import SubscriptionPlan, TenantStatus
+- from common.ids import tenant_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class Tenant(BaseModel)：租户（施工单位/咨询机构等使用方）。
+   方法：
+   - is_trial_expired(self, now: datetime | None) -> bool  # 试用期是否已到期（非 trial 套餐或无到期时间 → False）。
+   - quota_value(self, metric: str) -> float  # 读取某项配额当前用量（缺失键按 0 处理）。
+   - to_public_dict(self) -> dict[str, Any]  # API 输出用 dict（枚举转值、时间转 ISO 字符串由 pydantic 处理）。
+
+【必须实现的函数】
+1. default_quota_used() -> dict[str, float]  # 新租户配额计数器初值。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】violation.py
+================================================================================
+你是一名 Python 后端开发者。请实现 violation.py。
+
+【背景】
+违规项领域模型（合规校验智能体的输出单元）。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import datetime
+- from pydantic import BaseModel, Field
+- from common.constants import ViolationSeverity, ViolationStatus
+- from common.ids import violation_id
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class Violation(BaseModel)：单条违规项。 合规可追溯要求：regulation_version 必须记录结论产生时依据的 法规版本（法规会更新/废止），为空即违反平台约束 （见 error_codes 70003）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

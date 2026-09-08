@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caai-a2a
+  labels: {app: caai-a2a}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: caai-a2a}
+  template:
+    metadata:
+      labels: {app: caai-a2a}
+    spec:
+      containers:
+        - name: a2a
+          image: caai/a2a:latest
+          ports: [{containerPort: 8080}]
+          livenessProbe:
+            httpGet: {path: /.well-known/agent-card.json, port: 8080}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /.well-known/agent-card.json, port: 8080}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          envFrom:
+            - configMapRef: {name: caai-config}
+            - secretRef: {name: caai-secrets}

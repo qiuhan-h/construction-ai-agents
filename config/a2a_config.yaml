@@ -1,0 +1,39 @@
+# =====================================================
+# A2A 协议配置（智能体间通信）
+# 占位说明：
+#   server.host —— A2A 服务监听地址，例 "0.0.0.0"（监听所有网卡）或具体内网 IP
+# =====================================================
+
+protocol:
+  version: "1.0"
+  transport: http              # http | websocket
+
+server:
+  # 占位：A2A 服务监听地址（内网 IP 或 0.0.0.0）
+  host: 需要补充实际链接
+  port: 9101
+  card_path: /agent.json       # Agent Card 发布端点
+
+client:
+  timeout_seconds: 30
+  max_retries: 3
+  backoff_seconds: 1.0
+
+registry:                      # 平台内智能体登记（Agent Card 索引）
+  agents:
+    - name: orchestrator
+      role: coordinator
+      description: 编排协调层，统一调度三大业务智能体
+    - name: safety_audit_agent
+      role: business
+      description: 施工安全审核
+    - name: compliance_agent
+      role: business
+      description: 合规校验
+    - name: site_monitor_agent
+      role: business
+      description: 施工现场监控
+
+message:
+  max_payload_kb: 1024         # 单条消息体上限
+  ttl_seconds: 3600            # 消息超时丢弃时间

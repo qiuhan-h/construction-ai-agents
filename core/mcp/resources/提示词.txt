@@ -1,0 +1,137 @@
+================================================================================
+core/mcp/resources/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/mcp/resources/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+MCP 资源：法规 / 标准 / 案例。
+
+【依赖】
+- from core.mcp.resources.case_resource import read_case, list_cases, CASE_URI_PREFIX
+- from core.mcp.resources.regulation_resource import read_regulation, list_regulations, REGULATION_URI_PREFIX
+- from core.mcp.resources.standard_resource import read_standard, list_standards, STANDARD_URI_PREFIX
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】case_resource.py
+================================================================================
+你是一名 Python 后端开发者。请实现 case_resource.py。
+
+【背景】
+MCP 案例资源（事故/合规案例摘要）。 URI 规范：case://{case_id} 首版实现：从 data/cases/{case_id}.json 读取； 不存在时返回空内容 + available=False。 阶段三/四与 models.vector.CaseVector 对齐。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- from pathlib import Path
+- from typing import Any
+- from common.ids import case_id
+- from config import get_settings
+- from core.mcp.server import register_resource
+
+【必须实现的函数】
+1. _cases_dir() -> Path
+2. _parse_uri(uri: str) -> str
+3. list_cases(tenant_id: str | None=None) -> list[dict[str, Any]]  # 列出案例；按 tenant_id 过滤。
+4. async read_case(uri: str, tenant_id: str | None=None) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】regulation_resource.py
+================================================================================
+你是一名 Python 后端开发者。请实现 regulation_resource.py。
+
+【背景】
+MCP 法规资源。 URI 规范：regulation://{code}/{version} + regulation://_list           法规清单（4a 新增） 首版实现：从 data/regulations/{code}__{version}.md 读取； 不存在时返回空内容 + metadata.available=False。 阶段四接 SQLAlchemy 与法规版本管理器。
+
+【依赖】
+- from __future__ import annotations
+- from pathlib import Path
+- from typing import Any
+- from common.ids import regulation_id
+- from config import get_settings
+- from core.mcp.server import register_resource
+
+【必须实现的函数】
+1. _regulations_dir() -> Path
+2. _parse_uri(uri: str) -> tuple[str, str]  # 解析 regulation://{code}/{version} 为 (code, version)。
+3. list_regulations() -> list[dict[str, Any]]  # 扫描本地法规文件目录，列出可用版本。
+4. async read_regulation(uri: str) -> dict[str, Any]  # 读取指定法规版本的全文。
+5. async read_regulation_list(uri: str) -> dict[str, Any]  # 读取法规清单（regulation://_list 资源）。 返回 {"content": [list_regulations()]}；外层字段与 MCPResourceReader 约定一致。 失败/无文件时返回 {"content": []}。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】standard_resource.py
+================================================================================
+你是一名 Python 后端开发者。请实现 standard_resource.py。
+
+【背景】
+MCP 标准资源（国标/行标等）。 URI 规范：standard://{code}/{version} 首版实现：从 data/regulations/standards/{code}__{version}.md 读取。
+
+【依赖】
+- from __future__ import annotations
+- from pathlib import Path
+- from typing import Any
+- from common.ids import standard_id
+- from config import get_settings
+- from core.mcp.server import register_resource
+
+【必须实现的函数】
+1. _standards_dir() -> Path
+2. _parse_uri(uri: str) -> tuple[str, str]
+3. list_standards() -> list[dict[str, Any]]
+4. async read_standard(uri: str) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

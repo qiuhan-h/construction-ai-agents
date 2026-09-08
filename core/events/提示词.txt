@@ -1,0 +1,140 @@
+================================================================================
+core/events/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/events/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+core.events 公共 API。 公开导出： - 事件类型：Event 及业务事件子类 - 主题常量：TOPIC_*  系列 - 事件总线：EventBus, get_event_bus, reset_event_bus - 便捷发布：publish, publish_sync
+
+【依赖】
+- from core.events.event_bus import EventBus, EventHandler, get_event_bus, publish, publish_sync, reset_event_bus
+- from core.events.events import KNOWN_TOPICS, AgentTaskDoneEvent, AlertResolvedEvent, AlertTriggeredEvent, Event, InspectionCompletedEvent, RegulationUpdatedEvent, ReportSignedEvent, TOPIC_AGENT_TASK_DONE, TOPIC_ALERT_RESOLVED, TOPIC_ALERT_TRIGGERED, TOPIC_INSPECTION_COMPLETED, TOPIC_REGULATION_UPDATED, TOPIC_REPORT_SIGNED, TOPIC_VIOLATION_CREATED, TOPIC_VIOLATION_RECTIFIED, ViolationCreatedEvent, ViolationRectifiedEvent
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】event_bus.py
+================================================================================
+你是一名 Python 后端开发者。请实现 event_bus.py。
+
+【背景】
+事件总线：发布 / 订阅接口，支持进程内异步派发与可选 Redis Stream。 设计原则： 1. 默认进程内实现（asyncio + 回调列表），无外部依赖； 2. 当 settings.redis_url 非占位时，可选启用 Redis Stream 适配器 （阶段二仅留接口与配置位，阶段四再补真实订阅端）； 3. publish/subscribe 全部 async；handler 内部异常被捕获并日志记录， 不会让发布者失败； 4. 主题通配符：订阅 "inspection.*" 可匹配 "inspection.completed" 等 一类事件，订阅 "*" 接收全部事件。 注意： - 本模块不直接 import core.llm / core.a2a / core.mcp； - 阶段二只覆盖进程内派发；多节点 / 持久化订阅留待阶段四。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import fnmatch
+- import logging
+- import re
+- from collections import defaultdict
+- from typing import Any, Awaitable, Callable
+- from common.exceptions import EventPublishError, EventSubscribeError
+- from common.timeutils import to_iso, utc_now
+- from core.events.events import Event
+
+【必须实现的类】
+1. class EventBus：进程内异步事件总线。 特性： - 主题可带通配符（fnmatch 风格：inspection.* / *.*）； - 同一主题可注册多个处理器，按订阅顺序串行派发； - 处理器抛错不影响其它处理器与发布者； - 提供历史缓存（可选）便于新订阅者追赶。
+   方法：
+   - __init__(self, history_size: int, enable_history: bool) -> None
+   - async subscribe(self, topic_pattern: str, handler: EventHandler) -> None  # 注册一个订阅。 Args: topic_pattern: 主题或通配符，如 "inspection.*" / "*" handler: async 处理器，签名为 async def handler(event: Event) -> None
+   - async unsubscribe(self, topic_pattern: str, handler: EventHandler) -> bool  # 取消订阅。返回是否成功移除。
+   - subscribers_of(self, topic: str) -> list[EventHandler]  # 同步返回当前匹配某主题的所有处理器（用于自检 / 调试）。 H2 修正：先做 ``list(self._subs.items())`` snapshot，避免与 subscribe/unsubscribe 并发时 ``dictionary changed size during iteration``。
+   - async publish(self, event: Event) -> None  # 发布事件（异步派发给所有匹配订阅）。
+   - async publish_many(self, events: list[Event]) -> None
+   - history(self, topic: str | None=None) -> list[Event]  # 返回历史事件（仅在 enable_history=True 时非空）。
+   - async reset(self) -> None  # 清空订阅与历史（仅测试使用；async 与 lifespan 关闭一致）。
+   - reset_sync(self) -> None  # 同步重置（兼容旧调用方）。
+   - async _safe_invoke(self, handler: EventHandler, event: Event) -> bool
+
+【必须实现的函数】
+1. _match_topic(pattern: str, topic: str) -> bool  # 匹配订阅 pattern 与事件 topic。 底层使用 ``fnmatch.fnmatchcase``，通配符语义与 fnmatch 一致 （L8 修补：早期 docstring 声称 "*" 不含 "."，与 fnmatch 实际行为 不符——fnmatch 的 "*" 匹配任意字符序列，**包含 "."**）： "*"          匹配所有主题（含多层，如 "a.b.c"） "*.*"        至少含一个 "." 的主题 "domain.*"   以 "domain." 开头的所有主题 精确匹配     pattern == topic
+2. get_event_bus() -> EventBus  # 获取全局事件总线（懒加载，含历史缓存开关）。
+3. reset_event_bus() -> None  # 重置全局事件总线（仅测试使用）。
+4. async publish(topic: str, tenant_id: str, source: str, **payload) -> Event  # 便捷发布：根据 topic/tenant/source/payload 构造 Event 并发布。
+5. publish_sync(topic: str, tenant_id: str, source: str, **payload) -> None  # 同步便捷发布：在已有 event loop 中调用 publish()。 如果当前没有运行中的事件循环，回退为 asyncio.run()（主要用于脚本/测试）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】events.py
+================================================================================
+你是一名 Python 后端开发者。请实现 events.py。
+
+【背景】
+事件类型定义：跨智能体异步协作的消息载体。 设计要点： - 业务事件用 dataclass（不可变），便于通过 JSON 序列化跨进程传输； - 每个事件必带 event_id（evt_ 前缀）、tenant_id、occurred_at； - topic 字段采用 "<domain>.<action>" 形式（如 "inspection.completed"）， 订阅端可使用通配符 "inspection.*" 匹配一类事件。 注意： - 事件 payload 不直接承载大文件 / 大块文本；如需引用，请用资源 URI （MCP regulation://、case://、standard:// 等）。 - 多租户隔离：所有事件必带 tenant_id，订阅 handler 入口应再做一次校验。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass, field, asdict
+- from typing import Any
+- from common.timeutils import to_iso, utc_now
+- from common.ids import event_id
+
+【关键常量】
+- TOPIC_INSPECTION_COMPLETED = 'inspection.completed'
+- TOPIC_VIOLATION_CREATED = 'violation.created'
+- TOPIC_VIOLATION_RECTIFIED = 'violation.rectified'
+- TOPIC_ALERT_TRIGGERED = 'alert.triggered'
+- TOPIC_ALERT_RESOLVED = 'alert.resolved'
+- TOPIC_REPORT_SIGNED = 'report.signed'
+- TOPIC_AGENT_TASK_DONE = 'agent.task.done'
+- TOPIC_REGULATION_UPDATED = 'regulation.updated'
+
+【必须实现的类】
+1. class Event：事件基类（不可变）。 Attributes: topic: 事件主题（领域.动作） tenant_id: 多租户隔离 source: 事件来源（智能体名 / 服务名） payload: 事件载荷（业务相关字段） event_id: 事件唯一 ID（evt_ 前缀，由 common.ids.event_id 生成） occurred_at: 事件发生时间（ISO-8601，UTC） metadata: 自由扩展字段（trace_id、correlation_id 等） 设计说明： 所有字段均有默认值，使子类可以仅覆盖 topic 字段。 业务调用应使用 Event.of(...) 或 publish(...) 工厂，传入必填项。
+   方法：
+   - to_dict(self) -> dict[str, Any]
+   - of(cls, topic: str, tenant_id: str, source: str, payload: dict[str, Any] | None=None, metadata: dict[str, Any] | None=None) -> 'Event'
+1. class InspectionCompletedEvent(Event)：审查/巡检完成事件。
+1. class ViolationCreatedEvent(Event)：新增违规项事件。
+1. class ViolationRectifiedEvent(Event)：违规项已整改事件。
+1. class AlertTriggeredEvent(Event)：告警触发事件。
+1. class AlertResolvedEvent(Event)：告警已处置事件。
+1. class ReportSignedEvent(Event)：审查报告已签章事件。
+1. class AgentTaskDoneEvent(Event)：智能体异步任务完成事件。
+1. class RegulationUpdatedEvent(Event)：法规库更新事件（版本变更，可触发下游重算/重审）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

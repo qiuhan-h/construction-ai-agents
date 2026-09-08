@@ -1,0 +1,99 @@
+================================================================================
+core/timeseries/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/timeseries/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+core.timeseries：时序数据库顶层入口。 P3-1 修正：InfluxDBWriter 实现从 agents/ 迁移到 core/timeseries/client.py， 遵守 core/ → agents/ 的分层约束。agent 侧 ``influxdb_writer.py`` 改为 re-export。
+
+【依赖】
+- from core.timeseries.client import InfluxDBWriter, InfluxWriteError, build_line_protocol, write_point
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】client.py
+================================================================================
+你是一名 Python 后端开发者。请实现 client.py。
+
+【背景】
+InfluxDB 2.x 时序数据库客户端（core 层顶层 API）。 设计： - 直接走 InfluxDB 2.x HTTP API（``/api/v2/write`` + ``/api/v2/query``）， 自行拼 line protocol；不依赖 ``influxdb-client``，沙箱无包也能跑； - 配置从 ``config.get_settings()`` 注入：``tsdb_url`` / ``tsdb_token`` / ``tsdb_org`` / ``tsdb_bucket``； - 缺凭据 / 占位 → **Mock 模式**（与 5b.4 一致），只记日志； - 写失败 → 抛 ``InfluxWriteError``；批量写（``write_points``）采用尽力而为： 失败点降级为 mock，单点失败不影响其他点。 分层约束（shu_zhuang_tu.txt）： - ``core/timeseries/`` 是时序数据库的顶层入口； - ``agents/site_monitor_agent/iot_integration/influxdb_writer.py`` re-export 本模块， 保持 agent 侧引用路径不变。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import json
+- import logging
+- import socket
+- import ssl
+- import time
+- import urllib.error
+- import urllib.parse
+- import urllib.request
+- from datetime import datetime, timezone
+- from typing import Any, Iterable
+
+【关键常量】
+- _PLACEHOLDER = '需要补充实际链接'
+
+【必须实现的类】
+1. class InfluxWriteError(Exception)：InfluxDB 写入失败。
+1. class InfluxDBWriter：InfluxDB 2.x 真实写入器。 使用方式： writer = InfluxDBWriter() await writer.write_point("temperature", {"device": "d1"}, {"value": 25.3}, ts) await writer.write_points([(m, tags, fields, ts), ...])
+   方法：
+   - __init__(self, url: str | None, token: str | None, org: str | None, bucket: str | None, timeout: float, force_mock: bool) -> None
+   - _load_from_config() -> tuple[str, str, str, str]
+   - is_mock(self) -> bool
+   - write_url(self) -> str
+   - async write_point(self, measurement: str, tags: dict[str, Any], fields: dict[str, Any], ts: datetime | None=None) -> bool  # 写单点。失败抛 ``InfluxWriteError``。
+   - async write_points(self, points: Iterable[tuple[str, dict[str, Any], dict[str, Any], datetime | None]]) -> dict[str, Any]  # 批量写。返回 {"ok": int, "failed": int, "errors": [...]}。
+   - async query_range(self, measurement: str, tags: dict[str, Any] | None, start: datetime | None=None, end: datetime | None=None, limit: int=None) -> list[dict[str, Any]]  # 范围查询（Flux 简化版；真实场景建议走 /api/v2/query + Flux）。
+   - async _do_write(self, measurement: str, tags: dict[str, Any], fields: dict[str, Any], ts: datetime | None) -> bool
+
+【必须实现的函数】
+1. _is_placeholder(value: Any) -> bool
+2. _get_secret_str(value: Any) -> str  # Pydantic ``SecretStr`` 兼容。
+3. _escape_tag_value(v: Any) -> str  # Line protocol tag / field value 转义。
+4. _escape_measurement(v: str) -> str  # measurement 名字：转义 ``,`` 和空格。
+5. _format_field_value(v: Any) -> str | None  # Field 值：int / uint / float / bool / string。
+6. build_line_protocol(measurement: str, tags: dict[str, Any], fields: dict[str, Any], ts: datetime | None=None) -> str | None  # 拼一条 InfluxDB line protocol。 返回 None 表示字段全部非法（被跳过）。
+7. _http_post(url: str, data: bytes, headers: dict[str, str], timeout: float) -> tuple[int, str]
+8. async write_point(measurement: str, tags: dict[str, Any], fields: dict[str, Any], ts: datetime | None=None) -> bool
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caai-mcp
+  labels: {app: caai-mcp}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: caai-mcp}
+  template:
+    metadata:
+      labels: {app: caai-mcp}
+    spec:
+      containers:
+        - name: mcp
+          image: caai/mcp:latest
+          ports: [{containerPort: 8090}]
+          livenessProbe:
+            httpGet: {path: /mcp/tools, port: 8090}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /mcp/tools, port: 8090}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          envFrom:
+            - configMapRef: {name: caai-config}
+            - secretRef: {name: caai-secrets}

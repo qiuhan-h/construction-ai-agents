@@ -1,0 +1,240 @@
+================================================================================
+core/observability/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/observability/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+可观测性包：OpenTelemetry tracing + Prometheus metrics。 F3 设计原则： - dev 环境默认 NoOp（零开销）； - prod 由环境变量 ENABLE_OTEL=1 / ENABLE_METRICS=1 启用； - 无环境变量时默认可用且开销可忽略。
+
+【依赖】
+- from __future__ import annotations
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】a2a_middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 a2a_middleware.py。
+
+【背景】
+A2A 中间件 trace 接入（阶段二预留插槽填充）。 为每条 A2A 请求创建 span，记录 method / tenant_id / agent_name。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from core.observability.tracer import get_tracer
+
+【必须实现的函数】
+1. setup(tracer: Any=None) -> None  # 初始化 A2A trace 中间件（幂等）。
+2. async trace_middleware(message: Any, next_handler: Any) -> Any  # A2A 请求级 trace 中间件。 用法：在 A2AServer 中间件链注册。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】api_middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 api_middleware.py。
+
+【背景】
+FastAPI HTTP middleware trace 接入。 为每个 HTTP 请求创建 span，记录 route / method / status_code。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from core.observability.tracer import get_tracer
+
+【必须实现的函数】
+1. setup(tracer: Any=None) -> None  # 初始化 API trace 中间件（幂等）。
+2. install(app: Any) -> None  # 向 FastAPI app 注册 trace 中间件。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】exporter.py
+================================================================================
+你是一名 Python 后端开发者。请实现 exporter.py。
+
+【背景】
+Prometheus /metrics 端点导出器。 F3 原则：dev 环境返回空 200；prod 由 ENABLE_METRICS=1 返回真实指标。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+
+【必须实现的函数】
+1. _metrics_enabled() -> bool
+2. generate_latest() -> str  # 生成 Prometheus exposition 格式文本。
+3. mount_metrics_endpoint(app) -> None  # 向 FastAPI app 挂载 /metrics 端点。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】mcp_middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mcp_middleware.py。
+
+【背景】
+MCP 中间件 trace 接入。 为 MCP JSON-RPC 调用创建 span，记录 method / tool / resource。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from core.observability.tracer import get_tracer
+
+【必须实现的函数】
+1. setup(tracer: Any=None) -> None  # 初始化 MCP trace 中间件（幂等）。
+2. async trace_mcp_call(method: str, params: dict[str, Any], handler: Any) -> Any  # MCP 调用级 trace 包装。 用法：在 MCPServer.handle_raw 前包装一层。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】metrics.py
+================================================================================
+你是一名 Python 后端开发者。请实现 metrics.py。
+
+【背景】
+Prometheus 业务指标定义。 F3 原则：dev 环境用 NoOp 计数器（无 prometheus_client 依赖）； prod 由 ENABLE_METRICS=1 启用真实 Counter / Gauge。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from typing import Any
+
+【必须实现的类】
+1. class _NoOpMetric：NoOp 指标：inc / set / observe / labels 全空实现。
+   方法：
+   - inc(self, amount: float=1.0) -> None
+   - set(self, value: float) -> None
+   - observe(self, amount: float) -> None
+   - labels(self, **kwargs) -> '_NoOpMetric'
+
+【必须实现的函数】
+1. _check_enabled() -> bool
+2. _make_counter(name: str, description: str, labelnames: list[str] | None=None) -> Any
+3. _make_gauge(name: str, description: str, labelnames: list[str] | None=None) -> Any
+4. _make_histogram(name: str, description: str, labelnames: list[str] | None=None) -> Any
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】tracer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tracer.py。
+
+【背景】
+OpenTelemetry Tracer 封装（NoOp 默认，prod 由 ENABLE_OTEL=1 启用）。 F3 原则：dev 环境返回 NoOp tracer，不引入 opentelemetry 依赖； prod 环境 ENABLE_OTEL=1 时初始化 SDK 并导出 OTLP。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from typing import Any
+
+【关键常量】
+- APP_NAME
+
+【必须实现的类】
+1. class _NoOpSpan：NoOp span：所有方法空实现。
+   方法：
+   - __enter__(self) -> '_NoOpSpan'
+   - __exit__(self, *args) -> None
+   - set_attribute(self, key: str, value: Any) -> None
+   - set_status(self, *args, **kwargs) -> None
+   - record_exception(self, exc: BaseException) -> None
+   - add_event(self, name: str, **kwargs) -> None
+1. class _NoOpTracer：NoOp tracer：start_as_current_span 返回上下文管理器。
+   方法：
+   - __init__(self, name: str) -> None
+   - start_as_current_span(self, name: str, **kwargs) -> _NoOpSpan
+   - start_span(self, name: str, **kwargs) -> _NoOpSpan
+
+【必须实现的函数】
+1. _otel_enabled() -> bool
+2. get_tracer(name: str=APP_NAME) -> Any  # 获取 tracer 实例。 dev / 无 ENABLE_OTEL → 返回 opentelemetry NoOp tracer（或纯 Python 兜底）。 prod / ENABLE_OTEL=1 → 初始化 TracerProvider + OTLP 导出。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】tracing.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tracing.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

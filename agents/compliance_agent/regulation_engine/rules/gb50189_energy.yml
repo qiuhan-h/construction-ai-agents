@@ -1,0 +1,124 @@
+# GB 50189-2015 公共建筑节能设计标准
+# 结构化规则 — 机器可判定
+
+rules:
+  - clause_id: "GB50189-2015-3.2.1"
+    title: "居住建筑窗墙面积比不应大于 0.6"
+    severity: medium
+    field: "residential.window_wall_ratio"
+    operator: "<="
+    value: 0.6
+    unit: ""
+    target_element: "building"
+    reason: "窗墙比过大会增加围护结构传热和太阳辐射得热，导致空调能耗升高"
+    suggestion: "居住建筑窗墙比 ≤ 0.6，东、西、北向外窗应采取遮阳措施"
+
+  - clause_id: "GB50189-2015-3.2.2"
+    title: "公共建筑窗墙面积比不应大于 0.7"
+    severity: medium
+    field: "public_building.window_wall_ratio"
+    operator: "<="
+    value: 0.7
+    unit: ""
+    target_element: "building"
+    reason: "公共建筑窗墙比过大同样会显著提升夏季空调冷负荷和冬季供暖负荷"
+    suggestion: "公共建筑窗墙比 ≤ 0.7，超过 0.8 时应进行围护结构热工性能权衡判断"
+
+  - clause_id: "GB50189-2015-3.3.1"
+    title: "外墙传热系数不应大于 0.60 W/(㎡·K)（严寒地区）"
+    severity: high
+    field: "exterior_wall.heat_transfer_coefficient"
+    operator: "<="
+    value: 0.60
+    unit: "W/(m2·K)"
+    target_element: "exterior_wall"
+    reason: "外墙传热系数过高会导致冬季供暖热量大量散失，夏季冷量损失增加"
+    suggestion: "严寒地区外墙 K ≤ 0.60 W/(㎡·K)，采用高效保温材料如挤塑板、岩棉"
+
+  - clause_id: "GB50189-2015-3.4.1"
+    title: "外窗传热系数不应大于 2.5 W/(㎡·K)"
+    severity: high
+    field: "exterior_window.heat_transfer_coefficient"
+    operator: "<="
+    value: 2.5
+    unit: "W/(m2·K)"
+    target_element: "exterior_window"
+    reason: "普通单层玻璃窗传热系数高达 5 W/(㎡·K)，是围护结构传热的薄弱环节"
+    suggestion: "采用中空玻璃窗或 Low-E 玻璃，K 值 ≤ 2.5 W/(㎡·K)"
+
+  - clause_id: "GB50189-2015-3.2.3"
+    title: "屋顶传热系数不应大于 0.50 W/(㎡·K)"
+    severity: high
+    field: "roof.heat_transfer_coefficient"
+    operator: "<="
+    value: 0.50
+    unit: "W/(m2·K)"
+    target_element: "roof"
+    reason: "屋顶受太阳辐射强度最高，传热系数过大将显著增加夏季空调冷负荷"
+    suggestion: "屋顶应采用高效保温层 + 隔热措施，K ≤ 0.50 W/(㎡·K)"
+
+  - clause_id: "GB50189-2015-4.2.1"
+    title: "空调系统能效比不应小于 3.0"
+    severity: medium
+    field: "air_conditioner.energy_efficiency_ratio"
+    operator: ">="
+    value: 3.0
+    unit: ""
+    target_element: "hvac_system"
+    reason: "空调系统能效比过低会导致运行能耗过高，不符合节能要求"
+    suggestion: "选用能效比 EER ≥ 3.0 的高效空调系统，或采用变频技术"
+
+  - clause_id: "GB50189-2015-5.2.1"
+    title: "照明功率密度不应大于 7 W/㎡（普通办公）"
+    severity: medium
+    field: "lighting.power_density"
+    operator: "<="
+    value: 7.0
+    unit: "W/m2"
+    target_element: "lighting_system"
+    reason: "照明功率密度过高会造成电能浪费，不符合绿色建筑节能要求"
+    suggestion: "采用 LED 高效光源 + 智能照明控制系统，LPD ≤ 7 W/㎡"
+
+  - clause_id: "GB50189-2015-6.1.1"
+    title: "可再生能源利用率不应小于 10%"
+    severity: medium
+    field: "building.renewable_energy_ratio"
+    operator: ">="
+    value: 10.0
+    unit: "%"
+    target_element: "building"
+    reason: "充分利用可再生能源可减少化石能源消耗和碳排放"
+    suggestion: "采用光伏、太阳能热水、地源热泵等技术，可再生能源占比 ≥ 10%"
+
+  - clause_id: "GB50189-2015-6.2.1"
+    title: "电梯能耗指标不应大于 0.85"
+    severity: low
+    field: "elevator.energy_consumption_index"
+    operator: "<="
+    value: 0.85
+    unit: ""
+    target_element: "elevator"
+    reason: "电梯是高层建筑的主要能耗设备之一，应选用节能型电梯"
+    suggestion: "采用能量回馈装置和变频调速电梯，能耗指标 ECI ≤ 0.85"
+
+  - clause_id: "GB50189-2015-3.1.3"
+    title: "围护结构热工性能等级不应低于 B 级"
+    severity: medium
+    field: "building.envelope_grade"
+    operator: ">="
+    value: "B"
+    unit: ""
+    target_element: "building"
+    reason: "围护结构热工性能等级低于 B 级意味着节能水平未达国家标准"
+    suggestion: "围护结构热工性能等级应达到 B 级或以上，鼓励达到 A 级"
+
+  - clause_id: "GB50189-2015-4.1.4"
+    title: "集中供暖系统热水供应温度宜为 60℃"
+    severity: low
+    field: "heating.supply_temperature"
+    operator: "=="
+    value: 60.0
+    unit: "degC"
+    target_element: "heating_system"
+    reason: "供水温度过高会导致热量损失增大，过低则影响供暖效果"
+    suggestion: "集中供暖系统供水温度宜为 60℃，回水温度 50℃"

@@ -1,0 +1,233 @@
+================================================================================
+api/schemas/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 api/schemas/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+api.schemas 公共 API。
+
+【依赖】
+- from api.schemas.bim_schemas import BIMElement, BIMProgressItem, BIMProgressResponse, BIMProjectTreeNode
+- from api.schemas.a2a_schemas import A2ACancelTaskRequest, A2ACancelTaskResponse, A2AErrorInfo, A2AErrorResponse, A2AGetTaskResponse, A2AListTasksResponse, A2AMessageDTO, A2AMessagePartDTO, A2ASendMessageRequest, A2ASendMessageResponse
+- from api.schemas.agent_schemas import AgentCapabilitiesDTO, AgentCardDTO, AgentDetail, AgentHealthResponse, AgentListResponse, AgentSkillDTO, AgentSummary
+- from api.schemas.mobile_schemas import MobileAlertListItem, MobileDashboard, MobileProjectCard
+- from api.schemas.pagination import Page, PaginationQuery
+- from api.schemas.response_schemas import ApiResponse, ErrorDetail, ErrorResponse
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】a2a_schemas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 a2a_schemas.py。
+
+【背景】
+A2A REST DTO：与 core.a2a.message / serializers 对应的 Pydantic 模型。 用途： - FastAPI 路由层接收 / 返回 HTTP 请求体时使用（DTO 边界）； - 与 core.a2a 内部模型解耦，避免协议改动波及 HTTP 接口； - 字段含义与 core.a2a.message 一致，但允许 extra="allow" 以便扩展。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from pydantic import BaseModel, ConfigDict, Field
+
+【必须实现的类】
+1. class A2AMessagePartDTO(BaseModel)
+1. class A2AMessageDTO(BaseModel)：A2A 消息 HTTP 入参。
+1. class A2ASendMessageRequest(BaseModel)
+1. class A2ASendMessageResponse(BaseModel)
+1. class A2AGetTaskResponse(BaseModel)
+1. class A2ACancelTaskRequest(BaseModel)
+1. class A2ACancelTaskResponse(BaseModel)
+1. class A2AListTasksResponse(BaseModel)
+1. class A2AErrorInfo(BaseModel)
+1. class A2AErrorResponse(BaseModel)
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】agent_schemas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agent_schemas.py。
+
+【背景】
+智能体元数据 / 列表 / 详情 DTO。 用途： - /agents 列表 / 详情接口的请求与响应模型； - /agents/{name}/card 端点（Agent Card）的简化版本； - 阶段二仅做"只读元数据"展示，注册 / 反注册留到阶段四管理面。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from pydantic import BaseModel, ConfigDict, Field
+
+【必须实现的类】
+1. class AgentSkillDTO(BaseModel)
+1. class AgentCapabilitiesDTO(BaseModel)
+1. class AgentCardDTO(BaseModel)
+1. class AgentSummary(BaseModel)：智能体简要元信息（列表用）。
+1. class AgentDetail(AgentSummary)：智能体详情（含 Card 全文）。
+1. class AgentListResponse(BaseModel)
+1. class AgentHealthResponse(BaseModel)
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】bim_schemas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 bim_schemas.py。
+
+【背景】
+BIM 数据 Schema（6d.1）。 设计原则： - 字段精简，适配边缘端 / 移动端消费（响应体尽量小）； - 与 BIMConnector / BIMRealConnector 返回结构对齐； - 进度项含偏差 + 级别，便于边缘端直接告警。
+
+【依赖】
+- from __future__ import annotations
+- from pydantic import BaseModel, Field
+
+【必须实现的类】
+1. class BIMElement(BaseModel)：BIM 构件详情。
+1. class BIMProjectTreeNode(BaseModel)：BIM 项目树节点（递归）。
+1. class BIMProgressItem(BaseModel)：进度项（计划 vs 实际 + 偏差）。
+1. class BIMProgressResponse(BaseModel)：进度对比响应。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】mobile_schemas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mobile_schemas.py。
+
+【背景】
+移动端精简 Schema（6c.1）。 设计原则： - 字段 ≤15 个（TR-8.4），只保留移动端首屏必需信息； - 告警/项目卡片用 list + 最少字段，响应体 < 5KB（TR-8.1）； - 与桌面端 Dashboard 共享数据源，仅裁剪输出字段。
+
+【依赖】
+- from __future__ import annotations
+- from pydantic import BaseModel, Field
+
+【必须实现的类】
+1. class MobileAlertListItem(BaseModel)：移动端告警列表项（精简）。
+1. class MobileProjectCard(BaseModel)：移动端项目卡片（精简）。
+1. class MobileDashboard(BaseModel)：移动端首页仪表盘（精简聚合）。 总字段数 = 6（远 ≤15）： tenant_name, open_alerts, safety_score, alerts[], projects[], updated_at
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】pagination.py
+================================================================================
+你是一名 Python 后端开发者。请实现 pagination.py。
+
+【背景】
+分页响应：Page[T]。 设计要点： - 使用泛型 Page[T]，T 为列表元素类型； - items / total / page / page_size / total_pages 五字段； - 业务层通过 Page.of(items, total, page, page_size) 构造； - 配套 PaginationQuery 用于请求参数校验。
+
+【依赖】
+- from __future__ import annotations
+- import math
+- from typing import Generic, TypeVar
+- from pydantic import BaseModel, ConfigDict, Field
+
+【关键常量】
+- T
+
+【必须实现的类】
+1. class PaginationQuery(BaseModel)：通用分页请求参数。
+   方法：
+   - offset(self) -> int
+   - limit(self) -> int
+1. class Page(BaseModel, Generic[T])：通用分页响应。
+   方法：
+   - of(cls, items: list[T], total: int, page: int, page_size: int) -> 'Page[T]'
+   - empty(cls, page: int, page_size: int) -> 'Page[T]'
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】response_schemas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 response_schemas.py。
+
+【背景】
+API 层统一响应结构。 设计要点： - 所有 API 接口统一返回 ApiResponse[T] 形式，简化前端处理； - code / message / data 三段式； - code 字段为字符串，承载业务错误码（与 common.error_codes 配合）； - 分页响应使用 Page[T]（pagination.py）； - 当 data 为 None 且 request_id 存在时，自动填充 request_id，便于链路追踪。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any, Generic, TypeVar
+- from pydantic import BaseModel, ConfigDict, Field
+
+【关键常量】
+- T
+
+【必须实现的类】
+1. class ApiResponse(BaseModel, Generic[T])：统一 API 响应。 示例： ApiResponse[dict](code="0", message="ok", data={"id": "prj_..."}) ApiResponse[str].ok("hi") ApiResponse[Any].fail("50002", "bad", details={"x": 1})
+   方法：
+   - ok(cls, data: T | None, message: str, request_id: str | None=None) -> 'ApiResponse[T]'
+   - fail(cls, code: str, message: str, details: dict[str, Any] | None, request_id: str | None, http_status: int | None) -> 'ApiResponse[T]'
+   - from_exception(cls, exc: Exception, request_id: str | None) -> 'ApiResponse[Any]'  # 从 AppException 派生响应。
+1. class ErrorDetail(BaseModel)：单条错误明细（用于表单/参数级校验错误）。
+1. class ErrorResponse(BaseModel)：API 错误响应体（用于 4xx/5xx 响应）。
+
+【必须实现的函数】
+1. _now_iso() -> str
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,203 @@
+================================================================================
+streamlit_app/components/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 streamlit_app/components/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+通用组件包（5a 实做 + 6c.2 移动端卡片）。 组件清单： - alert_display   告警展示（与 site_monitor 联动） - chart_component  通用图表封装（plotly / altair / native 三引擎） - map_component   地图组件（folium + streamlit-folium + native 三引擎） - report_viewer  报告查看器（Markdown / HTML / JSON + 下载按钮） - mobile_card    移动端卡片组件（6c.2：KPI / 告警 / 项目卡片） 每个组件均暴露 render() 入口；5a 阶段不依赖任何第三方可视化库的硬依赖， 缺包时自动降级（plotly / folium / streamlit-folium 任一缺失不报错）。
+
+【依赖】
+- from streamlit_app.components import alert_display, chart_component, map_component, mobile_card, report_viewer
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】alert_display.py
+================================================================================
+你是一名 Python 后端开发者。请实现 alert_display.py。
+
+【背景】
+通用告警展示组件（5a）。 设计： - 与 site_monitor 联动：从 session_state.caai_timeline 过滤 site_monitor_agent / alert.* 主题的事件 → 卡片化渲染； - 也支持外部传入任意 events 列表（兼容 03 之外页面复用）； - 按 severity（critical / warning / info）自动配色 + icon； - 点击"标记已读"按钮把事件从 caai_timeline 中删除； - 不依赖第三方可视化库（纯 Streamlit 原生组件），沙箱装不上也能渲染。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.utils import get_state
+
+【必须实现的函数】
+1. _detect_severity(event: dict[str, Any]) -> str  # 从 event.topic / payload 推断 severity。默认 info。
+2. _format_event(event: dict[str, Any]) -> dict[str, str]  # 把 event 整理成渲染友好字段。
+3. _alert_identity(event: dict[str, Any]) -> tuple  # 事件的稳定标识，用于精确定位"标记已读"目标。 优先用业务 id 字段；缺失时回退到 topic+source+ts+payload 的组合哈希。
+4. render(events: list[dict[str, Any]] | None, title: str, max_items: int, show_filters: bool, show_ack_button: bool, container_key: str=None) -> None  # 渲染告警面板。 Parameters ---------- events : list[dict] | None 事件列表；None 表示从 session_state.caai_timeline 取 （默认过滤 source 包含 site_monitor_agent 或 topic 以 alert. 开头）。 title : str 卡片标题。 max_items : int 最多展示多少条（按时间倒序）。 show_filters : bool 是否展示 severity 过滤多选框。 show_ack_button : bool 是否展示"标记已读"按钮（仅当 events 为 None 时生效——删除 session_state 中对应事件）。 container_key : str 容器 key 前缀，避免多实例冲突。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】chart_component.py
+================================================================================
+你是一名 Python 后端开发者。请实现 chart_component.py。
+
+【背景】
+通用图表组件（5a）。 设计： - 双引擎:plotly(交互式) / altair(声明式) / 兜底 streamlit 原生 line_chart; 按依赖可用性自动选择最优引擎; - 4 类图表:line / bar / pie / scatter; - 统一接口 render(kind="line", data=df, x="col", y=["col1","col2"], ...); - 不强制任何依赖——第三方包缺时退化到 st.line_chart / st.bar_chart 原生组件。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any, Literal
+- import pandas as pd
+- import streamlit as st
+
+【关键常量】
+- _ENGINES
+
+【必须实现的函数】
+1. _detect_engines() -> dict[str, bool]
+2. render(data: pd.DataFrame, kind: ChartKind, x: str | None, y: str | list[str] | None, title: str | None, color: str | None, height: int, engine: Literal['auto', 'plotly', 'altair', 'native'], container_key: str) -> None  # 渲染通用图表。 Parameters ---------- data : pd.DataFrame 已聚合好的数据帧。 kind : {"line","bar","pie","scatter"} 图表类型。 x : str | None X 轴字段；pie 图时用作 name 参数。 y : str | list[str] | None Y 轴字段；单值或多值。pie 图时只取第一个作为 value。 title : str | None 图表标题（render 渲染到上方）。 color : str | None 分组字段。 height : int plotly 高度（像素）。 engine : {"auto","plotly","altair","native"} 强制引擎；auto 按可用性自动选择。 container_key : str 容器 key 前缀。
+3. _render_plotly(data: pd.DataFrame, kind: ChartKind, x: str | None, y: list[str], color: str | None, height: int) -> None
+4. _render_altair(data: pd.DataFrame, kind: ChartKind, x: str | None, y: list[str], color: str | None) -> None
+5. _render_native(data: pd.DataFrame, kind: ChartKind, x: str | None, y: list[str], color: str | None) -> None  # 兜底:用 st 原生 line_chart / bar_chart / dataframe。
+6. render_kpi_row(metrics: dict[str, Any], container_key: str) -> None  # 渲染一行 KPI 指标卡（4 列布局）。
+7. render_event_timeline(events: list[dict[str, Any]], ts_field: str, bucket_field: str | None, container_key: str) -> None  # 把事件按时间桶统计，画出 line/bar 图。 events 形如 [{"ts": "...", "topic": "...", "payload": {...}}, ...]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】map_component.py
+================================================================================
+你是一名 Python 后端开发者。请实现 map_component.py。
+
+【背景】
+通用地图组件（5a）。 设计： - 引擎优先级:streamlit-folium(交互式) > folium(静态图片) > st.map(原生); - 通用 render(data, lat_col, lon_col, kind="markers"|"heatmap"|"polygon"); - 兜底:不依赖 folium/st_folium 时显示 dataframe + 提示; - 支持传入 GeoJSON 字典作为 polygon 边界（5c.5 GIS 数据源对接）。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any, Literal
+- import pandas as pd
+- import streamlit as st
+
+【关键常量】
+- _ENGINES
+
+【必须实现的函数】
+1. _detect_engines() -> dict[str, bool]
+2. render(data: pd.DataFrame | dict[str, Any] | None, kind: MapKind, lat_col: str, lon_col: str, name_col: str | None, color_col: str | None, title: str | None, center: tuple[float, float] | None, zoom: int, height: int, geojson: dict[str, Any] | None, container_key: str) -> None  # 渲染地图。 Parameters ---------- data : DataFrame | dict | None - markers / heatmap: DataFrame（必须含 lat/lon 列） - polygon: dict（GeoJSON FeatureCollection）或 DataFrame（自动包成 GeoJSON） kind : {"markers","heatmap","polygon"} lat_col / lon_col : str 经纬度列名（markers / heatmap 模式用）。 name_col : str | None 弹窗显示名称（markers 模式）。 color_col : str | None 按此列着色（markers / heatmap）。 title : str | None center : (lat, lon) | None 中心点；None 自动按 data 平均。 zoom : int height : int folium 高度（像素）。 geojson : dict | None polygon 模式下额外叠加的 GeoJSON 边界。 container_key : str
+3. _severity_to_color(level: str) -> str
+4. _to_geojson(data: pd.DataFrame | dict[str, Any]) -> dict[str, Any] | None  # 把 DataFrame 或 dict 转成 GeoJSON FeatureCollection。
+5. _render_native(data: pd.DataFrame | dict[str, Any], kind: MapKind, lat_col: str, lon_col: str, container_key: str) -> None  # 兜底:不依赖 folium 时,用 st.map + dataframe。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】mobile_card.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mobile_card.py。
+
+【背景】
+移动端卡片组件（6c.2）。 提供三个 render 函数，供 07_mobile 页面调用： - ``render_kpi_grid(kpis)``    KPI 卡片网格（2 列移动 / 4 列平板） - ``render_alert_list(alerts)`` 告警卡片列表（左边框分级色） - ``render_project_grid(projects)`` 项目卡片列表 设计： - 用 ``st.markdown(unsafe_allow_html=True)`` 渲染原生 HTML + CSS， 确保在窄屏（375px）下不溢出、可触控； - 缺数据时渲染空状态占位（不报错）； - 不依赖第三方组件库（纯 Streamlit + HTML/CSS）。
+
+【依赖】
+- from __future__ import annotations
+- from html import escape
+- from pathlib import Path
+- from typing import Any
+- import streamlit as st
+
+【关键常量】
+- _MOBILE_CSS_PATH
+
+【必须实现的函数】
+1. _load_mobile_css() -> str  # 读取移动端 CSS（缺失时返回空串，不阻断渲染）。
+2. inject_mobile_css() -> None  # 将移动端 CSS 注入页面（页面渲染前调用一次）。
+3. _open_container() -> None  # 打开移动端容器 div。
+4. _close_container() -> None
+5. render_kpi_grid(kpis: list[dict[str, Any]]) -> None  # 渲染 KPI 卡片网格。 kpis: [{"label": str, "value": str|number, "tone": "danger|success|warning|info"}]
+6. render_alert_list(alerts: list[dict[str, Any]]) -> None  # 渲染告警卡片列表（左边框分级色）。 alerts: [{"id","level","title","source","status","occurred_at"}]
+7. render_project_grid(projects: list[dict[str, Any]]) -> None  # 渲染项目卡片列表。 projects: [{"id","name","status","safety_score","open_alerts"}]
+8. render_refresh_row(updated_at: str | None) -> None  # 渲染更新时间栏。
+9. render_dashboard(kpis: list[dict[str, Any]] | None, alerts: list[dict[str, Any]] | None, projects: list[dict[str, Any]] | None, updated_at: str | None) -> None  # 一次性渲染完整移动端首页（CSS + 容器 + KPI + 告警 + 项目）。 供 07_mobile.render() 调用；缺数据时各区块独立渲染空状态。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】report_viewer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 report_viewer.py。
+
+【背景】
+通用报告查看器组件（5a）。 设计： - 接受 report 字典(从 /api/v1/reports/{id} 拉取)→ 自动识别 Markdown / HTML / 纯文本; - 渲染:Markdown → st.markdown;HTML → components.v1.html(沙箱模式); - 下载:提供 st.download_button,按报告 metadata.format 选择 md / html / json; - 若未来 5b.1 实做 PDF,可扩展 format=pdf → st.download_button 拉 bytes; - 不强制依赖 markdown 库（用 st.markdown 原生支持）。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.utils import APIError, api_client
+
+【必须实现的函数】
+1. _extract_content(report: dict[str, Any]) -> tuple[str, str]  # 从报告字典提取内容 + 推断格式(md / html / text / json)。 返回 (content, format)。
+2. render(report: dict[str, Any] | None, title: str | None, show_metadata: bool, show_download: bool, container_key: str) -> None  # 渲染单份报告。 Parameters ---------- report : dict | None 来自 /api/v1/reports/{id} 的完整报告字典。 title : str | None 渲染顶部标题（默认用 report.title）。 show_metadata : bool 是否展示 report_id / tenant_id / conclusion / status 等元数据。 show_download : bool 是否展示"下载"按钮（按 format 走 md / html / json）。 container_key : str 容器 key 前缀。
+3. render_download_buttons(report: dict[str, Any], content: str | None, fmt: str | None=None, container_key: str=None) -> None  # 渲染下载按钮。
+4. render_list(reports: list[dict[str, Any]] | None, title: str, on_select_key: str, container_key: str) -> None  # 渲染报告列表 + 点击展开详情。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

@@ -1,0 +1,185 @@
+================================================================================
+streamlit_app/utils/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 streamlit_app/utils/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+Streamlit utility layer exports.
+
+【依赖】
+- from streamlit_app.utils.api_client import APIClient, APIError, api_client
+- from streamlit_app.utils.state_manager import DEFAULTS, StateManager, get_state, init_state
+- from streamlit_app.utils.websocket_client import EventStreamClient, build_ws_base_from_http
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】api_client.py
+================================================================================
+你是一名 Python 后端开发者。请实现 api_client.py。
+
+【背景】
+同步 HTTP 客户端（Streamlit 友好）。 约定： - 默认 base_url 从 settings.api_base_url 读（或环境变量 API_BASE_URL）； - 默认 Authorization 走 dev- 前缀 token，格式：dev-{tenant_id}-{user_id}； - 响应统一走 ApiResponse 形状（4d 已约定）；失败抛 APIError，message / code 可直接 st.error； - 不依赖 langchain / orchestrator 内部模块，仅 httpx + os。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- from typing import Any
+- from urllib.parse import urljoin
+- import httpx
+
+【必须实现的类】
+1. class APIError(RuntimeError)：API 调用失败的统一异常。
+   方法：
+   - __init__(self, message: str, code: str='', status: int=0, data: Any=None) -> None
+1. class APIClient：Streamlit 侧同步 HTTP 客户端。
+   方法：
+   - __init__(self, base_url: str | None=None, token: str | None=None, timeout: float=15.0) -> None
+   - configure(self, base_url: str | None=None, token: str | None=None) -> None
+   - auth_headers(self) -> dict[str, str]
+   - _request(self, method: str, path: str, params: dict | None, json_body: dict | None, raw: bool) -> Any
+   - healthz(self) -> dict
+   - readyz(self) -> dict
+   - list_supported_agents(self) -> list[str]
+   - get_agent_card(self, name: str) -> dict
+   - list_workflows(self) -> dict
+   - get_workflow(self, name: str) -> dict
+   - trigger_workflow(self, name: str, payload: dict | None, via_query: bool=None) -> dict  # 触发工作流。 - via_query=False（默认）：payload 作 body JSON； - via_query=True：payload 作 ?payload={...}（兼容 4d query 入口）。
+   - get_run(self, run_id: str) -> dict
+   - list_timeline(self, limit: int | None=None) -> dict
+   - get_stats(self) -> dict
+   - list_reports(self, project_id: str | None=None, page: int=1, page_size: int=20) -> dict
+   - mobile_dashboard(self) -> dict  # 移动端首页仪表盘（聚合 KPI + 最近告警 + 项目卡片，< 5KB）。
+   - mobile_alerts(self) -> list  # 移动端告警列表（≤20 条精简字段）。
+   - mobile_projects(self) -> list  # 移动端项目卡片列表（≤10 个）。
+   - close(self) -> None
+
+【必须实现的函数】
+1. api_client() -> APIClient  # 获取当前会话的 API 客户端。 - Streamlit 可用：按 ``st.session_state`` 隔离客户端，避免多用户共享 token 导致的跨租户串户； - Streamlit 不可用（CLI / 单元测试 / 无 streamlit 环境）：回退到模块级单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】state_manager.py
+================================================================================
+你是一名 Python 后端开发者。请实现 state_manager.py。
+
+【背景】
+Streamlit session_state 统一封装。 约定： - key 前缀 ``caai_``（construction-ai-agents-）避免与第三方组件冲突； - ``init_state()`` 幂等可重复调用； - ``get_state()`` 返回 dict-like 代理，便于 ``state["token"]`` / ``state.token``。
+
+【依赖】
+- from __future__ import annotations
+- import threading
+- from typing import Any
+
+【必须实现的类】
+1. class StateManager：session_state 的轻量代理。
+   方法：
+   - __init__(self) -> None
+   - _get(self, key: str, default: Any=None) -> Any
+   - _set(self, key: str, value: Any) -> None
+   - tenant_id(self) -> str
+   - tenant_id(self, v: str) -> None
+   - user_id(self) -> str
+   - user_id(self, v: str) -> None
+   - token(self) -> str
+   - token(self, v: str) -> None
+   - api_base(self) -> str
+   - api_base(self, v: str) -> None
+   - ws_topic(self) -> str
+   - ws_topic(self, v: str) -> None
+   - push_event(self, event: dict[str, Any]) -> None
+   - clear_events(self) -> None
+   - events(self) -> list[dict[str, Any]]
+   - last_trigger_run_id(self) -> str | None
+   - last_trigger_run_id(self, v: str | None) -> None
+   - last_error(self) -> str | None
+   - last_error(self, v: str | None) -> None
+   - clear_error(self) -> None
+
+【必须实现的函数】
+1. init_state(force: bool=False) -> None  # 初始化默认 key；force=True 时重置为默认（用于"清空"按钮）。
+2. get_state() -> StateManager
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】websocket_client.py
+================================================================================
+你是一名 Python 后端开发者。请实现 websocket_client.py。
+
+【背景】
+WebSocket 事件订阅客户端。 - 同步客户端（依赖 ``websocket-client``），不依赖 asyncio； - 通过回调把消息丢到 Streamlit ``session_state``，再由页面 ``st.rerun()`` 刷新； - 自动断线重连（指数退避，最大 5s）； - 4d 已规定 ``ws URL = /api/v1/ws/events?topic=*.*&tenant_id=...``，客户端把租户从 token 解析。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- import logging
+- import threading
+- import time
+- from typing import Any, Callable
+
+【必须实现的类】
+1. class EventStreamClient：事件流客户端（同步线程）。
+   方法：
+   - __init__(self, ws_url: str, topic: str, tenant_id: str='*.*', on_event: EventCallback | None='', reconnect_max_delay: float=None) -> None
+   - start(self) -> bool  # 启动后台线程；返回 True 表示已启动。
+   - stop(self) -> None
+   - is_connected(self) -> bool
+   - _run_forever(self) -> None
+   - _connect_once(self) -> None
+
+【必须实现的函数】
+1. build_ws_base_from_http(http_base: str) -> str  # 把 http(s)://host:port 转成 ws(s)://host:port。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

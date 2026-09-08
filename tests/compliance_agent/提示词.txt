@@ -1,0 +1,90 @@
+================================================================================
+tests/compliance_agent/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/compliance_agent/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+compliance_agent 端到端自检测试包。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_agent.py。
+
+【背景】
+阶段四·4a（compliance_agent）端到端自检。 执行方式： cd construction-ai-agents python tests/compliance_agent/test_agent.py 覆盖法规索引 / 4 类检查器（消防/抗震/节能/绿建）/ 图纸 + 文档校验器 / 法规版本管理（含 H6 replace 事件参数回归）/ ComplianceAgent 端到端 / payload 解析（H18/H19 回归）/ 多租户隔离 / MCP 工具 / 提示词 / Skill 元数据，共 18 项。 全部用例不依赖外部 LLM / DB / broker。可直接 python 运行，也可被 pytest 收集（自检仅在 __main__ 下执行，避免模块级 sys.exit）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- import traceback
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- _SELF_TEST_CASES = [('a) 法规库 bootstrap + RegulationIndex 检索', t_regulation_index), ('b) FireChecker
+
+【必须实现的函数】
+1. check(name: str, fn) -> None
+2. t_regulation_index() -> None
+3. _run_checker(checker_cls, design_type: str) -> None
+4. t_fire_checker() -> None
+5. t_seismic_checker() -> None
+6. t_energy_checker() -> None
+7. t_green_checker() -> None
+8. t_drawing_validator() -> None
+9. t_drawing_validator_non_dict() -> None
+10. t_document_validator() -> None
+11. t_version_manager_add() -> None
+12. t_version_manager_replace() -> None
+13. t_agent_end_to_end() -> None
+14. t_agent_missing_params() -> None
+15. t_extract_payload_merges_text_and_data() -> None
+16. t_extract_payload_drawings_normalized() -> None
+17. t_multi_tenant_isolation() -> None
+18. t_mcp_install() -> None
+19. t_prompts_registered() -> None
+20. t_skill_metadata() -> None
+21. _run_self_test() -> int  # 脚本式自检：逐条运行用例，返回退出码（0=全过，1=有失败）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

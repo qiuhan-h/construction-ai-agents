@@ -1,0 +1,431 @@
+================================================================================
+tests/integration/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/integration/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+集成测试包（多模块协作：工作流 / 智能体协作 / 仪表盘数据）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_abac_masking_tenant.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_abac_masking_tenant.py。
+
+【背景】
+集成测试：6b.2 ABAC 引擎 + 字段脱敏 + 租户 SQL 中间件。 覆盖 TR-6.1 ~ TR-6.7： - TR-6.1: ABAC 时间窗 — 非 9:00-18:00 → evaluate False - TR-6.2: ABAC 敏感度 — sensitivity=high + clearance=low → False - TR-6.3: ABAC 超时 — sleep(0.06) 后超时 → False - TR-6.4: FieldMasker — viewer mask 隐藏 budget - TR-6.5: FieldMasker — admin mask 不改动 - TR-6.6: tenant_middleware — SELECT 无 tenant_id → 注入 WHERE tenant_id = ? - TR-6.7: AuthContext 含 role 字段，从 JWT role claim 解析
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import time
+- from datetime import datetime, timezone
+- from unittest.mock import patch
+- import pytest
+- from core.security.abac_engine import ABACEngine, get_abac_engine, reset_abac_engine
+- from core.security.field_masking import FieldMasker, get_field_masker
+- from core.security.policies import get_policy_engine, reset_policy_engine
+- from core.storage.tenant_middleware import TenantContext, TenantMiddleware, get_tenant_middleware, reset_tenant_middleware
+
+【必须实现的类】
+1. class _FakeClock：受控单调时钟：手动推进，消除真实 sleep 的时序 flaky（K1 修复）。
+   方法：
+   - __init__(self) -> None
+   - __call__(self) -> float
+   - advance(self, dt: float) -> None
+
+【必须实现的函数】
+1. reset_all()
+2. test_abac_time_window_outside_work_hours_denied() -> None  # 非工作时段（如 03:00 UTC+8）→ evaluate 返回 False。
+3. test_abac_time_window_inside_work_hours_allowed() -> None  # 工作时段（如 10:00 UTC+8 = 02:00 UTC）→ evaluate 返回 True。
+4. test_abac_time_window_disabled_flag() -> None  # time_window_enabled=False → 时间窗规则关闭。
+5. test_abac_sensitivity_low_clearance_high_sensitivity_denied() -> None  # resource.sensitivity=high + subject.clearance=low → False。
+6. test_abac_sensitivity_high_clearance_high_sensitivity_allowed() -> None  # resource.sensitivity=high + subject.clearance=high → True。
+7. test_abac_timeout_denied() -> None  # 评估超时（>50ms）→ False。用受控时钟确定性模拟慢规则。
+8. test_abac_timeout_not_triggered_when_rules_fast() -> None  # 受控时钟不推进（规则瞬时完成）→ 不触发超时，正常评估。
+9. test_field_masker_viewer_hides_budget() -> None  # viewer 角色 mask({"budget": 1000000, "name": "x"}) → {"name": "x"}。
+10. test_field_masker_viewer_masks_phone() -> None  # viewer 角色 phone → partial 掩码。
+11. test_field_masker_viewer_masks_contractor() -> None  # viewer 角色 contractor → 全掩码 ***。
+12. test_field_masker_admin_no_change() -> None  # admin 角色 mask 不改动 dict。
+13. test_field_masker_engineer_masks_budget() -> None  # engineer 角色 budget → 全掩码 ***（非 hide）。
+14. test_field_masker_nested_dict() -> None  # 嵌套 dict 递归脱敏。
+15. test_tenant_middleware_injects_where() -> None  # SELECT projects 无 tenant_id 条件 → 注入 WHERE tenant_id = :_tenant_id。
+16. test_tenant_middleware_skips_if_already_has_tenant_id() -> None  # 已有 tenant_id 条件 → 不重复注入。
+17. test_tenant_middleware_skips_non_select() -> None  # 非 SELECT → 不注入。
+18. test_tenant_middleware_skips_no_tenant_context() -> None  # 无 tenant_id 上下文 → 不注入。
+19. test_tenant_middleware_injects_and_with_existing_where() -> None  # 已有 WHERE → 追加 AND tenant_id。
+20. test_tenant_middleware_sqlparse_validation() -> None  # TR-6.6: sqlparse 解析注入后 SQL 含 WHERE tenant_id。
+21. test_auth_context_role_from_dev_token() -> None  # dev token 解析后 AuthContext.role = admin。
+22. test_auth_context_role_from_jwt_claim() -> None  # JWT token 中 role claim → AuthContext.role。
+23. test_auth_context_role_default_viewer_from_jwt() -> None  # JWT 无 role claim → AuthContext.role = viewer。
+24. test_policy_engine_rbac_deny_skips_abac() -> None  # RBAC 拒绝 → 不走 ABAC（viewer 无 invoke 权限）。
+25. test_policy_engine_rbac_pass_abac_pass() -> None  # RBAC 通过 + ABAC 通过 → True。
+26. test_policy_engine_rbac_pass_abac_deny() -> None  # RBAC 通过 + ABAC 拒绝（敏感度不足）→ False。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】test_agent_collaboration.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_agent_collaboration.py。
+
+【背景】
+集成测试：事件驱动的多智能体协作（Orchestrator → Workflow → Agent → 时间线）。 不依赖 LLM / 外部 broker：智能体用 Mock，事件走内存总线。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from core.a2a.message import A2AMessage
+- from core.events import Event, TOPIC_INSPECTION_COMPLETED, get_event_bus, reset_event_bus
+- from core.orchestrator import Orchestrator, WorkflowEngine
+- from services import TaskQueue
+
+【必须实现的类】
+1. class _MockAgent
+   方法：
+   - __init__(self, name: str) -> None
+   - async handle(self, message: A2AMessage, task) -> A2AMessage
+1. class _MockAM
+   方法：
+   - __init__(self) -> None
+   - async get(self, name: str, tenant_id: str) -> _MockAgent
+   - list_for_tenant(self, tenant_id: str)
+   - async shutdown(self) -> None
+
+【必须实现的函数】
+1. async _publish_inspection(tenant_id: str, conclusion: str) -> tuple[Orchestrator, _MockAM]
+2. test_failed_inspection_triggers_compliance_followup() -> None  # 审查不通过 → 编排器启动合规复审工作流 → compliance 智能体被调用。
+3. test_passed_inspection_does_not_trigger_followup() -> None  # 审查通过 → 不应启动合规复审（负向断言）。
+4. test_collaboration_timeline_tenant_isolation() -> None  # 协作时间线严格按租户隔离：B 租户看不到 A 租户的交互。
+5. test_agent_receives_correct_tenant_id() -> None  # 工作流派发给智能体的消息必须携带事件所属租户（P1 多租户回归）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】test_audit_middleware.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_audit_middleware.py。
+
+【背景】
+审计日志中间件测试（extra-2）。 验证： 1. POST 请求生成审计日志 2. GET 请求不生成审计日志（减少日志量） 3. 健康检查端点不审计 4. 审计日志写入降级（数据库不可用时降级为 logger） 5. 审计日志包含必要字段（tenant_id + actor + action + method + status_code）
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- from pathlib import Path
+- from unittest.mock import patch
+- import pytest
+- from fastapi.testclient import TestClient
+- from api.main import create_app
+
+【关键常量】
+- ROOT
+
+【必须实现的类】
+1. class TestAuditMiddleware：审计日志中间件测试。
+   方法：
+   - test_post_request_audited(self, client)  # POST 请求应触发审计日志。
+   - test_get_request_not_audited(self, client)  # GET 请求不应触发审计日志。
+   - test_health_endpoint_not_audited(self, client)  # 健康检查端点不审计。
+   - test_metrics_endpoint_not_audited(self, client)  # 指标端点不审计。
+   - test_audit_log_degradation(self, client)  # 审计日志写入降级（数据库不可用时降级为 logger）。
+   - test_audit_log_fields(self, client)  # 审计日志包含必要字段。
+   - test_audit_methods_set(self, client)  # 审计方法集合正确。
+
+【必须实现的函数】
+1. client()
+2. _auth_headers()
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】test_bim_edge.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_bim_edge.py。
+
+【背景】
+集成测试：6d.1 BIM 数据 API + Dockerfile.edge。 覆盖 TR-10.1 ~ TR-10.7： - TR-10.1: GET /api/v1/bim/projects/{id}/tree → 200 - TR-10.2: GET /api/v1/bim/elements/{id} → 200 - TR-10.3: GET /api/v1/bim/progress/{id} → 200 含偏差项 - TR-10.4: BIM Schema 字段精简 - TR-10.5: Dockerfile.edge 存在 + 多阶段 + healthcheck - TR-10.6: BIM 连接器降级（缺凭据 → mock） - TR-10.7: 进度偏差检测（delayed/ahead 计数）
+
+【依赖】
+- from __future__ import annotations
+- from pathlib import Path
+- import pytest
+
+【关键常量】
+- _PROJECT_ROOT
+- _DOCKERFILE_EDGE
+
+【必须实现的函数】
+1. test_bim_project_tree() -> None  # GET /api/v1/bim/projects/{id}/tree → 200 + 含 IfcBuilding。
+2. test_bim_element() -> None  # GET /api/v1/bim/elements/{id} → 200 + element_id 匹配。
+3. test_bim_progress() -> None  # GET /api/v1/bim/progress/{id} → 200 + 含偏差项。
+4. test_bim_schemas_field_count() -> None  # BIM Schema 字段数符合精简要求。
+5. test_dockerfile_edge_exists() -> None  # Dockerfile.edge 存在且非空。
+6. test_dockerfile_edge_multistage() -> None  # Dockerfile.edge 含多阶段构建（builder + runtime）。
+7. test_dockerfile_edge_healthcheck() -> None  # Dockerfile.edge 含 healthcheck。
+8. test_dockerfile_edge_edge_env() -> None  # Dockerfile.edge 设 EDGE_MODE 环境变量。
+9. test_dockerfile_edge_nonroot() -> None  # Dockerfile.edge 使用非 root 用户。
+10. test_bim_connector_mock_degradation() -> None  # BIMConnector 缺 httpx → mock 模式（返回数据不报错）。
+11. test_bim_real_connector_placeholder_degradation() -> None  # BIMRealConnector 缺凭据 → 降级 mock（不报错）。
+12. test_progress_tracker_deviation() -> None  # ProgressTracker 检测偏差并分级。
+13. test_bim_progress_delayed_ahead_counts() -> None  # 进度端点返回 delayed / ahead 计数。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】test_dashboard_data.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_dashboard_data.py。
+
+【背景】
+集成测试：仪表盘数据提供者（live_alerts / project_overview）多租户读取。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from agents.site_monitor_agent.outputs import DashboardDataProvider
+
+【必须实现的函数】
+1. test_live_alerts_returns_list() -> None
+2. test_project_overview_returns_dict() -> None
+3. test_dashboard_data_tenant_scoped() -> None  # 不同租户/项目读取不串数据、不抛错。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】test_mobile_embedded.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_mobile_embedded.py。
+
+【背景】
+集成测试：6c.1 移动端 API + 钉钉/企微内嵌。 覆盖 TR-8.1 ~ TR-8.5： - TR-8.1: GET /api/v1/mobile/dashboard 响应体 < 5120 bytes - TR-8.2: DingTalkApp.oauth_callback state mismatch → 403 - TR-8.3: DingTalkApp.oauth_callback timestamp 过期（>300s）→ 403 - TR-8.4: MobileDashboard schema 字段 ≤ 15 个 - TR-8.5: wechatpy 未安装时 WeComApp.push_notification 返回 True（mock 降级）
+
+【依赖】
+- from __future__ import annotations
+- import time
+- from unittest.mock import patch
+- import pytest
+- from fastapi import HTTPException
+
+【必须实现的函数】
+1. test_mobile_dashboard_schema_field_count() -> None  # MobileDashboard schema 字段 ≤ 15 个（精简）。
+2. test_mobile_alert_list_item_schema_fields() -> None  # MobileAlertListItem 字段精简。
+3. test_mobile_project_card_schema_fields() -> None  # MobileProjectCard 字段精简。
+4. test_mobile_dashboard_response_under_5kb() -> None  # GET /api/v1/mobile/dashboard 响应体 < 5120 bytes。
+5. test_mobile_alerts_response() -> None  # GET /api/v1/mobile/alerts 返回列表。
+6. test_mobile_projects_response() -> None  # GET /api/v1/mobile/projects 返回列表。
+7. test_dingtalk_oauth_state_mismatch_403() -> None  # DingTalkApp.oauth_callback state 不匹配 → HTTPException 403。
+8. test_dingtalk_oauth_timestamp_expired_403() -> None  # DingTalkApp.oauth_callback timestamp >300s → HTTPException 403。
+9. test_dingtalk_oauth_valid_state_passes() -> None  # DingTalkApp.oauth_callback 正确 state + 新鲜 timestamp → 成功。
+10. test_wecom_push_notification_mock_degradation() -> None  # wechatpy 未安装时 WeComApp.push_notification 返回 True（mock 降级）。
+11. test_wecom_oauth_callback_mock_degradation() -> None  # WeComApp.oauth_callback 空配置 → mock 降级返回 userid。
+12. test_dingtalk_push_notification_mock_degradation() -> None  # DingTalkApp.push_notification 空配置 → mock 降级返回 True。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】test_mobile_pages.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_mobile_pages.py。
+
+【背景】
+集成测试：6c.2 响应式 Streamlit 移动端页面。 覆盖 TR-9.1 ~ TR-9.6： - TR-9.1: 07_mobile 页面注册（_PAGE_MODULES / _IMPLEMENTED / PAGES 列表） - TR-9.2: API 客户端 mobile_dashboard / mobile_alerts / mobile_projects 方法存在 - TR-9.3: mobile.css 含响应式断点（@media min-width） - TR-9.4: mobile_card 组件 KPI/告警/项目卡片渲染正确 HTML 类名 - TR-9.5: KPI tone 映射正确（danger/success/warning/info） - TR-9.6: 空数据渲染空状态占位（不报错）
+
+【依赖】
+- from __future__ import annotations
+- from pathlib import Path
+- from unittest.mock import MagicMock, patch
+- import pytest
+
+【关键常量】
+- _PROJECT_ROOT
+- _MOBILE_CSS
+
+【必须实现的函数】
+1. test_mobile_page_registered_in_modules() -> None  # 07_mobile 注册在 _PAGE_MODULES 中。
+2. test_mobile_page_in_implemented() -> None  # 07_mobile 在 _IMPLEMENTED 集合中（可路由）。
+3. test_mobile_page_in_app_pages_list() -> None  # 07_mobile 出现在 app.py PAGES 列表中。
+4. test_mobile_page_importable() -> None  # 07_mobile 模块可导入且暴露 render()。
+5. test_api_client_mobile_methods_exist() -> None  # APIClient 含 mobile_dashboard / mobile_alerts / mobile_projects 方法。
+6. test_api_client_mobile_methods_callable() -> None  # 三个移动端方法均可调用。
+7. test_mobile_css_file_exists() -> None  # mobile.css 文件存在且非空。
+8. test_mobile_css_has_breakpoints() -> None  # mobile.css 含响应式断点 @media。
+9. test_mobile_css_has_card_styles() -> None  # mobile.css 含 KPI/告警/项目卡片样式类。
+10. test_mobile_card_module_importable() -> None  # mobile_card 组件可导入且暴露核心函数。
+11. test_render_kpi_grid_html() -> None  # KPI 网格渲染含 caai-kpi-card 类名。
+12. test_render_alert_list_html() -> None  # 告警列表渲染含分级色类名。
+13. test_render_project_grid_html() -> None  # 项目卡片渲染含项目名 + 状态徽章。
+14. test_kpi_tone_mapping() -> None  # KPI 卡片 tone 正确映射到 CSS 类名。
+15. test_empty_kpi_renders_empty_state() -> None  # 空 KPI 数据渲染空状态占位（不报错）。
+16. test_empty_alerts_renders_empty_state() -> None  # 空告警列表渲染空状态。
+17. test_empty_projects_renders_empty_state() -> None  # 空项目列表渲染空状态。
+18. test_render_dashboard_with_none_data() -> None  # render_dashboard 全空数据不报错（最终降级）。
+19. test_mobile_page_render_no_crash() -> None  # 07_mobile.render() 在 mock 环境下不崩溃（API 不可达时降级）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】test_tenant_saas.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_tenant_saas.py。
+
+【背景】
+集成测试：6b.1 多租户 SaaS —— 注册 / 配额 429 / 套餐升级 / 租户隔离 / 计费。 覆盖 tasks.md TR-5.1 ~ TR-5.5： - TR-5.1 注册后 status=trial、quota_used=0、trial_expires_at=now+30d - TR-5.2 quota_used >= quota_limit 时 check_quota 返回 False - TR-5.3 upgrade_plan trial→pro 成功后 plan=pro - TR-5.4 GET /api/v1/tenants/{id} 返回 200 且含 quota 字段 - TR-5.5 trial 租户第 101 次请求返回 429（HTTP 端到端） 测试隔离：每个用例注入全新 InMemoryTenantRepository（不触碰 dev SQLite）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import uuid
+- from datetime import timedelta
+- import pytest
+- from common.exceptions import QuotaExceededError, TenantConflictError, TenantSuspendedError, ValidationError
+- from common.timeutils import utc_now
+- from core.storage.tenant_repo import InMemoryTenantRepository, reset_tenant_repository, set_tenant_repository_override
+- from services.billing_service import get_billing_service, reset_billing_service
+- from services.quota_service import get_quota_service, reset_quota_service
+- from services.tenant_service import get_tenant_service, reset_tenant_service
+
+【必须实现的函数】
+1. isolated_saas()
+2. _run(coro)
+3. _code(prefix: str) -> str
+4. test_register_trial_tenant_defaults() -> None  # TR-5.1: 新租户 trial / quota=0 / 试用 30 天。
+5. test_quota_check_false_and_429_at_limit() -> None  # TR-5.2: 达上限后 check_quota=False；继续 consume 抛 QuotaExceededError(429)。
+6. test_upgrade_plan_trial_to_pro() -> None  # TR-5.3: trial→pro 后 plan=pro、status=active、额度提升、试用到期清除。
+7. test_upgrade_to_trial_or_unknown_plan_rejected() -> None
+8. test_trial_expired_blocks_consume() -> None  # 试用到期 → consume 抛 429（reason=trial_expired）。
+9. test_suspended_tenant_denied() -> None  # 停用租户 consume → 403；check_quota → False。
+10. test_closed_tenant_cannot_upgrade() -> None
+11. test_concurrency_slot_trial_limit_one() -> None  # trial 并发槽位=1：第二次 acquire 429，release 后可再次获取。
+12. test_tenant_isolation_counters_independent() -> None  # A 租户消耗不影响 B 租户配额。
+13. test_duplicate_code_conflict() -> None
+14. test_billing_mock_monthly_fee() -> None
+15. client()
+16. _auth(tenant_id: str) -> dict
+17. test_api_register_and_get_with_quota(client) -> None  # TR-5.4: 注册 201；GET 200 且含 quota 字段。
+18. test_api_101st_call_returns_429(client) -> None  # TR-5.5: trial 租户第 101 次 quota-check 返回 429。
+19. test_api_upgrade_plan(client) -> None
+20. test_api_cross_tenant_access_forbidden(client) -> None  # B 租户 token 访问 A 租户资源 → 403。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 10】test_workflows.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_workflows.py。
+
+【背景】
+集成测试：WorkflowEngine 工作流注册 / 拓扑分层执行 / 参数渲染 / 失败传播。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import pytest
+- from core.a2a.message import A2AMessage
+- from core.orchestrator import WorkflowEngine
+- from core.orchestrator.workflow_engine import TaskSpec, Workflow
+
+【必须实现的类】
+1. class _MockAgent
+   方法：
+   - __init__(self, name: str, fail: bool=False) -> None
+   - async handle(self, message: A2AMessage, task) -> A2AMessage
+1. class _MockAM
+   方法：
+   - __init__(self, agents: dict[str, _MockAgent]) -> None
+   - async get(self, name: str, tenant_id: str) -> _MockAgent
+
+【必须实现的函数】
+1. _two_node_workflow() -> Workflow
+2. test_workflow_register_and_list() -> None
+3. test_workflow_execute_chain_runs_both_agents() -> None
+4. test_workflow_failure_marks_run_failed() -> None
+5. test_workflow_parallel_nodes_all_run() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

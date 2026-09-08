@@ -1,0 +1,145 @@
+================================================================================
+tests/unit/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/unit/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+单元测试包（协议 / MCP / GIS 等纯逻辑测试）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_a2a_protocol.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_a2a_protocol.py。
+
+【背景】
+A2A 协议单元测试：消息 / 任务状态机 / JSON-RPC 响应信封。
+
+【依赖】
+- from __future__ import annotations
+- import pytest
+- from common.ids import message_id
+- from core.a2a import make_error_response, make_success_response
+- from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
+- from core.a2a.serializers import JSONRPCError
+
+【必须实现的函数】
+1. test_message_part_text_and_data() -> None
+2. test_a2a_message_construction() -> None
+3. test_task_state_transitions() -> None
+4. test_task_invalid_transition_raises() -> None
+5. test_make_success_response_envelope() -> None
+6. test_make_error_response_envelope() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】test_gis_engine.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_gis_engine.py。
+
+【背景】
+GIS 引擎单元测试：空间几何（点在多边形内 / 距离 / 包围盒）+ 电子围栏。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- from agents.site_monitor_agent.gis_monitoring.geofencing import Geofencing
+- from agents.site_monitor_agent.gis_monitoring.spatial_monitor import GeoPoint, SpatialMonitor
+
+【关键常量】
+- SQUARE = [GeoPoint(longitude=116.0, latitude=39.0), GeoPoint(longitude=116.001, latitude=
+- INSIDE
+- OUTSIDE
+- MONITOR
+
+【必须实现的函数】
+1. test_point_in_polygon_inside() -> None
+2. test_point_in_polygon_outside() -> None
+3. test_distance_m_positive_and_order_independent() -> None
+4. test_bounding_box_covers_all_points() -> None
+5. test_define_fence_roundtrip() -> None
+6. test_check_violation_inside_and_outside() -> None
+7. test_check_violation_unknown_fence_no_crash() -> None
+8. test_record_violation_async_p05() -> None  # P0-5 回归：record_violation 必须是 async 且内部 await 存储。 围栏内 → 返回 None；围栏外 → 返回违规 id（或存储可用时非 None）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】test_mcp_handlers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_mcp_handlers.py。
+
+【背景】
+MCP 服务单元测试：tool/resource/prompt 注册与调用、错误处理、P3-3 最长前缀匹配。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import pytest
+- from common.exceptions import MCPPromptNotFoundError, MCPResourceNotFoundError, MCPToolExecutionError, MCPToolNotFoundError
+- from core.mcp.server import MCPService
+
+【必须实现的函数】
+1. _fresh_service() -> MCPService
+2. test_call_tool_returns_result_envelope() -> None
+3. test_list_tools_includes_registered() -> None
+4. test_call_unknown_tool_raises() -> None
+5. test_tool_runner_error_wrapped() -> None
+6. test_read_resource_exact_match() -> None
+7. test_read_resource_longest_prefix_match_p33() -> None  # P3-3 回归：regulation://GB50300/2020 应命中 regulation://* 前缀资源。
+8. test_read_unknown_resource_raises() -> None
+9. test_render_prompt() -> None
+10. test_render_unknown_prompt_raises() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

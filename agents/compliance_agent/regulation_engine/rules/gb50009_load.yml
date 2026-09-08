@@ -1,0 +1,124 @@
+# GB 50009-2012 建筑结构荷载规范
+# 结构化规则 — 机器可判定
+
+rules:
+  - clause_id: "GB50009-2012-3.2.1"
+    title: "结构重要性系数 γ0 应按安全等级取值（1.0 / 1.1 / 0.9）"
+    severity: critical
+    field: "structure.importance_coefficient"
+    operator: "in"
+    value: [0.9, 1.0, 1.1]
+    unit: ""
+    target_element: "structure"
+    reason: "结构重要性系数直接影响承载能力极限状态验算结果，取值错误会导致安全储备不足或过度保守"
+    suggestion: "按结构安全等级取 γ0 = 1.1（一级）、1.0（二级）、0.9（三级）"
+
+  - clause_id: "GB50009-2012-5.1.1-1"
+    title: "住宅楼面活荷载标准值 = 2.0 kN/㎡"
+    severity: high
+    field: "residential_floor.live_load"
+    operator: "=="
+    value: 2.0
+    unit: "kN/m2"
+    target_element: "floor"
+    reason: "活荷载取值偏低将导致承载力验算安全储备不足，结构可能发生开裂或破坏"
+    suggestion: "住宅、公寓楼面活荷载标准值取 2.0 kN/㎡"
+
+  - clause_id: "GB50009-2012-5.1.1-2"
+    title: "办公楼楼面活荷载标准值 = 2.0 kN/㎡"
+    severity: high
+    field: "office_floor.live_load"
+    operator: "=="
+    value: 2.0
+    unit: "kN/m2"
+    target_element: "floor"
+    reason: "办公楼活荷载取值不足会导致结构在正常使用下出现过大挠度或开裂"
+    suggestion: "办公楼、会议室楼面活荷载标准值取 2.0 kN/㎡"
+
+  - clause_id: "GB50009-2012-5.1.1-3"
+    title: "医院病房楼面活荷载标准值 = 2.5 kN/㎡"
+    severity: medium
+    field: "hospital_floor.live_load"
+    operator: "=="
+    value: 2.5
+    unit: "kN/m2"
+    target_element: "floor"
+    reason: "医院病房有设备和人员密集，活荷载标准值高于普通建筑"
+    suggestion: "医院病房、门诊楼面活荷载取 2.5 kN/㎡"
+
+  - clause_id: "GB50009-2012-5.3.1"
+    title: "不上人屋面活荷载 = 0.5 kN/㎡，上人屋面 = 2.0 kN/㎡"
+    severity: medium
+    field: "roof.live_load"
+    operator: "=="
+    value: 0.5
+    unit: "kN/m2"
+    target_element: "roof"
+    reason: "屋面活荷载应根据是否上人正确取值，取值错误会导致屋面结构安全储备不足"
+    suggestion: "不上人屋面取 0.5 kN/㎡，上人屋面取 2.0 kN/㎡"
+
+  - clause_id: "GB50009-2012-8.1.1"
+    title: "基本风压应按规范全国风压分布图确定"
+    severity: high
+    field: "building.basic_wind_pressure"
+    operator: ">="
+    value: 0.25
+    unit: "kN/m2"
+    target_element: "structure"
+    reason: "基本风压取值过低会导致风荷载计算偏小，对高层建筑和大跨度建筑尤为危险"
+    suggestion: "按 GB 50009-2012 附录 E 全国基本风压分布图查取当地基本风压值"
+
+  - clause_id: "GB50009-2012-7.1.1"
+    title: "基本雪压应按规范全国雪压分布图确定"
+    severity: high
+    field: "building.basic_snow_pressure"
+    operator: ">="
+    value: 0.1
+    unit: "kN/m2"
+    target_element: "structure"
+    reason: "雪压取值不足会导致大雪时屋面积雪超载，可能引发屋面坍塌事故"
+    suggestion: "按 GB 50009-2012 附录 D 全国基本雪压分布图查取当地基本雪压值"
+
+  - clause_id: "GB50009-2012-3.2.4"
+    title: "永久荷载分项系数 γG = 1.2（不利）/ 1.0（有利）"
+    severity: critical
+    field: "combination.dead_load_factor"
+    operator: "=="
+    value: 1.2
+    unit: ""
+    target_element: "combination"
+    reason: "永久荷载分项系数取值错误会导致承载能力极限状态验算结果严重偏离实际"
+    suggestion: "对结构不利时 γG = 1.2，有利时 γG = 1.0"
+
+  - clause_id: "GB50009-2012-3.2.4-2"
+    title: "可变荷载分项系数 γQ = 1.4（一般）/ 1.35（组合值系数）"
+    severity: critical
+    field: "combination.live_load_factor"
+    operator: "=="
+    value: 1.4
+    unit: ""
+    target_element: "combination"
+    reason: "可变荷载分项系数直接影响荷载效应组合结果，是承载能力验算的关键参数"
+    suggestion: "一般可变荷载 γQ = 1.4，当组合值系数为 1.0 时可取 γQ = 1.35"
+
+  - clause_id: "GB50009-2012-3.2.3"
+    title: "荷载效应组合应采用基本组合/标准组合/准永久组合"
+    severity: critical
+    field: "combination.type"
+    operator: "in"
+    value: ["basic", "standard", "quasi_permanent"]
+    unit: ""
+    target_element: "combination"
+    reason: "不同设计状况应采用不同的荷载效应组合方式，组合方式错误会导致验算结果失真"
+    suggestion: "承载能力极限状态用基本组合，正常使用极限状态分别用标准组合或准永久组合"
+
+  - clause_id: "GB50009-2012-5.1.2"
+    title: "楼面活荷载折减系数应按规范规定取值"
+    severity: medium
+    field: "floor.live_load_reduction"
+    operator: "=="
+    value: 1.0
+    unit: ""
+    target_element: "floor"
+    reason: "多层或高层建筑下层楼面的活荷载折减系数未按规范取值会导致结构设计过于保守或不安全"
+    suggestion: "按规范第 5.1.2 条，楼面活荷载可根据计算柱截面位置进行适当折减"

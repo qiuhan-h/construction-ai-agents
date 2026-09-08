@@ -1,0 +1,308 @@
+================================================================================
+streamlit_app/pages/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 streamlit_app/pages/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】01_safety_audit.py
+================================================================================
+你是一名 Python 后端开发者。请实现 01_safety_audit.py。
+
+【背景】
+Page 01 - 安全审核工作台（5a）。 设计： - 4 区块:① 智能体卡片（来自 card API）② skill 选择 + 触发 ③ 任务进度轮询 ④ 历史报告（用 report_viewer 渲染）； - 与 utils/api_client 无侵入耦合； - 复用 04_dashboard 风格的 APIError 兜底 + 触发后保存 run_id。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- import time
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.components import report_viewer
+- from streamlit_app.utils import APIError, api_client, get_state
+
+【关键常量】
+- AGENT_NAME = 'safety_audit_agent'
+- PAGE_TITLE = '安全审核'
+
+【必须实现的函数】
+1. _api() -> Any
+2. _load_agent_card(cli: Any) -> dict[str, Any]
+3. _invoke_safety_audit(cli: Any, skill: str, message: str, project_id: str, plan_id: str) -> dict[str, Any]  # 调 /api/v1/agents/safety_audit_agent/invoke。
+4. _poll_task_status(cli: Any, task_id: str, max_seconds: float=30.0) -> dict[str, Any]  # 简单轮询 /api/v1/tasks/{task_id}（4d 已实做）。
+5. _render_agent_card(card: dict[str, Any]) -> None
+6. _render_invoke_form() -> None
+7. _render_history() -> None
+8. render() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】02_compliance.py
+================================================================================
+你是一名 Python 后端开发者。请实现 02_compliance.py。
+
+【背景】
+Page 02 - 合规校验工作台（5a）。 设计：与 01_safety_audit 同构，差异： - AGENT_NAME = compliance_agent - skill 列表来自 card，但兜底用 fire_review / seismic_review / energy_review / green_review（agents/compliance_agent/__init__.py 暴露的 4 个 PROMPT_*）。
+
+【依赖】
+- from __future__ import annotations
+- import time
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.components import report_viewer
+- from streamlit_app.utils import APIError, api_client, get_state
+
+【关键常量】
+- AGENT_NAME = 'compliance_agent'
+- PAGE_TITLE = '合规校验'
+- _FALLBACK_SKILLS = ['fire_review', 'seismic_review', 'energy_review', 'green_review']
+
+【必须实现的函数】
+1. _api() -> Any
+2. _load_agent_card(cli: Any) -> dict[str, Any]
+3. _invoke_compliance(cli: Any, skill: str, message: str, project_id: str, inspection_id: str) -> dict[str, Any]
+4. _poll_task(cli: Any, task_id: str, max_seconds: float=15.0) -> dict[str, Any]
+5. _render_agent_card(card: dict[str, Any]) -> None
+6. _render_invoke_form() -> None
+7. _render_history() -> None
+8. render() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】03_site_monitor.py
+================================================================================
+你是一名 Python 后端开发者。请实现 03_site_monitor.py。
+
+【背景】
+Page 03 - 现场监控工作台（5a）。 设计： - 5 区块:① 智能体卡片 ② WS 实时事件流（启动/停止 + 状态指示） ③ 实时告警面板（复用 components/alert_display） ④ 触发监控工作流 ⑤ 历史报告; - WS 客户端复用 utils.websocket_client.EventStreamClient（同 04_dashboard）; - 过滤 source=site_monitor_agent 的事件推到 alert_display。
+
+【依赖】
+- from __future__ import annotations
+- import time
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.components import alert_display, report_viewer
+- from streamlit_app.utils import APIError, EventStreamClient, api_client, build_ws_base_from_http, get_state
+
+【关键常量】
+- AGENT_NAME = 'site_monitor_agent'
+- PAGE_TITLE = '现场监控'
+- _FALLBACK_SKILLS = ['alert_judge', 'daily_report', 'trend_report']
+
+【必须实现的函数】
+1. _api() -> Any
+2. _on_event(event: dict[str, Any]) -> None  # WS 事件回调：推到 session_state.caai_timeline。
+3. _get_event_client(state: Any) -> EventStreamClient
+4. _render_agent_card(card: dict[str, Any]) -> None
+5. _render_ws_panel(state: Any) -> None
+6. _render_invoke_form() -> None
+7. _render_history() -> None
+8. render() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】04_dashboard.py
+================================================================================
+你是一名 Python 后端开发者。请实现 04_dashboard.py。
+
+【背景】
+Page 04 - orchestration visualization dashboard (stage 4e). Four tabs: 1. Overview: 4 KPI cards + last run + system status 2. Workflows: registered workflow list + trigger form 3. Runs: query by run_id, render run details 4. Events: WS live stream (manual + auto reconnect)
+
+【依赖】
+- from __future__ import annotations
+- import json
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.utils import APIError, EventStreamClient, api_client, build_ws_base_from_http, get_state
+
+【关键常量】
+- _TAB_NAMES = ['Overview', 'Workflows', 'Runs', 'Events']
+
+【必须实现的函数】
+1. _api() -> Any
+2. _event_client() -> EventStreamClient
+3. _on_event(event: dict[str, Any]) -> None
+4. render() -> None
+5. _render_overview(state) -> None
+6. _render_workflows(state) -> None
+7. _suggest_default_payload(workflow_name: str) -> dict
+8. _render_runs(state) -> None
+9. _render_events(state) -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】05_gis_viewer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 05_gis_viewer.py。
+
+【背景】
+Page 05 - GIS 视图（5a）。 设计： - 复用 components/map_component 渲染 markers / heatmap / polygon; - 默认演示数据:北京若干工地坐标(模拟); - 上传 GeoJSON / CSV 按钮 → 替换 demo 数据; - 切换 kind / zoom / center 操作; - 5c GIS 数据源接入（deployment/gis/*）后续可对接。
+
+【依赖】
+- from __future__ import annotations
+- import io
+- from typing import Any
+- import pandas as pd
+- import streamlit as st
+- from streamlit_app.components import map_component
+
+【关键常量】
+- PAGE_TITLE = 'GIS 视图'
+
+【必须实现的函数】
+1. _default_df() -> pd.DataFrame
+2. _render_data_source() -> pd.DataFrame  # 选择数据源 → 返回 DataFrame。
+3. _render_controls() -> tuple[str, int, tuple[float, float] | None]
+4. _render_summary(df: pd.DataFrame) -> None
+5. render() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】06_agent_management.py
+================================================================================
+你是一名 Python 后端开发者。请实现 06_agent_management.py。
+
+【背景】
+Page 06 - 智能体管理（5a）。 设计： - 4 区块:① 白名单 + 已实例化状态 ② 选定 agent 的 card 详情 ③ 自定义调用（自由填 method + params） ④ 任务历史（按 agent 过滤）; - 复用 utils/api_client.list_supported_agents + get_agent_card; - 自由调用用于调试 / 高级用法。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.utils import APIError, api_client, get_state
+
+【关键常量】
+- PAGE_TITLE = '智能体管理'
+
+【必须实现的函数】
+1. _api() -> Any
+2. _render_agent_list() -> str | None  # 渲染白名单 + 已实例化列表,返回用户点击的 agent_name。
+3. _render_card(agent_name: str) -> None  # 渲染选定的 agent card。
+4. _render_free_invoke() -> None  # 自由调用表单（method + params JSON）。
+5. _render_task_history() -> None  # 显示与本租户相关的任务记录（来自 /api/v1/tasks 历史列表，4d 是否实现？）。
+6. render() -> None
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】07_mobile.py
+================================================================================
+你是一名 Python 后端开发者。请实现 07_mobile.py。
+
+【背景】
+Page 07 - 移动端响应式首页（6c.2）。 消费 6c.1 移动端精简 API： GET /api/v1/mobile/dashboard   聚合首页数据 GET /api/v1/mobile/alerts      告警列表 GET /api/v1/mobile/projects    项目卡片列表 设计： - mobile-first 单列布局，窄屏（375px）不溢出； - 用 mobile_card 组件渲染 KPI / 告警 / 项目卡片（原生 HTML+CSS）； - API 不可达时渲染空状态占位（不报错），与降级策略一致； - 顶部下拉刷新按钮（手动触发，不自动轮询）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- import streamlit as st
+- from streamlit_app.components.mobile_card import render_alert_list, render_kpi_grid, render_project_grid, render_refresh_row, inject_mobile_css
+- from streamlit_app.utils import APIError, api_client, get_state
+
+【关键常量】
+- MOBILE_PAGE_ID = '07_mobile'
+
+【必须实现的函数】
+1. _api() -> Any  # 获取已配置的 API 客户端。
+2. _fetch_dashboard() -> dict | None  # 拉取移动端首页聚合数据；失败返回 None。
+3. _build_kpis(dashboard: dict | None) -> list[dict[str, Any]]  # 从 dashboard 聚合 KPI 卡片数据。
+4. render() -> None  # 渲染移动端响应式首页。
+5. _fetch_alerts() -> list  # 独立拉取告警列表（列表模式）。
+6. _fetch_projects() -> list  # 独立拉取项目列表（列表模式）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+Page 路由分发（5a）。 6 个页面全部实做： 01_safety_audit        安全审核工作台 02_compliance          合规校验工作台 03_site_monitor        现场监控工作台（带实时告警 + WS 事件流） 04_dashboard           编排可视化 Dashboard（4e 已就位） 05_gis_viewer          GIS 视图（demo + 上传） 06_agent_management    智能体管理（清单 + Card + 自由调用） 本 dispatcher 把 page_id 路由到对应模块的 render()，与 app.py 解耦。
+
+【依赖】
+- from __future__ import annotations
+- import importlib
+- import streamlit as st
+
+【关键常量】
+- _IMPLEMENTED = {'01_safety_audit', '02_compliance', '03_site_monitor', '04_dashboard', '05_gis_
+
+【必须实现的函数】
+1. render(page_id: str='04_dashboard') -> None  # 根据 page_id 渲染页面。 未实现的页面 → 友好提示占位文案（5a 阶段不应触发）； 已实现的页面 → importlib 动态 import + 调 module.render()。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

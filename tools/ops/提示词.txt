@@ -1,0 +1,333 @@
+================================================================================
+tools/ops/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tools/ops/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】_gen_prompts_v2.py
+================================================================================
+你是一名 Python 后端开发者。请实现 _gen_prompts_v2.py。
+
+【背景】
+批量重写各目录的 提示词.txt 为"代码生成提示词"格式。 提取内容： - 模块 docstring → 【背景】 - import 语句 → 【依赖】 - 模块级常量（全大写）→ 常量清单 - 类（基类、方法签名含参数类型+返回值、docstring） - 顶层函数（完整签名、docstring） - 每个文件段按 core/security/ 模板格式输出 保留 core/security/ 已精修的人工版本不覆盖。
+
+【依赖】
+- from __future__ import annotations
+- import ast
+- import os
+- import sys
+- from pathlib import Path
+- from typing import Any
+
+【关键常量】
+- ROOT
+- EXCLUDE_DIRS = {'__pycache__', '.git', '.pytest_cache', '.trae', 'node_modules', '.venv', '.ide
+- CODE_EXTS = {'.py', '.yml', '.yaml', '.sh', '.sql', '.json'}
+- PRESERVE_DIRS = {'core/security'}
+
+【必须实现的函数】
+1. _clean_doc(doc: str | None) -> str
+2. _sig_of_func(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str  # 生成函数签名字符串：name(arg: type, ...) -> ret。
+3. _py_extract(path: Path) -> dict[str, Any]
+4. _generic_extract(path: Path) -> dict[str, Any]
+5. _file_prompt(name: str, info: dict[str, Any]) -> str
+6. gen_dir_prompt(dir_path: Path) -> str
+7. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】audit_dependencies.py
+================================================================================
+你是一名 Python 后端开发者。请实现 audit_dependencies.py。
+
+【背景】
+依赖 CVE 扫描（7a-5 安全加固）。 使用 pip-audit 检查项目依赖项是否有已知漏洞。 验收标准：pip-audit 无 HIGH+ 级别漏洞。 用法： python tools/audit_dependencies.py
+
+【依赖】
+- from __future__ import annotations
+- import json
+- import subprocess
+- import sys
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. main() -> int  # 运行 pip-audit 并检查 HIGH+ 漏洞。返回 exit code。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】backup_db.sh
+================================================================================
+你是一名 Python 后端开发者。请实现 backup_db.sh。
+
+【背景】
+!/bin/bash 7e-1 数据库定时备份脚本。 
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】billing_reconcile.py
+================================================================================
+你是一名 Python 后端开发者。请实现 billing_reconcile.py。
+
+【背景】
+7e-3 租户计费对账脚本。 用途：按月对账租户用量记录，核对配额计费准确性。 对账内容： 1. 按租户汇总当月 API 调用量 2. 核对 UsageRecord 表与实际调用日志 3. 检查配额超限租户是否被正确限流（429） 4. 生成对账报告 用法： python tools/billing_reconcile.py                    # 当月对账 python tools/billing_reconcile.py --month 2026-08    # 指定月份 python tools/billing_reconcile.py --tenant tnt_xxx   # 指定租户
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import sys
+- from datetime import datetime, timezone
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. reconcile(month: str, tenant_id: str | None=None) -> int  # 对账主逻辑。
+2. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】go_nogo_checklist.py
+================================================================================
+你是一名 Python 后端开发者。请实现 go_nogo_checklist.py。
+
+【背景】
+7d-1 Go/No-Go 上线预检脚本。 用途：生产发布前脚本化预检，5 类逐项检查，输出签字单。 5 类预检： 1. 配置完整性：.env / K8s Secret 所有占位已替换 2. 备份就绪：数据库备份脚本 + 密钥备份就绪 3. 监控就绪：Prometheus / Grafana / 告警通道已配置 4. 回滚就绪：前一版本镜像 tag 可用 + downgrade 脚本就绪 5. 值班就绪：值班人员 + 通讯录 + 回滚授权 用法： APP_ENV=prod python tools/go_nogo_checklist.py python tools/go_nogo_checklist.py          # 非 prod 演练模式 退出码： 0 = GO（全部通过） 1 = NO-GO（有阻断项） 2 = WARNING（有警告但可放行）
+
+【依赖】
+- from __future__ import annotations
+- import os
+- import sys
+- from datetime import datetime, timezone
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+- _PLACEHOLDER = '需要补充实际链接'
+
+【必须实现的函数】
+1. _is_placeholder(value: str) -> bool  # 判断字符串是否为占位值。
+2. check_configuration() -> tuple[list[str], list[str]]  # 配置完整性：关键配置项非占位。返回 (blockers, warnings)。
+3. check_backups() -> tuple[list[str], list[str]]  # 备份就绪：备份脚本 + 密钥备份。返回 (blockers, warnings)。
+4. check_monitoring() -> tuple[list[str], list[str]]  # 监控就绪：Prometheus + Grafana + 告警通道。返回 (blockers, warnings)。
+5. check_rollback() -> tuple[list[str], list[str]]  # 回滚就绪：回滚脚本 + downgrade 路径。返回 (blockers, warnings)。
+6. check_oncall() -> tuple[list[str], list[str]]  # 值班就绪：值班人员 + 通讯录 + 回滚授权。返回 (blockers, warnings)。
+7. main() -> int  # 主入口。返回 0=GO, 1=NO-GO, 2=WARNING。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】rollback_drill.py
+================================================================================
+你是一名 Python 后端开发者。请实现 rollback_drill.py。
+
+【背景】
+7d-4 回滚演练脚本。 用途：验证回滚流程可在规定时间内完成，确保发布事故时快速恢复。 演练项： 1. 镜像 tag 回退验证（模拟 kubectl set image） 2. Alembic downgrade 边界验证（downgrade -1 可执行） 3. 数据备份存在性验证（回滚前数据可恢复） 4. 回滚后健康检查（healthz + readyz 恢复） 5. 回滚耗时基线（目标 < 5 分钟） 演练模式： --dry-run  仅验证脚本和配置存在性，不执行真实回滚 --full     执行 alembic downgrade -1 + upgrade head 往返验证 用法： python tools/rollback_drill.py --dry-run python tools/rollback_drill.py --full
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import sys
+- import time
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. check_rollback_readiness() -> tuple[list[str], list[str]]  # 回滚就绪检查：脚本/配置/镜像 tag 存在性。
+2. test_alembic_downgrade_upgrade() -> bool  # Alembic downgrade + upgrade 往返验证。 降级模式下使用 ORM create_all 而非 alembic， 所以这里验证 _ensure_schema 可重复执行。
+3. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】rotate_secrets.py
+================================================================================
+你是一名 Python 后端开发者。请实现 rotate_secrets.py。
+
+【背景】
+7e-2 密钥轮换流程脚本。 用途：定期轮换生产密钥，降低泄露风险。 轮换密钥： 1. API_JWT_SECRET          JWT 签名密钥（需双密钥并行期） 2. LLM_API_KEY             LLM 服务 API Key 3. APS_CLIENT_SECRET       BIM/APS 客户端密钥 4. TSDB_TOKEN              InfluxDB Token 5. ALIYUN_SMS_ACCESS_KEY   阿里云短信 AccessKey 流程： 1. 生成新密钥 2. 写入 K8s Secret（新 key） 3. 滚动重启应用（加载新密钥） 4. 验证新密钥生效 5. 旧密钥保留 24h（JWT 并行期）后删除 用法： python tools/rotate_secrets.py --dry-run  # 仅生成新密钥，不应用 python tools/rotate_secrets.py --apply    # 生成 + 写入 K8s Secret python tools/rotate_secrets.py --verify  # 验证当前密钥
+
+【依赖】
+- from __future__ import annotations
+- import argparse
+- import secrets
+- import string
+- import sys
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. _generate_jwt_secret() -> str  # 生成 JWT 密钥（32+ 字节随机串）。
+2. _generate_api_key() -> str  # 生成 API Key 格式（前缀 + 随机串）。
+3. _generate_client_secret() -> str  # 生成客户端密钥。
+4. rotate_dry_run() -> int  # 演练模式：仅生成新密钥，不应用。
+5. rotate_apply() -> int  # 应用模式：生成 + 写入 .env.example 示例（真实环境用 kubectl）。
+6. verify_secrets() -> int  # 验证当前密钥状态。
+7. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】seed_staging.py
+================================================================================
+你是一名 Python 后端开发者。请实现 seed_staging.py。
+
+【背景】
+7c-2 预发环境数据初始化：alembic upgrade head + 多租户 seed。 用途： 1. 全新库建表（alembic upgrade head） 2. 创建至少 2 个租户验证数据隔离 3. 创建测试用户和项目 用法（docker-compose 启动后）： docker compose -f deployment/docker/docker-compose.yml run --rm api         python tools/seed_staging.py 或本地： python tools/seed_staging.py
+
+【依赖】
+- from __future__ import annotations
+- import sys
+- import uuid
+- from datetime import datetime, timezone
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. run_alembic() -> bool  # 建表：优先 alembic，降级 ORM create_all。
+2. seed_tenants() -> bool  # 创建 2 个测试租户。
+3. verify_isolation() -> bool  # 验证租户数据隔离。
+4. main() -> int  # 主入口。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 10】stress_test.py
+================================================================================
+你是一名 Python 后端开发者。请实现 stress_test.py。
+
+【背景】
+压力测试：模拟高并发事件 + 工作流执行。 验证： 1. 事件总线在高并发下不丢消息 2. 工作流引擎在并发 50 个工作流时吞吐量 > 10/s 3. 任务队列幂等键在并发下不重复 4. WebSocket 并发连接数指标正确 用法： python tools/stress_test.py
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- import time
+- from pathlib import Path
+- from core.events import Event, TOPIC_ALERT_TRIGGERED, get_event_bus, reset_event_bus
+- from core.orchestrator import Orchestrator, WorkflowEngine
+- from services import TaskQueue
+
+【关键常量】
+- ROOT
+
+【必须实现的类】
+1. class _NoopAgent
+   方法：
+   - async handle(self, message, task)
+1. class _NoopAM
+   方法：
+   - async get(self, name, tenant_id)
+   - list_for_tenant(self, tenant_id)
+   - async shutdown(self)
+
+【必须实现的函数】
+1. async _stress_events(n: int=200) -> tuple[int, float]  # 发布 n 条事件，测量吞吐量。
+2. async _stress_task_queue(n: int=50) -> int  # 并发提交 n 个幂等键相同的任务，验证不重复。
+3. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

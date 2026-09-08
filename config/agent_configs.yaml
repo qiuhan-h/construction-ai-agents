@@ -1,0 +1,56 @@
+# =====================================================
+# 智能体配置（业务参数）
+# 运行时凭据（API Key 等）一律走环境变量 / .env，不放在此文件
+# 占位说明：
+#   defaults.llm.model —— 默认模型名，例 "qwen-plus" / "gpt-4o-mini" / "your-model"
+#                        可被环境变量 LLM_DEFAULT_MODEL 覆盖
+# =====================================================
+
+defaults: &defaults
+  llm:
+    # 占位：默认模型名（dashscope / openai / 自建 等），可被 LLM_DEFAULT_MODEL 覆盖
+    model: 需要补充实际链接
+    temperature: 0.2
+    max_tokens: 4096
+  retry:
+    max_attempts: 3
+    backoff_seconds: 2.0
+  report:
+    output_format: markdown
+    require_signature: true   # 报告输出前经 report_signer 签章
+
+agents:
+  safety_audit_agent:          # 施工安全审核智能体
+    <<: *defaults
+    description: 解析施工方案/图纸/规范，执行荷载计算、结构分析、风险评估
+    timeout_seconds: 600
+    knowledge_base:
+      standards_dir: data/regulations
+      case_vector_collection: construction_cases
+    calculators:
+      load_code: GB50009        # 建筑结构荷载规范
+      seismic_code: GB50011     # 建筑抗震设计规范
+
+  compliance_agent:            # 合规校验智能体
+    <<: *defaults
+    description: 依据法规库执行消防、抗震、节能、绿色建筑专项核查
+    timeout_seconds: 600
+    regulation_engine:
+      source: data/regulations
+      bind_version_to_conclusion: true   # 每条结论绑定当时依据的法规版本
+    checkers:
+      - fire
+      - seismic
+      - energy
+      - green
+
+  site_monitor_agent:          # 施工现场监控智能体
+    <<: *defaults
+    description: 接入 IoT 传感器与 BIM 模型，执行 GIS 监控与告警
+    timeout_seconds: 120
+    iot:
+      protocol: mqtt
+      tsdb_batch_size: 500      # 传感器数据批量写入时序库
+    alert:
+      dedup_window_seconds: 300
+      daily_report_hour: 18     # 每日 18:00 生成监控日报

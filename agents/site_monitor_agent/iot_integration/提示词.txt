@@ -1,0 +1,180 @@
+================================================================================
+agents/site_monitor_agent/iot_integration/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/site_monitor_agent/iot_integration/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】data_pipeline.py
+================================================================================
+你是一名 Python 后端开发者。请实现 data_pipeline.py。
+
+【背景】
+原始数据 → 清洗 → 时序库管道。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from collections.abc import Callable
+- from datetime import datetime, timezone
+- from typing import Any
+- from common.timeutils import ensure_utc, from_iso, to_iso, utc_now
+
+【必须实现的类】
+1. class DataPipeline：asyncio.Queue 缓冲 + on_event 回调。
+   方法：
+   - __init__(self, queue_size: int=10000) -> None
+   - async ingest(self, raw: dict) -> None
+   - async run(self, on_event: Callable) -> None  # 持续消费；on_event 签名 async def on_event(cleaned: dict) -> None。
+   - stop(self) -> None
+   - dropped_count(self) -> int
+   - _clean(raw: dict) -> dict  # 归一化：必填字段校验 + 时间戳统一为 UTC ISO。 必填字段：device_id, metric, value 输出字段： { "device_id": str, "metric": str, "value": float, "unit": str, "timestamp": str (ISO-8601 UTC), "tenant_id": str, "project_id": str, "tags": dict, }
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】influxdb_writer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 influxdb_writer.py。
+
+【背景】
+InfluxDB 写入器（5b.5）— re-export shim。 P3-1 修正：实现已迁移到 ``core/timeseries/client.py``，遵守 core/ → agents/ 的分层约束。本文件仅做 re-export，保持 agent 侧引用路径不变。 旧引用方式 ``from agents.site_monitor_agent.iot_integration.influxdb_writer import InfluxDBWriter`` 继续可用；新代码应直接用 ``from core.timeseries import InfluxDBWriter``。
+
+【依赖】
+- from __future__ import annotations
+- from core.timeseries.client import InfluxDBWriter, InfluxWriteError, build_line_protocol, write_point
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】mqtt_connector.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mqtt_connector.py。
+
+【背景】
+MQTT 客户端：订阅传感器上报 topic。 缺失 paho-mqtt 时降级为 mock 模式（用 asyncio.Queue 注入）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import json
+- import logging
+- import secrets
+- from collections.abc import Callable
+- from typing import Any
+
+【必须实现的类】
+1. class MQTTConnector：MQTT 订阅：topic = 'construct/{tenant_id}/sensors/+/+'
+   方法：
+   - __init__(self, broker: str | None=None, port: int | None=None, client_id: str | None=None, tenant_id: str='tnt') -> None
+   - subscribe(self, topic: str, handler: Callable) -> None  # 订阅 topic；handler 签名 async def handler(payload: dict) -> None。
+   - publish(self, topic: str, payload: dict) -> None
+   - async mock_inject(self, topic: str, payload: dict) -> None  # mock 模式：往队列注入测试数据。
+   - async loop_forever(self) -> None  # 启动循环；mock 模式从 queue 拉取，真实模式用 asyncio.to_thread 包阻塞调用。
+   - _on_message(self, _client: Any, _userdata: Any, msg: Any) -> None
+
+【必须实现的函数】
+1. _settings_mqtt() -> tuple[str, int]  # 从 config.settings（.env 的 MQTT_BROKER / MQTT_PORT）读取；失败返回空。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】sensor_manager.py
+================================================================================
+你是一名 Python 后端开发者。请实现 sensor_manager.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】tsdb_writer.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tsdb_writer.py。
+
+【背景】
+InfluxDB 写入：时序数据落库。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from datetime import datetime
+- from typing import Any
+- from common.timeutils import from_iso
+
+【必须实现的类】
+1. class TSDBWriter：InfluxDB 写入：封装 influxdb-client（缺失时降级 mock）。
+   方法：
+   - __init__(self, settings: Any | None=None) -> None
+   - async write_point(self, measurement: str, tags: dict, fields: dict, ts: datetime) -> bool  # 写入单条数据点（mock 模式只记日志）。
+   - async query_range(self, measurement: str, tags: dict, start: datetime, end: datetime) -> list[dict]  # 范围查询（mock 返回空）。
+   - parse_timestamp(ts_str: str) -> datetime  # 工具方法：从清洗后的 ISO 字符串解析 datetime。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

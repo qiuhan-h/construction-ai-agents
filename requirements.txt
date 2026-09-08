@@ -1,0 +1,73 @@
+# =====================================================
+# construction-ai-agents 运行时依赖
+# 要求 Python >= 3.11
+# =====================================================
+
+# --- Web 服务与 API 接入层 ---
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30
+websockets>=12.0
+python-multipart>=0.0.9
+orjson>=3.10
+
+# --- 配置与校验 ---
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3
+python-dotenv>=1.0
+PyYAML>=6.0.1
+
+# --- 数据库与迁移 (阶段二起使用) ---
+SQLAlchemy>=2.0,<3.0
+alembic>=1.13
+psycopg[binary]>=3.1
+
+# --- 缓存与时序存储 ---
+redis>=5.0
+influxdb-client>=1.42
+
+# --- 异步任务队列 ---
+celery>=5.4
+
+# --- LLM 接入 (core/llm, 不绑定具体框架, 直连 OpenAI 兼容接口) ---
+httpx>=0.27
+
+# --- 认证 (JWT 解签) ---
+python-jose[cryptography]>=3.3
+
+# --- 事件总线可选 RabbitMQ 适配器 (阶段二起使用, 默认进程内) ---
+# 启用: pip install -e ".[messaging]"
+# aio-pika>=9.4
+
+# --- LangChain 业务链与工具 (阶段三起使用) ---
+langchain>=0.2
+langchain-openai>=0.1
+
+# --- GIS 集成 ---
+geopandas>=0.14
+shapely>=2.0
+
+# --- 向量存储 ---
+chromadb>=0.5
+
+# --- 前端 ---
+streamlit>=1.35
+websocket-client>=1.6   # streamlit 侧同步 WS 客户端
+
+# --- 可观测性 (5c.1/5c.2, 不安装则降级 NoOp) ---
+opentelemetry-api>=1.25
+opentelemetry-sdk>=1.25
+opentelemetry-exporter-otlp>=1.25
+prometheus_client>=0.20
+
+# --- 国密 SM2 (5c.8, 不安装则降级 HMAC-SHA256) ---
+gmssl>=3.2
+
+# --- MQTT 边缘网关 (6d, 不安装则降级 mock) ---
+paho-mqtt>=2.0
+
+# --- BIM/IFC 解析 (5b.5, 不安装则降级 mock) ---
+ifcopenshell>=0.7
+
+# =====================================================
+# 开发依赖请安装: pip install -e ".[dev]"
+# =====================================================

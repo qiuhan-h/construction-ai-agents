@@ -1,0 +1,168 @@
+================================================================================
+agents/site_monitor_agent/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/site_monitor_agent/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】a2a_handlers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 a2a_handlers.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agent.py。
+
+【背景】
+施工现场监控智能体主类（SiteMonitorAgent）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from typing import Any
+- from common.constants import AgentName
+- from common.exceptions import AgentParseError, AppException
+- from common.ids import message_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.agent_card import Skill
+- from core.a2a.message import A2AMessage, MessagePart, Task
+- from core.events import Event, get_event_bus
+- from agents.base_agent import BaseAgent, register_agent
+- from agents.site_monitor_agent.alert_engine import AlertDispatcher, AlertRepository, AlertRule, RuleEngine, ThresholdManager, default_alert_rules
+- from agents.site_monitor_agent.gis_monitoring import Geofencing, RiskHeatmap, SpatialMonitor
+- from agents.site_monitor_agent.iot_integration import DataPipeline, MQTTConnector, SensorManager, TSDBWriter
+- ...（共 18 个导入）
+
+【必须实现的类】
+1. class SiteMonitorAgent(BaseAgent)：施工现场监控智能体（IoT/BIM/GIS + 告警 + 日报）。
+   方法：
+   - __init__(self, tenant_id: str, a2a_url: str, card_path: str, metadata: dict[str, Any] | None, auto_register: bool, mqtt_client: MQTTConnector | None, bim_client: BIMConnector | None, rules: list[AlertRule] | None) -> None
+   - async handle(self, message: A2AMessage, task: Task) -> A2AMessage
+   - _extract_payload(self, message: A2AMessage) -> dict[str, Any]
+   - async _run_alert(self, payload: dict[str, Any]) -> dict[str, Any]
+   - async _run_daily_report(self, payload: dict[str, Any]) -> dict[str, Any]
+   - async _run_bim_sync(self, payload: dict[str, Any]) -> dict[str, Any]
+   - _build_reply(self, artifacts: dict[str, Any], src: A2AMessage, kind: str) -> A2AMessage
+   - _error_reply(self, src: A2AMessage, reason: str) -> A2AMessage
+
+【必须实现的函数】
+1. make_site_monitor_agent(tenant_id: str, a2a_url: str) -> SiteMonitorAgent
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】langchain_agent.py
+================================================================================
+你是一名 Python 后端开发者。请实现 langchain_agent.py。
+
+【背景】
+现场监控智能体的 LangChain 风格入口（最小实现）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from core.a2a.message import A2AMessage, Task
+- from agents.site_monitor_agent.agent import SiteMonitorAgent
+
+【必须实现的类】
+1. class SiteMonitorLangChainAgent：LangChain 风格包装（缺失时降级）。
+   方法：
+   - __init__(self, base_agent: SiteMonitorAgent) -> None
+   - async run(self, message: A2AMessage, task: Task) -> A2AMessage
+   - base_agent(self) -> SiteMonitorAgent
+   - has_langchain(self) -> bool
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】mcp_handlers.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mcp_handlers.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】prompts.py
+================================================================================
+你是一名 Python 后端开发者。请实现 prompts.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

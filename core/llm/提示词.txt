@@ -1,0 +1,250 @@
+================================================================================
+core/llm/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/llm/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+LLM 接入层：OpenAI 兼容调用 / 多模型路由 / 提示词 / 用量统计。
+
+【依赖】
+- from core.llm.config import LLMModelConfig, get_llm_model_config
+- from core.llm.prompt_manager import PromptManager, PromptTemplate, get_prompt_manager
+- from core.llm.provider import ChatMessage, LLMResponse, LLMUsage, OpenAICompatibleProvider, ProviderRouter, get_router
+- from core.llm.token_tracker import TokenTracker, get_token_tracker
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】config.py
+================================================================================
+你是一名 Python 后端开发者。请实现 config.py。
+
+【背景】
+LLM 模型配置：从全局 Settings 派生模型级调用参数。 密钥只从环境变量 / .env 注入（Settings.llm_api_key 为 SecretStr）， 本模块不做任何硬编码兜底——缺失即显式失败（LLMNotConfiguredError）。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass
+- from pydantic import SecretStr
+- from common.exceptions import LLMNotConfiguredError
+- from config import get_settings
+
+【必须实现的类】
+1. class LLMModelConfig：单次 LLM 调用的完整参数快照。
+
+【必须实现的函数】
+1. get_llm_model_config(model: str | None=None) -> LLMModelConfig  # 构造模型配置。model 为空时使用全局默认模型。 Raises: LLMNotConfiguredError: 未配置 LLM_API_KEY 时（避免静默降级）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】injector.py
+================================================================================
+你是一名 Python 后端开发者。请实现 injector.py。
+
+【背景】
+LLM 注入器：全项目唯一 LLM 实例创建入口（阶段六 6a.3）。 职责： - 按 ``provider``（mock / openai / anthropic / vllm）创建 LangChain 兼容 llm 对象； - 缺失第三方 SDK（langchain_openai / langchain_anthropic）或未配置 API Key 时， 自动降级，绝不抛 ImportError / 配置错误打断链路： openai/vllm 降级顺序：langchain_openai.ChatOpenAI → httpx 适配器（复用 core.llm.provider.OpenAICompatibleProvider 的重试/限流/token 统计）→ FakeListLLM； anthropic 降级顺序：langchain_anthropic.ChatAnthropic → FakeListLLM； - 单例缓存（同 provider 复用同一实例）。 返回对象均可传给 ``LLMChain(llm=...)`` / ``prompt | llm`` 使用。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from config import get_settings
+
+【关键常量】
+- _VALID_PROVIDERS = {'mock', 'openai', 'anthropic', 'vllm'}
+- _MOCK_RESPONSES
+
+【必须实现的类】
+1. class LLMInjector：LLM 实例工厂（单例）。 用法:: from core.llm.injector import get_injector llm = get_injector().get_llm()                 # 按 settings.llm_provider llm = get_injector().get_llm("openai")         # 显式指定
+   方法：
+   - __init__(self) -> None
+   - get_llm(self, provider: str | None=None) -> Any  # 返回 LangChain 兼容 llm 对象；任何失败都降级 FakeListLLM。
+   - _build(self, provider: str) -> Any
+   - _build_openai_compatible(self, provider: str) -> Any
+   - _build_anthropic(self) -> Any
+   - _safe_fake(provider: str) -> Any
+1. class _NullLLM：langchain 完全缺失时的兜底（无第三方依赖）。 LCTBusinessChain 在 langchain 不可用时本就会降级 MockBusinessChain， 正常不会走到这里；仅作为注入器自身的最终防线。
+   方法：
+   - __call__(self, prompt: str, *_, **__) -> str
+   - predict(self, prompt: str, *_, **__) -> str
+
+【必须实现的函数】
+1. _has_real_api_key() -> bool  # 判断是否配置了可用的 LLM API Key（非空且非占位符）。
+2. _build_httpx_adapter() -> Any | None  # 构造 OpenAI 兼容 httpx 直连适配器；失败返回 None。
+3. _build_fake_llm() -> Any  # 构造 FakeListLLM 占位（langchain 已装时可用；调用方应已确认 langchain 可用）。 langchain 1.0+ 将 FakeListLLM 迁至 ``langchain_community.llms.fake``； 旧版（<0.2）在 ``langchain.llms.fake``。两个路径都尝试。
+4. get_injector() -> LLMInjector  # 全局 LLMInjector 单例。
+5. reset_injector() -> None  # 重置单例缓存（测试用）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】prompt_manager.py
+================================================================================
+你是一名 Python 后端开发者。请实现 prompt_manager.py。
+
+【背景】
+提示词模板管理：版本化、严格变量校验、集中维护。 约定： - 模板文本使用 str.format 占位符（{plan_type} 等）； - render() 严格校验缺失/多余变量，避免把未替换的占位符发给 LLM； - 模板带版本号，报告中引用提示词版本可复盘输出差异。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass, field
+- from common.exceptions import ValidationError
+
+【关键常量】
+- _BUILTIN_SYSTEM = '你是一名资深建筑工程安全专家，负责{task_name}工作。你引用法规与标准时必须给出具体文件名称与条款号；不...
+
+【必须实现的类】
+1. class PromptTemplate：一个提示词模板（含版本）。
+1. class PromptManager：提示词模板注册表。
+   方法：
+   - __init__(self) -> None
+   - register(self, template: PromptTemplate, overwrite: bool) -> None
+   - get(self, name: str) -> PromptTemplate
+   - list_names(self) -> list[str]
+   - render(self, name: str, **variables) -> str  # 渲染模板。缺失或多余变量均抛 ValidationError。
+
+【必须实现的函数】
+1. _extract_placeholders(text: str) -> set[str]  # 解析 str.format 占位符 {var}（忽略无名的花括号内容做粗略容错）。
+2. _build_default_manager() -> PromptManager
+3. get_prompt_manager() -> PromptManager  # 全局提示词管理器单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】provider.py
+================================================================================
+你是一名 Python 后端开发者。请实现 provider.py。
+
+【背景】
+LLM 接入层：OpenAI 兼容 Chat Completions 直连（httpx）。 设计原则： - 不绑定任何特定模型厂商，仅依赖 OpenAI 兼容接口（阿里云百炼 / OpenAI / 自建等）； - 模型与端点地址完全由 Settings 注入（不硬编码任何供应商信息）； - 失败显式化：超时/限流/格式错误分别映射到不同异常，由上层（编排层）决策重试或降级； - 指数退避重试仅针对瞬时故障（网络错误 / 429 / 5xx），4xx 业务错误直接抛错； - 每次成功调用自动写入 TokenTracker（成本归因到 caller）。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- import logging
+- import time
+- from dataclasses import dataclass, field
+- from typing import Any
+- import httpx
+- from common.exceptions import LLMAllProvidersFailedError, LLMError, LLMNotConfiguredError, LLMRateLimitError, LLMResponseInvalidError, LLMTimeoutError
+- from core.llm.config import LLMModelConfig, get_llm_model_config
+- from core.llm.token_tracker import get_token_tracker
+
+【关键常量】
+- _CHAT_PATH = '/chat/completions'
+
+【必须实现的类】
+1. class ChatMessage：单条对话消息。
+1. class LLMUsage：本次调用的 token 用量。
+1. class LLMResponse：LLM 调用结果。
+1. class OpenAICompatibleProvider：单个 OpenAI 兼容端点的提供者。
+   方法：
+   - __init__(self, config: LLMModelConfig) -> None
+   - _request_body(self, messages: list[ChatMessage], temperature: float | None, max_tokens: int | None) -> dict[str, Any]
+   - _parse_response(self, payload: dict[str, Any]) -> LLMResponse
+   - chat(self, messages: list[ChatMessage], caller: str | None, temperature: float | None, max_tokens: int | None) -> LLMResponse  # 执行一次对话补全（含瞬时故障退避重试）。 Raises: LLMTimeoutError: 所有重试均超时。 LLMRateLimitError: 重试耗尽仍被限流。 LLMError: 服务端 5xx / 4xx 业务错误 / 响应格式异常。
+1. class ProviderRouter：多模型路由：按优先级降级链依次尝试，全部失败才抛错。 默认路由：配置的默认模型。业务可通过 register 增加备用模型 （如主力限流时切到同厂备选模型）。
+   方法：
+   - __init__(self, providers: list[OpenAICompatibleProvider]) -> None
+   - register(self, model: str) -> 'ProviderRouter'  # 追加备用模型（配置沿用全局 Settings）。
+   - chat(self, messages: list[ChatMessage], caller: str | None, model: str | None, temperature: float | None, max_tokens: int | None) -> LLMResponse  # 发起对话补全。 model 指定时只使用该模型（失败不降级）； 未指定时按降级链尝试全部模型。
+
+【必须实现的函数】
+1. get_router() -> ProviderRouter  # 全局 Provider 路由单例（未配置 LLM_API_KEY 时延迟到首次调用才抛错）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】token_tracker.py
+================================================================================
+你是一名 Python 后端开发者。请实现 token_tracker.py。
+
+【背景】
+Token 用量与成本统计。 - 按模型记录每次调用的 prompt/completion token 与费用； - 支持按调用方（caller：智能体/任务 ID）聚合，用于成本归因； - 单价表可运行时注册（不同供应商/计费周期不同），未注册模型只记量不计费； - 线程安全（LLM 调用可能来自多线程 worker）。
+
+【依赖】
+- from __future__ import annotations
+- import threading
+- from dataclasses import dataclass, field
+- from datetime import datetime
+- from common.timeutils import utc_now
+
+【必须实现的类】
+1. class TokenUsageRecord：一次 LLM 调用的用量记录。
+   方法：
+   - total_tokens(self) -> int
+1. class TokenTracker：进程内用量累加器（持久化留待可观测性模块接入）。
+   方法：
+   - __init__(self) -> None
+   - register_pricing(self, model: str, input_price: float, output_price: float) -> None  # 注册/覆盖模型单价（元 / 1K tokens）。
+   - record(self, model: str, prompt_tokens: int, completion_tokens: int, caller: str | None) -> float  # 记录一次调用，返回本次费用（元）。
+   - total(self, model: str | None=None, caller: str | None=None) -> dict[str, float]  # 聚合统计：可选按模型/调用方过滤。
+   - reset(self) -> None  # 清空记录（测试用）。
+
+【必须实现的函数】
+1. get_token_tracker() -> TokenTracker  # 全局用量统计单例。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

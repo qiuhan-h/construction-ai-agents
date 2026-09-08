@@ -1,0 +1,259 @@
+================================================================================
+common/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 common/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+公共基础：常量、错误码、统一异常、ID 生成、时间工具。
+
+【依赖】
+- from common.constants import APP_NAME, APP_VERSION, AgentName
+- from common.error_codes import ErrorCode
+- from common.exceptions import A2AAgentNotFoundError, A2AError, A2AMessageInvalidError, A2ANetworkError, A2AProtocolVersionMismatchError, A2ATaskNotFoundError, A2ATimeoutError, AgentError, AgentParseError, AppException, AuthenticationError, AuthorizationError, ConfigError, EventPublishError, EventSubscribeError, LLMAllProvidersFailedError, LLMError, LLMNotConfiguredError, LLMRateLimitError, LLMResponseInvalidError, LLMTimeoutError, MCPError, MCPPromptNotFoundError, MCPProtocolVersionMismatchError, MCPResourceNotFoundError, MCPToolExecutionError, MCPToolNotFoundError, NotFoundError, RegulationVersionMissingError, ServiceUnavailableError, StorageError, StorageReadError, TaskError, TaskStateConflictError, ValidationError
+- from common.ids import case_id, event_id, message_id, new_id, new_ulid, plan_id, project_id, regulation_id, report_id, standard_id, task_id, tenant_id, violation_id, alert_id, inspection_id
+- from common.timeutils import ensure_utc, utc_now, to_iso, from_iso
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】constants.py
+================================================================================
+你是一名 Python 后端开发者。请实现 constants.py。
+
+【背景】
+常量与枚举：全平台共享的标识、状态、等级定义。 约定： - 所有跨模块的状态值一律使用本文件的枚举，禁止散落字符串字面量。 - 枚举成员名英文大写，值为短横线/下划线小写（用于存储与 API 传输）。
+
+【依赖】
+- from __future__ import annotations
+- from enum import Enum
+
+【关键常量】
+- APP_NAME = 'construction-ai-agents'
+- APP_VERSION = '0.1.0'
+- DEFAULT_CASE_COLLECTION = 'construction_cases'
+
+【必须实现的类】
+1. class AgentName(str, Enum)：平台内智能体标识（与 config/a2a_config.yaml 的 registry 一一对应）。
+   方法：
+   - is_business(self) -> bool  # 业务智能体（执行具体审查/监控）与协调者的区分。
+1. class TenantStatus(str, Enum)：租户状态（6b.1 状态机：trial → active → suspended → closed）。
+1. class SubscriptionPlan(str, Enum)：租户订阅套餐（6b.1 计费/配额）。 - trial      试用：30 天，100 次 API 调用，1GB 存储，1 并发 - starter    入门版：10,000 次/月，10GB，3 并发 - pro        专业版：100,000 次/月，100GB，10 并发 - enterprise 企业版：不限调用量，1000GB，50 并发
+1. class ProjectStatus(str, Enum)：项目状态。
+1. class PlanType(str, Enum)：施工方案类型（安全审核的主要对象）。
+1. class PlanStatus(str, Enum)：施工方案状态。
+1. class InspectionStatus(str, Enum)：审查/检查任务状态。
+1. class AuditConclusion(str, Enum)：审查结论。
+1. class ViolationSeverity(str, Enum)：违规项严重程度。
+1. class ViolationStatus(str, Enum)：违规项整改状态。
+1. class AlertLevel(str, Enum)：告警等级。
+1. class AlertStatus(str, Enum)：告警处置状态。
+1. class ReportStatus(str, Enum)：审查报告状态（SIGNED 表示已经 report_signer 签章）。
+1. class TaskStatus(str, Enum)：异步任务（Celery）状态。
+1. class ResourceType(str, Enum)：MCP 资源类型（法规/标准/案例）。
+1. class DocType(str, Enum)：向量库中文档类型。
+1. class GeofenceType(str, Enum)：地理围栏几何类型。
+1. class FenceSource(str, Enum)：围栏数据来源。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】error_codes.py
+================================================================================
+你是一名 Python 后端开发者。请实现 error_codes.py。
+
+【背景】
+统一错误码定义。 编码规则：5 位数字，首位为模块域 1xxx 通用      2xxx 配置        3xxx 认证/授权 4xxx LLM       5xxx A2A        6xxx MCP 7xxx 智能体业务 8xxx 任务        9xxx 存储 每个错误码携带：默认消息 + 对应 HTTP 状态码（API 层直接映射响应）。
+
+【依赖】
+- from __future__ import annotations
+- from dataclasses import dataclass
+
+【必须实现的类】
+1. class ErrorCode
+1. class ErrorCodes
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】exceptions.py
+================================================================================
+你是一名 Python 后端开发者。请实现 exceptions.py。
+
+【背景】
+统一异常定义：所有业务异常继承 AppException。 设计要点： - 异常携带 ErrorCode（错误码 + 默认消息 + HTTP 状态码），API 层统一转响应； - 各层只抛语义化子类，不直接抛裸 Exception； - details 用于携带结构化上下文（如失败的模型名、资源 ID），便于排障。
+
+【依赖】
+- from __future__ import annotations
+- from typing import Any
+- from common.error_codes import ErrorCodes, ErrorCode
+
+【必须实现的类】
+1. class AppException(Exception)：平台异常基类。
+   方法：
+   - __init__(self, message: str | None, error_code: ErrorCode | None, details: dict[str, Any] | None=None) -> None
+   - code(self) -> str
+   - http_status(self) -> int
+   - to_dict(self) -> dict[str, Any]  # 转为 API 统一响应体结构。
+1. class ConfigError(AppException)
+1. class ValidationError(AppException)
+1. class NotFoundError(AppException)
+1. class ServiceUnavailableError(AppException)
+1. class AuthenticationError(AppException)
+1. class AuthorizationError(AppException)
+1. class QuotaExceededError(AppException)：租户配额用尽（API 调用量 / 存储 / 并发），HTTP 429。
+1. class TenantConflictError(AppException)：租户状态机冲突 / 编码重复，HTTP 409。
+1. class TenantSuspendedError(AppException)：租户已停用或注销，拒绝服务，HTTP 403。
+1. class LLMError(AppException)：LLM 调用失败基类（重试耗尽后抛出）。
+1. class LLMNotConfiguredError(AppException)
+1. class LLMTimeoutError(LLMError)
+1. class LLMRateLimitError(LLMError)
+1. class LLMResponseInvalidError(LLMError)
+1. class LLMAllProvidersFailedError(LLMError)
+1. class A2AError(AppException)
+1. class A2AMessageInvalidError(A2AError)
+1. class A2AAgentNotFoundError(A2AError)
+1. class A2AProtocolVersionMismatchError(A2AError)
+1. class A2ATaskNotFoundError(A2AError)
+1. class A2ATimeoutError(A2AError)
+1. class A2ANetworkError(A2AError)
+1. class MCPError(AppException)
+1. class MCPResourceNotFoundError(MCPError)
+1. class MCPToolNotFoundError(MCPError)
+1. class MCPToolExecutionError(MCPError)
+1. class MCPProtocolVersionMismatchError(MCPError)
+1. class MCPPromptNotFoundError(MCPError)
+1. class EventPublishError(AppException)
+1. class EventSubscribeError(AppException)
+1. class AgentError(AppException)：智能体业务执行失败基类。
+1. class AgentParseError(AppException)
+1. class RegulationVersionMissingError(AppException)：结论未绑定法规版本，违反合规可追溯约束。
+1. class TaskError(AppException)
+1. class TaskStateConflictError(AppException)
+1. class StorageError(AppException)
+1. class StorageReadError(AppException)
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】ids.py
+================================================================================
+你是一名 Python 后端开发者。请实现 ids.py。
+
+【背景】
+ID 生成：ULID（时序可排序）+ 业务前缀。 - 26 位 Crockford Base32：48 位毫秒时间戳 + 80 位随机数，字典序即时间序； - 统一带业务前缀（如 prj_ / plan_ / alert_），落库与日志中可直接辨识实体类型； - 无第三方依赖，跨进程/跨节点安全（随机部分来自 os.urandom）。
+
+【依赖】
+- from __future__ import annotations
+- import secrets
+- import time
+
+【关键常量】
+- _ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+【必须实现的函数】
+1. new_ulid() -> str  # 生成 26 位 ULID 字符串。 已知限制（设计取舍）： - 时间戳取自 ``time.time()``（墙上时钟）。如 NTP 发生回拨，可能产生 时间戳减小的 ULID，破坏"字典序即时间序"的不变量。生产场景若依赖严格 单调，应在调用方引入单调时钟或迁移到 ``time.monotonic_ns()``（但跨 进程不可比，需要外部协调）。 - 实践经验：受 NTP 微调（slew 模式 ≤500ppm）影响极小；如怀疑回拨， 可在落库前比对前后 ID 的前 10 字符（时间戳段）。
+2. new_id(prefix: str) -> str  # 生成带业务前缀的 ID，如 prj_01J5ZK...
+3. tenant_id() -> str
+4. project_id() -> str
+5. plan_id() -> str
+6. inspection_id() -> str
+7. violation_id() -> str
+8. alert_id() -> str
+9. report_id() -> str
+10. task_id() -> str
+11. regulation_id() -> str
+12. standard_id() -> str
+13. case_id() -> str
+14. event_id() -> str
+15. message_id() -> str
+16. geofence_id() -> str
+17. geofence_violation_id() -> str  # 越界事件 ID（5b.3 落地于 GeofenceViolationTable）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】timeutils.py
+================================================================================
+你是一名 Python 后端开发者。请实现 timeutils.py。
+
+【背景】
+时间工具：全平台统一使用 UTC 感知时间（timezone-aware）。 约定： - 领域模型与数据库中的时间一律为 UTC 且带时区信息； - 展示层（Streamlit/API 响应）负责转为本地时区； - 禁止使用 datetime.utcnow()（返回 naive 时间）。
+
+【依赖】
+- from __future__ import annotations
+- from datetime import date, datetime, time, timedelta, timezone
+
+【关键常量】
+- UTC
+
+【必须实现的函数】
+1. utc_now() -> datetime  # 当前 UTC 时间（带时区）。
+2. utc_today() -> date  # 当前 UTC 日期。
+3. ensure_utc(dt: datetime) -> datetime  # 归一化为 UTC：naive 时间按 UTC 处理，aware 时间转 UTC。
+4. to_iso(dt: datetime) -> str  # 格式化为 ISO-8601 字符串（UTC，微秒精度）。
+5. from_iso(value: str) -> datetime  # 解析 ISO-8601 字符串为 UTC aware datetime。
+6. utc_day_bounds(day: date | datetime) -> tuple[datetime, datetime]  # 返回指定日期在 UTC 下的 [00:00, 次日 00:00) 区间（用于日报聚合）。
+7. add(seconds: float, base: datetime | None) -> datetime  # 在 base（默认 now）上增加秒数，返回 UTC aware datetime。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

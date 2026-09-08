@@ -1,0 +1,166 @@
+================================================================================
+agents/site_monitor_agent/alert_engine/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 agents/site_monitor_agent/alert_engine/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+告警子包：规则 + 阈值 + 分发 + 仓储。
+
+【依赖】
+- from agents.site_monitor_agent.alert_engine.alert_dispatcher import AlertDispatcher
+- from agents.site_monitor_agent.alert_engine.alert_repository import AlertRepository
+- from agents.site_monitor_agent.alert_engine.rule_engine import AlertRule, RuleEngine, default_alert_rules
+- from agents.site_monitor_agent.alert_engine.threshold_manager import ThresholdManager
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】alert_dispatcher.py
+================================================================================
+你是一名 Python 后端开发者。请实现 alert_dispatcher.py。
+
+【背景】
+告警分发：去重 + 落库 + 升级 + 事件发布。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import logging
+- from datetime import datetime
+- from typing import Any
+- from common.constants import AlertLevel
+- from common.timeutils import utc_now
+- from core.events import get_event_bus
+- from core.events.events import AlertResolvedEvent, AlertTriggeredEvent
+- from agents.site_monitor_agent.alert_engine.alert_repository import AlertRepository
+
+【必须实现的类】
+1. class AlertDispatcher：告警分发：dedup_key + dedup_window 去重 → 落库 → 事件。
+   方法：
+   - __init__(self, dedup_window_seconds: int, alert_repo: AlertRepository | None, notifier: Any | None, event_bus: Any | None) -> None
+   - async dispatch(self, alert: Any) -> bool  # 返回 true=新告警（已发事件），false=去重命中。
+   - _prune_seen(self, now: datetime) -> None  # 清理过期或超量条目，防止 _seen 无限增长。 - 时间：移除超过 dedup_window_seconds * 2 的条目； - 数量：保留时间最近的 10000 条。
+   - async resolve(self, alert_id: str, tenant_id: str | None) -> bool  # 解决告警。 优先用传入的 tenant_id；未传时从仓储反查，避免事件总线 订阅方按 tenant_id 过滤时失效。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】alert_repository.py
+================================================================================
+你是一名 Python 后端开发者。请实现 alert_repository.py。
+
+【背景】
+告警表 SQLAlchemy 仓储（首版内存，阶段五接 DB）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+
+【必须实现的类】
+1. class AlertRepository：告警表仓储（首版内存模式，阶段五接 AlertTable）。
+   方法：
+   - __init__(self, session_factory: Any | None=None) -> None
+   - add(self, alert: Any) -> str  # 落库：返回 alert.id。
+   - get(self, alert_id: str) -> dict | None
+   - list_by_tenant(self, tenant_id: str, status: str | None, limit: int) -> list[dict]
+   - list_active(self, tenant_id: str, project_id: str | None=None) -> list[dict]
+   - update_status(self, alert_id: str, status: str) -> bool
+   - _from_row(row: Any) -> dict
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】rule_engine.py
+================================================================================
+你是一名 Python 后端开发者。请实现 rule_engine.py。
+
+【背景】
+规则引擎：metric 阈值求值。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from dataclasses import dataclass, field
+- from typing import Any
+- from core.rules.operator import compare
+- from core.rules.rule import AlertRule as _BaseAlertRule
+
+【必须实现的类】
+1. class RuleEngine：对 (metric, value) 求值，返回触发的 Rule 列表。
+   方法：
+   - __init__(self, rules: list[AlertRule] | None=None) -> None
+   - add(self, rule: AlertRule) -> None
+   - remove(self, rule_id: str) -> bool
+   - evaluate(self, metric: str, value: float) -> list[AlertRule]
+   - list_rules(self) -> list[AlertRule]
+
+【必须实现的函数】
+1. default_alert_rules() -> list[AlertRule]  # 施工现场默认告警阈值规则。 H22 修补：``SiteMonitorAgent`` 原先构造空 ``RuleEngine()``， ``evaluate()`` 永远返回 []，规则引擎形同虚设。这里提供一组覆盖 塔吊/风速/扬尘/噪声/高温/基坑位移的开箱即用阈值，运行时仍可由 配置中心 / ThresholdManager 通过 ``add()`` / 构造参数覆盖。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】threshold_manager.py
+================================================================================
+你是一名 Python 后端开发者。请实现 threshold_manager.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

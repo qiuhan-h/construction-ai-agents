@@ -1,0 +1,147 @@
+================================================================================
+tools/smoke/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tools/smoke/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+暂无模块说明，需根据接口契约实现。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】smoke_7b_degradation.py
+================================================================================
+你是一名 Python 后端开发者。请实现 smoke_7b_degradation.py。
+
+【背景】
+7b 本地降级验证：无凭据下验证 8 个通道降级行为。 验证项： 1. LLM：LLM_PROVIDER=mock → FakeListLLM 占位 2. PostgreSQL：DATABASE_URL 占位 → SQLite 回退 3. Redis：REDIS_URL 占位 → 内存缓存 4. InfluxDB：TSDB_URL 占位 → NoOp 写入 5. 钉钉：凭据空 → mock + warning 6. 企微：凭据空 → mock + warning 7. 短信：凭据空 → mock + warning 8. BIM/APS：凭据空 → mock 降级 9. MQTT：paho-mqtt 缺失 → asyncio.Queue mock 验收：所有通道降级不崩溃 + 各自返回 mock 数据 + 日志有 warning。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- from pathlib import Path
+- import logging
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. check_llm_degradation() -> bool  # 1. LLM 降级验证：mock 模式返回 FakeListLLM。
+2. check_db_degradation() -> bool  # 2. PostgreSQL 降级：DATABASE_URL 占位 → SQLite 回退。
+3. check_redis_degradation() -> bool  # 3. Redis 降级：REDIS_URL 占位 → 内存缓存。
+4. check_influxdb_degradation() -> bool  # 4. InfluxDB 降级：TSDB_URL 占位 → NoOp 写入。
+5. check_dingtalk_degradation() -> bool  # 5. 钉钉降级：凭据空 → mock + warning。
+6. check_wecom_degradation() -> bool  # 6. 企微降级：凭据空 → mock + warning。
+7. check_sms_degradation() -> bool  # 7. 短信降级：凭据空 → mock + warning。
+8. check_bim_degradation() -> bool  # 8. BIM/APS 降级：凭据空 → mock 降级。
+9. check_mqtt_degradation() -> bool  # 9. MQTT 降级：paho-mqtt 缺失 → asyncio.Queue mock。
+10. main() -> int  # 主入口。返回 exit code（0=全部 PASS，1=有 FAIL）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】smoke_7b_real.py
+================================================================================
+你是一名 Python 后端开发者。请实现 smoke_7b_real.py。
+
+【背景】
+7b 真实联调脚本：逐通道验证 .env 中已配置的真实凭据。 通道： 1. LLM（商用Key） 2. PostgreSQL + Redis 3. InfluxDB 4. 钉钉群通知（webhook） 5. 企微群通知（webhook） 6. 阿里云短信（需手机号） 注：BIM/APS 和 MQTT 无凭据，跳过（降级验证已完成）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import json
+- import sys
+- from pathlib import Path
+
+【关键常量】
+- ROOT
+
+【必须实现的函数】
+1. check_llm() -> bool  # 7b-1 LLM 真实联调。
+2. check_db_redis() -> bool  # 7b-2 PostgreSQL + Redis 真实联调。
+3. check_influxdb() -> bool  # 7b-3 InfluxDB 真实联调。
+4. check_dingtalk() -> bool  # 7b-4 钉钉群通知真实联调。
+5. check_wecom() -> bool  # 7b-5 企微群通知真实联调。
+6. check_sms_aliyun(phone: str='') -> bool  # 7b-6 阿里云短信真实联调。
+7. main() -> int  # 主入口。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】smoke_e2e.py
+================================================================================
+你是一名 Python 后端开发者。请实现 smoke_e2e.py。
+
+【背景】
+端到端烟雾测试：docker-compose 全链路冒烟。 验证： 1. API /healthz 返回 200 2. A2A agent-card 可获取 3. MCP tools/list 可获取 4. 事件发布 → 智能体处理 → 时间线生成 5. 报告生成 + 签章验证 6. RBAC 拒绝越权访问 用法： docker-compose up -d python tools/smoke_e2e.py
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- from pathlib import Path
+- import httpx
+
+【关键常量】
+- ROOT
+- API_BASE = 'http://localhost:8000/api/v1'
+- A2A_BASE = 'http://localhost:8080'
+- MCP_BASE = 'http://localhost:8090/mcp'
+
+【必须实现的函数】
+1. async _check(name: str, coro_factory, expect_status: int=200) -> bool
+2. async _run() -> int
+3. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

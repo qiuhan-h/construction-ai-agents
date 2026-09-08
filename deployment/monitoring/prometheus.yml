@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "caai-api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+
+  - job_name: "caai-worker"
+    static_configs:
+      - targets: ["worker:8001"]
+
+  - job_name: "caai-a2a"
+    static_configs:
+      - targets: ["a2a-server:8080"]
+
+  - job_name: "caai-mcp"
+    static_configs:
+      - targets: ["mcp-server:8090"]

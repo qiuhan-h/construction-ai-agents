@@ -1,0 +1,98 @@
+================================================================================
+core/llm/prompts/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/llm/prompts/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+LLM 提示词模板子包（阶段六 6a.3）。 提供中英双语 system prompt 构造器，供直接使用 ``core.llm.provider.OpenAICompatibleProvider.chat()`` 的调用方 （非 LangChain 路径）使用。LangChain 路径的 prompt 模板仍在 ``core/langchain/chains/*_chain.py`` 中通过 ``register_prompt`` 注册。
+
+【依赖】
+- from core.llm.prompts.compliance_prompt import COMPLIANCE_SYSTEM_PROMPT_EN, COMPLIANCE_SYSTEM_PROMPT_ZH, build_compliance_messages
+- from core.llm.prompts.safety_prompt import SAFETY_SYSTEM_PROMPT_EN, SAFETY_SYSTEM_PROMPT_ZH, build_safety_messages
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】compliance_prompt.py
+================================================================================
+你是一名 Python 后端开发者。请实现 compliance_prompt.py。
+
+【背景】
+合规校验智能体提示词（中英双语）。 用于 ``OpenAICompatibleProvider.chat()`` 直连路径，结合法规上下文输出结构化 JSON。
+
+【依赖】
+- from __future__ import annotations
+- from core.llm.provider import ChatMessage
+
+【关键常量】
+- COMPLIANCE_SYSTEM_PROMPT_ZH = '你是一名建筑合规校验专家，依据 GB 50016（防火）、GB 50011（抗震）、GB 50189（节能）、G...
+- COMPLIANCE_SYSTEM_PROMPT_EN = 'You are a building code compliance expert. Check design ...
+
+【必须实现的函数】
+1. build_compliance_messages(document: str, regulations_context: str, lang: str) -> list[ChatMessage]  # 构造合规校验对话消息（system + user）。 Args: document: 设计文档文本（或结构化字段的 JSON 字符串）。 regulations_context: 检索到的相关法规条文（由 RegulationIndex/RuleChecker 提供）。 lang: "zh" 或 "en"。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】safety_prompt.py
+================================================================================
+你是一名 Python 后端开发者。请实现 safety_prompt.py。
+
+【背景】
+安全审核智能体提示词（中英双语）。 用于 ``OpenAICompatibleProvider.chat()`` 直连路径，输出结构化 JSON。
+
+【依赖】
+- from __future__ import annotations
+- from core.llm.provider import ChatMessage
+
+【关键常量】
+- SAFETY_SYSTEM_PROMPT_ZH = '你是一名资深建筑施工安全审核专家，熟悉 GB 50009（荷载）、GB 50010（混凝土结构）、GB 5001...
+- SAFETY_SYSTEM_PROMPT_EN = 'You are a senior construction safety audit expert, profi...
+
+【必须实现的函数】
+1. build_safety_messages(document: str, project_name: str, artifact_kind: str, lang: str) -> list[ChatMessage]  # 构造安全审核对话消息（system + user）。 Args: document: 待审核文档文本。 project_name: 项目名（可选）。 artifact_kind: 资料类型（施工方案/图纸/计算书）。 lang: "zh" 或 "en"。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

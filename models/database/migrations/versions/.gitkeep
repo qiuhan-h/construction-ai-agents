@@ -1,0 +1,4 @@
+# 占位：Alembic 数据库迁移版本目录。
+# 用途：存放 alembic revision 脚本（autogenerate 生成）。
+# 当前 SQLAlchemy 模型已就位（models/database/models.py），但迁移脚本尚未生成。
+# 阶段六配置真实 PostgreSQL 时运行 `alembic revision --autogenerate -m "init"` 生成。

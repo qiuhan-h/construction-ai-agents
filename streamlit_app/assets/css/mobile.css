@@ -1,0 +1,172 @@
+/* 移动端响应式样式（6c.2）。
+
+设计原则：
+- mobile-first：默认样式面向窄屏（≤ 768px），媒体查询逐步增强；
+- 卡片圆角 + 阴影 + 紧凑间距，适配触控操作；
+- 告警级别用左边框色区分（critical 红 / warning 橙 / info 蓝）；
+- 不依赖外部 CSS 框架，纯原生 CSS 注入到 Streamlit。
+*/
+
+/* ===================== 基础重置 ===================== */
+.caai-mobile .stMarkdown p,
+.caai-mobile .stMarkdown h1,
+.caai-mobile .stMarkdown h2,
+.caai-mobile .stMarkdown h3 {
+    margin-bottom: 0.25rem;
+}
+
+/* ===================== 移动端容器 ===================== */
+.caai-mobile-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.5rem;
+}
+
+/* ===================== KPI 卡片 ===================== */
+.caai-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.caai-kpi-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e8e8e8;
+}
+
+.caai-kpi-card .caai-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.caai-kpi-card .caai-kpi-label {
+    font-size: 0.72rem;
+    color: #888;
+    margin-top: 0.15rem;
+}
+
+/* KPI 色调 */
+.caai-kpi-card.caai-kpi-danger .caai-kpi-value { color: #e74c3c; }
+.caai-kpi-card.caai-kpi-success .caai-kpi-value { color: #27ae60; }
+.caai-kpi-card.caai-kpi-warning .caai-kpi-value { color: #f39c12; }
+.caai-kpi-card.caai-kpi-info .caai-kpi-value { color: #2980b9; }
+
+/* ===================== 告警卡片 ===================== */
+.caai-alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.caai-alert-card {
+    background: #fafafa;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-left: 3px solid #bbb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.caai-alert-card.caai-level-critical { border-left-color: #e74c3c; background: #fdf0ef; }
+.caai-alert-card.caai-level-warning  { border-left-color: #f39c12; background: #fef8f0; }
+.caai-alert-card.caai-level-info     { border-left-color: #3498db; background: #f0f7fd; }
+
+.caai-alert-card .caai-alert-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.caai-alert-card .caai-alert-meta {
+    font-size: 0.68rem;
+    color: #999;
+    margin-top: 0.15rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===================== 项目卡片 ===================== */
+.caai-project-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.caai-project-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.caai-project-card .caai-project-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.caai-project-card .caai-project-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.75rem;
+    background: #ecf0f1;
+    color: #7f8c8d;
+    margin-left: 0.3rem;
+}
+
+.caai-project-card .caai-project-badge.caai-badge-active   { background: #e8f8f0; color: #27ae60; }
+.caai-project-card .caai-project-badge.caai-badge-paused  { background: #fef8f0; color: #f39c12; }
+.caai-project-card .caai-project-badge.caai-badge-closed  { background: #f0f0f0; color: #999; }
+
+/* ===================== 空状态 ===================== */
+.caai-empty-state {
+    text-align: center;
+    padding: 1.5rem 0.5rem;
+    color: #bbb;
+    font-size: 0.8rem;
+}
+
+/* ===================== 刷新按钮 ===================== */
+.caai-refresh-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.caai-refresh-row .caai-updated-time {
+    font-size: 0.68rem;
+    color: #aaa;
+}
+
+/* ===================== 响应式断点（渐进增强） ===================== */
+
+/* 平板（≥ 600px）：KPI 改 4 列 */
+@media (min-width: 600px) {
+    .caai-kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .caai-mobile-container {
+        max-width: 720px;
+        padding: 0.75rem;
+    }
+    .caai-project-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 桌面（≥ 1024px）：容器限宽，避免拉伸 */
+@media (min-width: 1024px) {
+    .caai-mobile-container {
+        max-width: 960px;
+    }
+}

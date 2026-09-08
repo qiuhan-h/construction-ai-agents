@@ -1,0 +1,90 @@
+================================================================================
+tests/orchestrator/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 tests/orchestrator/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+编排器测试包。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】test_orchestrator.py
+================================================================================
+你是一名 Python 后端开发者。请实现 test_orchestrator.py。
+
+【背景】
+编排器（Orchestrator）端到端自检。 执行方式： cd construction-ai-agents python tests/orchestrator/test_orchestrator.py 覆盖： - TaskQueue 提交 / 状态查询 / 幂等键（H12 回归）； - WorkflowEngine 拓扑分层（含 M9 空工作流不报环回归）； - Orchestrator 事件路由：EventBus → 智能体 → 协作时间线； - CollaborationManager 多租户时间线隔离。 不依赖外部 broker / DB / LLM：智能体用 Mock，事件走内存总线。 自检仅在 __main__ 下执行；pytest 收集时跑 ``main()``。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import sys
+- from pathlib import Path
+- from common.ids import message_id
+- from core.a2a.message import A2AMessage
+- from core.events import Event, TOPIC_ALERT_TRIGGERED, TOPIC_INSPECTION_COMPLETED, get_event_bus, reset_event_bus
+- from core.orchestrator import Orchestrator, WorkflowEngine
+- from services import TaskQueue
+
+【关键常量】
+- ROOT
+
+【必须实现的类】
+1. class _MockAgent：记录被调用次数的 Mock 智能体。
+   方法：
+   - __init__(self, name: str) -> None
+   - async handle(self, message: A2AMessage, task) -> A2AMessage
+1. class _MockAgentManager
+   方法：
+   - __init__(self) -> None
+   - async get(self, name: str, tenant_id: str)
+   - list_for_tenant(self, tenant_id: str)
+   - async shutdown(self) -> None
+
+【必须实现的函数】
+1. test_task_queue_submit_and_status() -> None  # TaskQueue：提交 → 查询；幂等键复用 task_id（H12 回归）。
+2. test_workflow_engine_empty_workflow_no_cycle() -> None  # M9 回归：空工作流不得误报"存在环"。
+3. async _run_orchestrator_smoke() -> tuple[int, dict]  # 事件 → 编排器 → 智能体 → 时间线。返回 (timeline_count, handled)。
+4. test_orchestrator_event_routing() -> None  # 事件驱动智能体协作：时间线 + Mock 智能体被调用。
+5. test_collaboration_timeline_tenant_isolation() -> None  # 协作时间线按租户隔离。
+6. main() -> int
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

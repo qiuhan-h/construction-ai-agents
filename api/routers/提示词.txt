@@ -1,0 +1,441 @@
+================================================================================
+api/routers/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 api/routers/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+api.routers 包：FastAPI 路由聚合。
+
+【依赖】
+- from api.routers.a2a_router import build_a2a_router
+- from api.routers.agents_router import build_agents_router
+- from api.routers.bim_router import build_bim_router
+- from api.routers.health_router import build_health_router
+- from api.routers.mcp_router import build_mcp_router
+- from api.routers.mobile_router import build_mobile_router
+- from api.routers.orchestrator_router import build_orchestrator_router
+- from api.routers.reports_router import build_reports_router
+- from api.routers.tasks_router import build_tasks_router
+- from api.routers.tenant_router import build_tenant_router
+- from api.routers.websocket_router import build_websocket_router
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】a2a_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 a2a_router.py。
+
+【背景】
+A2A HTTP 路由：基于 core.a2a.server 的 FastAPI 路由。 端点（/api/v1/a2a 前缀）： POST /api/v1/a2a/agents                       智能体列表（基于 AgentRegistry） GET  /api/v1/a2a/agents/{name}                智能体详情（Card） GET  /api/v1/a2a/agents/{name}/card           仅返回 AgentCard 全文 GET  /api/v1/a2a/agents/{name}/health         智能体健康探活 POST /api/v1/a2a/agents/{name}/messages       发送消息（REST 包装） GET  /api/v1/a2a/tasks                        任务列表 GET  /api/v1/a2a/tasks/{task_id}              查询任务 POST /api/v1/a2a/tasks/{task_id}/cancel       取消任务 POST /api/v1/a2a/rpc/{agent_name}/{method}    JSON-RPC 入口（透传） 设计原则： - 本路由是 core.a2a.server 之上更友好、面向前端的 REST 包装； - 所有响应包成 ApiResponse[T]； - AppException 会被自动映射到对应 HTTP 状态码； - 鉴权：所有端点强制 Depends(get_auth_context)，tenant_id 由 AuthContext 覆盖请求体中的 tenant_id，杜绝客户端冒充任意租户。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from common.constants import AgentName
+- from common.exceptions import AppException
+- from common.ids import message_id as new_message_id
+- from common.timeutils import to_iso, utc_now
+- from core.a2a.message import A2AMessage, MessagePart
+- from core.a2a.protocol import PROTOCOL_VERSION
+- from core.a2a.server import A2AServer, get_registry
+- from api.schemas.a2a_schemas import A2ACancelTaskRequest, A2ACancelTaskResponse, A2AGetTaskResponse, A2AListTasksResponse, A2AMessageDTO, A2AMessagePartDTO, A2ASendMessageRequest, A2ASendMessageResponse
+- from api.schemas.response_schemas import ApiResponse
+
+【必须实现的函数】
+1. _to_dto(message: A2AMessage | None) -> A2AMessageDTO | None
+2. _task_to_response(task: Any) -> A2AGetTaskResponse
+3. _to_internal_message(dto: A2AMessageDTO) -> A2AMessage
+4. _raise_from_app_exc(exc: AppException) -> None  # 将 AppException 转为 FastAPI HTTPException。
+5. build_a2a_router() -> APIRouter  # 构造 /api/v1/a2a 路由。
+6. mount_a2a(app: Any) -> None  # 把 A2A 路由挂到 FastAPI app 上。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】agents_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 agents_router.py。
+
+【背景】
+智能体管理路由（4d）。 端点（/api/v1/agents 前缀）： GET  /api/v1/agents                  列出当前租户可用的业务智能体（含全局元数据） GET  /api/v1/agents/supported        列出 AgentManager 支持的智能体白名单 POST /api/v1/agents/{name}/invoke    通过 HTTP 触发智能体方法（A2A send_message 包装） GET  /api/v1/agents/{name}/card      读取 Agent Card 简化版 设计： - 4d 调用 AgentManager.get() 懒加载智能体实例； - /invoke 把入参包成 A2AMessage，调 BaseAgent.handle()； - 复用 ApiResponse[dict] 统一包装。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Depends, HTTPException, status
+- from api.dependencies.agent_manager import AgentManager, get_agent_manager
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.response_schemas import ApiResponse
+- from common.exceptions import AppException
+- from common.ids import message_id as new_message_id
+- from common.ids import task_id as new_task_id
+- from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
+
+【必须实现的函数】
+1. _raise_from_app_exc(exc: AppException) -> None
+2. build_agents_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】bim_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 bim_router.py。
+
+【背景】
+BIM 数据 API 路由（6d.1）。 端点（/api/v1/bim 前缀）： GET /api/v1/bim/projects/{project_id}/tree     项目构件树 GET /api/v1/bim/elements/{element_id}            构件详情 GET /api/v1/bim/progress/{project_id}            进度对比 + 偏差告警 设计： - 复用 BIMConnector（mock）/ BIMRealConnector（APS）； - 凭据缺失 → mock 降级（返回空壳结构，不抛错）； - 边缘端可消费精简 BIM 数据，不依赖完整 BIM 平台。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Depends, status
+- from pydantic import BaseModel
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.bim_schemas import BIMElement, BIMProgressItem, BIMProgressResponse, BIMProjectTreeNode
+- from api.schemas.response_schemas import ApiResponse
+
+【必须实现的函数】
+1. build_bim_router() -> APIRouter
+2. async _fetch_project_tree(tenant_id: str, project_id: str) -> list[dict[str, Any]]  # 获取项目构件树。BIM 平台不可达 → mock 降级。
+3. async _fetch_element(tenant_id: str, element_id: str) -> dict[str, Any]  # 获取构件详情。BIM 平台不可达 → mock 降级。
+4. _compute_progress(tenant_id: str, project_id: str) -> dict[str, Any]  # 计算进度对比。无真实数据 → mock 计划 + 实际。
+5. _get_bim_connector(tenant_id: str) -> Any  # 获取 BIM 连接器。优先 BIMRealConnector，降级 BIMConnector。
+6. _mock_project_tree(project_id: str) -> list[dict[str, Any]]
+7. _mock_element(element_id: str) -> dict[str, Any]
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 5】health_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 health_router.py。
+
+【背景】
+健康检查路由（4d D4）。 端点（/api/v1/health 前缀）： GET /api/v1/health/healthz   存活探针：进程在 → 200 GET /api/v1/health/readyz    就绪探针：DB / Redis / Celery 状态聚合 设计： - ``healthz`` 永远 200（除非进程崩溃）； - ``readyz`` 在依赖缺失时返回 503 + 详细 checks；不阻塞启动。 - 4d DB / Redis 探针走 settings 占位符（``需要补充实际链接``）→ 视为未配置但不报错。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import re
+- from typing import Any
+- from fastapi import APIRouter, Response, status
+- from api.schemas.response_schemas import ApiResponse
+- from common.timeutils import to_iso, utc_now
+
+【关键常量】
+- _PLACEHOLDER_RE
+
+【必须实现的函数】
+1. _is_configured(value: str | None) -> bool
+2. async _check_celery() -> dict[str, Any]
+3. async _check_db() -> dict[str, Any]
+4. async _check_redis() -> dict[str, Any]
+5. async _check_event_bus() -> dict[str, Any]
+6. build_health_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 6】mcp_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mcp_router.py。
+
+【背景】
+MCP HTTP 路由：基于 core.mcp.server 的 FastAPI 路由。 端点（/api/v1/mcp 前缀）： GET  /api/v1/mcp/resources          列出资源（可按 ?prefix=regulation:// 过滤） GET  /api/v1/mcp/resources/read     读取资源（?uri=regulation://xxx） GET  /api/v1/mcp/tools              列出工具 POST /api/v1/mcp/tools/call         调用工具 GET  /api/v1/mcp/prompts            列出提示词 POST /api/v1/mcp/prompts/get        渲染提示词 POST /api/v1/mcp/rpc                JSON-RPC 入口（透传所有方法） GET  /api/v1/mcp/health             健康探活 阶段二未引入鉴权；MCP 通常部署在内网，仅可信服务调用。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, HTTPException, Query, Request, status
+- from common.exceptions import AppException
+- from core.mcp.server import MCPServer, get_mcp_service
+- from api.schemas.response_schemas import ApiResponse
+
+【必须实现的函数】
+1. _raise_from_app_exc(exc: AppException) -> None
+2. build_mcp_router() -> APIRouter  # 构造 /api/v1/mcp 路由。
+3. mount_mcp(app: Any) -> None  # 把 MCP 路由挂到 FastAPI app 上。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 7】mobile_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 mobile_router.py。
+
+【背景】
+移动端精简路由（6c.1）。 端点（/api/v1/mobile 前缀）： GET /api/v1/mobile/dashboard   首页仪表盘（聚合 KPI + 最近 5 条告警 + 项目卡片） GET /api/v1/mobile/alerts      告警列表（≤20 条精简字段） GET /api/v1/mobile/projects    项目卡片列表（≤10 个） 设计： - 响应体 < 5KB（TR-8.1）：字段精简 + 列表截断； - 无外部数据源时返回空壳结构（不抛错，移动端可渲染空状态）； - 数据来自既有仓储/服务（共享桌面端数据源，仅裁剪输出字段）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Depends, Response, status
+- from pydantic import BaseModel
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.mobile_schemas import MobileAlertListItem, MobileDashboard, MobileProjectCard
+- from api.schemas.response_schemas import ApiResponse
+- from common.timeutils import to_iso, utc_now
+
+【关键常量】
+- MAX_ALERTS_DASHBOARD = 5
+- MAX_ALERTS_LIST = 20
+- MAX_PROJECTS = 10
+
+【必须实现的函数】
+1. build_mobile_router() -> APIRouter
+2. _build_dashboard(auth: AuthContext) -> MobileDashboard  # 聚合移动端首页数据。
+3. _fetch_alerts(tenant_id: str, limit: int) -> list[dict[str, Any]]  # 从告警仓储获取精简告警列表。
+4. _fetch_projects(tenant_id: str, limit: int) -> list[dict[str, Any]]  # 从项目仓储获取精简项目卡片。
+5. _aggregate_safety_score(projects: list[dict[str, Any]]) -> float | None  # 从项目卡片聚合安全评分（均值）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 8】orchestrator_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 orchestrator_router.py。
+
+【背景】
+编排器 HTTP 路由（4d）。 端点（/api/v1/orchestrator 前缀）： GET  /api/v1/orchestrator/workflows                 列出已注册工作流 POST /api/v1/orchestrator/workflows/{name}/trigger  手动触发工作流 GET  /api/v1/orchestrator/runs/{run_id}             查询运行状态 GET  /api/v1/orchestrator/timeline                  当前租户协作时间线 设计： - 4d 不暴露 ``create / delete`` workflow（仅消费 4c 内置工作流）； - ``/trigger`` 接收 payload dict，渲染工作流参数并启动执行； - payload 同时支持： - query ``?payload={"alert_id":"a1"}``（URL 兼容） - body JSON ``{"payload": {...}}``（推荐） 兼容性：query 优先（无 body 时也接受），body JSON 次之； - ``/runs/{run_id}`` 走 WorkflowEngine.get_run()（内存）。
+
+【依赖】
+- from __future__ import annotations
+- import json
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.dependencies.orchestrator_provider import get_orchestrator
+- from api.schemas.response_schemas import ApiResponse
+- from common.exceptions import AppException
+
+【必须实现的函数】
+1. _raise_from_app_exc(exc: AppException) -> None
+2. _coerce_payload(raw: Any) -> dict[str, Any] | None  # 把 query / body 中的 payload 归一化为 dict。 - 已是 dict → 直接返回； - 是 str 且可解析为 JSON → 反序列化； - 是 str 不可解析 / None / 其他类型 → 返回 None。
+3. build_orchestrator_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 9】reports_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 reports_router.py。
+
+【背景】
+报告管理路由（4d 首版：内存 mock；5b.3 切换为 ORM，4d 接口契约保留）。 端点（/api/v1/reports 前缀）： GET    /api/v1/reports              按项目列出报告（ORM ReviewReportRepository） GET    /api/v1/reports/{report_id}  获取报告详情（Markdown + 签章） GET    /api/v1/reports/{id}/download 下载报告（首版 Markdown） 设计： - 4d 时期：``_ReportStore`` 内存仓储；外部通过 ``get_report_store()`` 注入； - 5b.3：新增 ``get_report_repository()`` 返回 ``ReviewReportRepository``（ORM）； - ``_ReportStore.get/list/add`` 内部"ORM 优先，失败回退内存"，使 4d 单元测试 / 演示脚本（直接调 ``get_report_store()``）继续可用； - ``report_id`` 前缀 ``rpt_`` 校验不变； - 报告 Markdown 来源：A2AMessage.data.report.content（来自上游智能体）。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import threading
+- from typing import Any
+- from fastapi import APIRouter, Depends, HTTPException, Query, status
+- from fastapi.responses import Response
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.pagination import Page
+- from api.schemas.response_schemas import ApiResponse
+
+【关键常量】
+- _PDF_LOCK
+- _ORM_LOCK
+- _REPORT_STORE
+
+【必须实现的类】
+1. class _ReportStore：4d 内存 mock store；5b.3 起内部桥接到 ORM。
+   方法：
+   - __init__(self) -> None
+   - add(self, item: dict[str, Any]) -> None
+   - get(self, report_id: str) -> dict[str, Any] | None
+   - list(self, tenant_id: str, project_id: str | None=None, limit: int=20, offset: int=0) -> tuple[list[dict], int]
+
+【必须实现的函数】
+1. get_pdf_exporter() -> Any  # 延迟构造 PDFExporter；缺包时返回 None（路由层回退 Markdown）。
+2. _make_orm_repository() -> Any  # 延迟构造 ORM 仓储；缺包/失败时返回 None，自动回退到内存 mock。
+3. get_report_repository() -> Any  # 获取 ORM 仓储（每次调用 _make 一次再缓存，加锁避免并发竞态）。
+4. get_report_store() -> _ReportStore
+5. _reset_report_store() -> None
+6. build_reports_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 10】tasks_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tasks_router.py。
+
+【背景】
+任务管理路由（4d）。 端点（/api/v1/tasks 前缀）： GET    /api/v1/tasks/{task_id}      查询任务状态（Celery 或 mock） DELETE /api/v1/tasks/{task_id}      取消任务 设计： - 4d 通过 ``services.task_queue.get_task_queue()`` 走 mock / Celery； - 多租户隔离：所有端点强制 Depends(get_auth_context)，并通过 TaskQueue.owner_of 校验 task 归属，跨租户访问返回 404； - 取消仅对未完成任务生效；已完成任务返回 ``cancelled=False``。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Depends, HTTPException, status
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.response_schemas import ApiResponse
+
+【必须实现的函数】
+1. _enforce_owner_or_404(q: Any, task_id: str, auth: AuthContext) -> None  # 校验 task 归属，跨租户访问视为不存在（避免信息泄漏）。
+2. build_tasks_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 11】tenant_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 tenant_router.py。
+
+【背景】
+多租户 SaaS 路由（6b.1）：租户注册 / 查询 / 升级 / 配额检查。 端点（/api/v1/tenants 前缀）： POST /api/v1/tenants                       自助注册（trial 30 天 + 100 次调用） GET  /api/v1/tenants/{tenant_id}           查询租户 + 配额快照 POST /api/v1/tenants/{tenant_id}/upgrade   升级套餐（starter/pro/enterprise） POST /api/v1/tenants/{tenant_id}/quota-check 消耗一次配额（超额 → HTTP 429） 设计： - 注册端点公开（自助开通）；其余端点需 Bearer token 且仅能操作本租户； - 业务异常（AppException）统一映射为结构化错误体 ``{"code", "message", "details"}``，HTTP 状态码取自错误码定义； - 配额超限 → 429（code=30004），租户停用 → 403（code=30003）； - 不改动既有智能体 / 路由逻辑；租户上下文自动注入在 Task 6 中间件完成。
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- from typing import Any, Literal
+- from fastapi import APIRouter, Depends, HTTPException, status
+- from pydantic import BaseModel, Field
+- from api.dependencies.auth import AuthContext, get_auth_context
+- from api.schemas.response_schemas import ApiResponse
+- from common.exceptions import AppException
+
+【必须实现的类】
+1. class TenantCreateRequest(BaseModel)
+1. class PlanUpgradeRequest(BaseModel)
+1. class QuotaCheckRequest(BaseModel)
+
+【必须实现的函数】
+1. _http_from_app_exc(exc: AppException) -> HTTPException  # AppException → FastAPI HTTPException（结构化 detail）。
+2. _ensure_same_tenant(auth: AuthContext, tenant_id: str) -> None  # 租户隔离：token 中的 tenant_id 必须与路径租户一致。
+3. async _tenant_payload(tenant: Any) -> dict[str, Any]  # 租户模型 → API 输出（含配额快照）。
+4. build_tenant_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 12】websocket_router.py
+================================================================================
+你是一名 Python 后端开发者。请实现 websocket_router.py。
+
+【背景】
+WebSocket 路由（4d D5）。 端点（/api/v1/ws 前缀）： WS /api/v1/ws/events?topic=alert.*&tenant_id=tnt_x  实时事件推送 设计： - 客户端在 query 携带 ``topic``（支持通配符 ``*``）与 ``tenant_id``； - 服务端先订阅，再 accept WebSocket，避免竞态（参考 4d plan §3.8）； - 每 30s 发 ping；客户端断线时取消订阅并清理资源； - 4d 不要求鉴权：ws query 传 tenant_id 即可（生产由前置网关做 JWT）。
+
+【依赖】
+- from __future__ import annotations
+- import asyncio
+- import json
+- import logging
+- from typing import Any
+- from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+
+【关键常量】
+- PING_INTERVAL_SECONDS = 30.0
+
+【必须实现的函数】
+1. build_websocket_router() -> APIRouter
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

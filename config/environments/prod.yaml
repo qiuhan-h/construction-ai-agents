@@ -1,0 +1,9 @@
+# 生产环境覆盖（仅在字段未被环境变量显式设置时生效）
+# 注意：生产凭据（DATABASE_URL / LLM_API_KEY / API_JWT_SECRET 等）
+# 必须由环境变量或 K8s Secret 注入，禁止写入本文件。
+log_level: WARNING
+api_port: 8000
+
+llm_temperature: 0.1
+llm_max_retries: 5
+llm_timeout: 180.0

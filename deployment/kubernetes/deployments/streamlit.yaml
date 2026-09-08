@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caai-streamlit
+  labels: {app: caai-streamlit}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: caai-streamlit}
+  template:
+    metadata:
+      labels: {app: caai-streamlit}
+    spec:
+      containers:
+        - name: streamlit
+          image: caai/streamlit:latest
+          ports: [{containerPort: 8501}]
+          livenessProbe:
+            httpGet: {path: /_stcore/health, port: 8501}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /_stcore/health, port: 8501}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          envFrom:
+            - configMapRef: {name: caai-config}

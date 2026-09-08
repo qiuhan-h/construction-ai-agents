@@ -1,0 +1,154 @@
+================================================================================
+core/langchain/chains/ 目录代码生成提示词合集
+================================================================================
+本文件汇总 core/langchain/chains/ 目录下所有代码文件的"代码生成提示词"。
+每一段都是一段独立的 prompt，可直接复制粘贴给大模型，让其生成对应代码文件。
+分段处理，每段对应一个代码文件。生成代码时请严格遵守每段中的接口契约和约束。
+
+================================================================================
+【生成文件 1】__init__.py
+================================================================================
+你是一名 Python 后端开发者。请实现 __init__.py。
+
+【背景】
+LangChain 业务链子包（5b.6 实做，依 shu_zhuang_tu.txt 第 184-188 行）。 子包结构（对齐 ``shu_zhuang_tu.txt``）:: chains/ ├── __init__.py           本文件：协议 + 公共组件 + 工厂注册表 ├── safety_chain.py      安全审核链（方案/图纸/结构 → verdict/findings/suggestions） ├── compliance_chain.py   合规校验链（法规比对 → passed/violations） └── monitoring_chain.py   监控分析链（告警 → action/reasoning/notify） 设计（5b.6 边界）： - 本 ``__init__.py`` 只做"协议 + 共享组件 + 工厂注册表"， 具体 chain 的 prompt + 注册调用在子模块； - ``BusinessChain`` 协议：``name`` + ``async run(tenant_id, payload) -> dict``； - ``MockBusinessChain``：缺 langchain SDK 时降级；按 name 分支返回结构化 mock； - ``LCTBusinessChain``：真 LangChain LLMChain 封装，缺包自动降级； - ``register_chain / get_chain / list_chains``：工厂注册表 + 单例 cache。 不依赖： - 不引入额外第三方包（langchain 在调用时再 import；缺包不抛 ImportError）； - 不接向量库（向量库在 5b.2，由调用方注入）。 入口约定（5b.6 推荐）:: from core.langchain.chains import get_chain, BusinessChain chain = get_chain("safety_audit") out = await chain.run(tenant_id, {"document": "..."})
+
+【依赖】
+- from __future__ import annotations
+- import logging
+- import os
+- import threading
+- from dataclasses import dataclass, field
+- from typing import Any, Callable, Literal, Protocol, runtime_checkable
+
+【必须实现的类】
+1. class BusinessChain(Protocol)：业务链统一协议。
+   方法：
+   - async run(self, tenant_id: str, payload: dict[str, Any]) -> dict[str, Any]  # 执行链，返回结构化 dict。
+1. class ChainContext：链式调用上下文（payload 容器）。
+1. class MockBusinessChain：不依赖任何第三方 SDK 的兜底 chain。 行为：按 ``name`` 从 ``_MOCK_RESPONSES`` 取注册的 mock 响应工厂； 缺失时返回通用 mock。真实 LLM 调用由 ``LCTBusinessChain`` 提供。
+   方法：
+   - __init__(self, name: str) -> None
+   - async run(self, tenant_id: str, payload: dict[str, Any]) -> dict[str, Any]
+1. class LCTBusinessChain：基于 LangChain LLMChain 的真业务链。 缺包时**绝不抛 ImportError**——构造时检测到没装 langchain， 自动降级为 MockBusinessChain，但属性 / 接口保持一致。
+   方法：
+   - __init__(self, name: str, model: str | None) -> None
+   - async run(self, tenant_id: str, payload: dict[str, Any]) -> dict[str, Any]
+
+【必须实现的函数】
+1. register_mock_response(name: str, factory: Callable[[str], dict[str, Any]]) -> None  # 注册 chain 的 mock 响应工厂（子模块 import 时调用）。 Args: name: chain 名（safety_audit / compliance / site_monitor）。 factory: 接受 ``tenant_id`` 返回 mock dict 的可调用对象。
+2. _langchain_available() -> bool
+3. register_prompt(name: str, prompt: str) -> None  # 注册 chain 的 prompt 模板（子模块 import 时调用）。
+4. register_chain(name: str, factory: _ChainFactory) -> None  # 注册自定义 chain 工厂（5b.6 公共扩展点）。 子模块（safety_chain / compliance_chain / monitoring_chain） 在 import 时调用本函数完成默认注册。
+5. _ensure_default_registry() -> None  # 惰性填充默认注册表（避免 import 时强依赖 langchain）。 触发子模块 import：子模块各自调用 ``register_chain`` + ``register_prompt`` + ``register_mock_response``。
+6. get_chain(name: str, use_cache: bool) -> BusinessChain  # 按 name 获取业务链。 异常： - ``ValueError``：name 不在白名单（防止拼写错静默 fallback）。 - ``ModuleNotFoundError``：底层 chain 工厂抛（目前实现永不抛）。
+7. list_chains() -> list[str]  # 返回已注册的 chain 名。
+8. reset_default_chains() -> None  # 重置单例 cache（测试用）。
+9. langchain_available() -> bool  # 暴露给业务层 / 健康检查。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 2】compliance_chain.py
+================================================================================
+你是一名 Python 后端开发者。请实现 compliance_chain.py。
+
+【背景】
+合规校验链（5b.6 实做，对齐 shu_zhuang_tu.txt 第 186 行）。 职责： - 注册 ``compliance`` 业务链 + prompt + mock 响应； - 业务逻辑：法规库比对 → passed + violations（code/article/severity/suggestion）； - 缺 langchain SDK 时降级 ``MockBusinessChain``（用注册的 mock 响应）。 注册链名：``compliance``
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.chains import LCTBusinessChain, register_chain, register_mock_response, register_prompt
+
+【关键常量】
+- COMPLIANCE_PROMPT = '你是建筑施工合规校验专家。\n对【{project_name}】的{check_kind}进行合规校验，比对法规...
+
+【必须实现的函数】
+1. _mock_compliance_response(tenant_id: str) -> dict  # Mock 响应：防火墙耐火极限不足。
+2. _register() -> None  # 注册 compliance 业务链（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 3】monitoring_chain.py
+================================================================================
+你是一名 Python 后端开发者。请实现 monitoring_chain.py。
+
+【背景】
+监控分析链（5b.6 实做，对齐 shu_zhuang_tu.txt 第 187 行）。 职责： - 注册 ``site_monitor`` 业务链 + prompt + mock 响应； - 业务逻辑：实时告警 → action + reasoning + next_check_minutes + notify_channels； - 缺 langchain SDK 时降级 ``MockBusinessChain``（用注册的 mock 响应）。 注册链名：``site_monitor``
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.chains import LCTBusinessChain, register_chain, register_mock_response, register_prompt
+
+【关键常量】
+- MONITORING_PROMPT = '你是施工现场监控分析专家，处理实时告警。\n告警上下文：\n{alert_payload}\n历史同类告警：\n...
+
+【必须实现的函数】
+1. _mock_site_monitor_response(tenant_id: str) -> dict  # Mock 响应：塔吊风速超阈值。
+2. _register() -> None  # 注册 site_monitor 业务链（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+【生成文件 4】safety_chain.py
+================================================================================
+你是一名 Python 后端开发者。请实现 safety_chain.py。
+
+【背景】
+安全审核链（5b.6 实做，对齐 shu_zhuang_tu.txt 第 188 行）。 职责： - 注册 ``safety_audit`` 业务链 + prompt + mock 响应； - 业务逻辑：方案 / 图纸 / 结构安全审核 → verdict + findings + suggestions； - 缺 langchain SDK 时降级 ``MockBusinessChain``（用注册的 mock 响应）。 注册链名：``safety_audit``
+
+【依赖】
+- from __future__ import annotations
+- from core.langchain.chains import LCTBusinessChain, register_chain, register_mock_response, register_prompt
+
+【关键常量】
+- SAFETY_AUDIT_PROMPT = '你是施工现场安全审核专家，负责对【{project_name}】的{artifact_kind}进行审核。\n审...
+
+【必须实现的函数】
+1. _mock_safety_audit_response(tenant_id: str) -> dict  # Mock 响应：高支模区域未提供监测点位图。
+2. _register() -> None  # 注册 safety_audit 业务链（import 时调用一次）。
+
+【约束】
+- 严格遵循上述接口签名（参数名、类型注解、返回值类型）
+- 保持向后兼容，不修改已有公共接口
+- 新增功能须补充对应单元测试
+
+【输出】
+完整的代码文件，使用中文 docstring 和类型注解，并在关键逻辑处添加中文行内注释。
+
+================================================================================
+目录级生成约束
+================================================================================
+1. 所有文件必须使用中文 docstring 和类型注解（from __future__ import annotations）
+2. 严格遵循各文件【必须实现的类/函数】中定义的接口签名
+3. 新增功能须补充对应单元测试，运行 pytest 确认无回归
+4. 涉及环境变量的配置须同步更新 .env.example 与 config/settings.py
+
+【中文注释规范】（所有生成的代码必须遵守）
+- 模块顶部 docstring：中文说明文件职责、设计原则
+- 类 docstring：中文说明类用途、关键属性
+- 方法/函数 docstring：中文说明功能、参数含义、返回值
+- 关键代码逻辑：必须添加中文行内注释（# 注释），解释"为什么这样做"
+- 复杂分支、循环、异常处理：必须有中文注释说明意图
+- 禁止使用英文注释；禁止无注释的复杂逻辑块
+- 常量、枚举、配置项：必须有中文注释说明用途
+================================================================================

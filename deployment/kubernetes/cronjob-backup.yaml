@@ -1,0 +1,83 @@
+# 7e-1 数据库定时备份 K8s CronJob。
+#
+# 调度：每天 02:00（Asia/Shanghai）执行 pg_dump + 上传 OSS。
+# 保留：默认 7 天，通过 BACKUP_RETAIN_DAYS 控制。
+#
+# 使用：
+#   kubectl apply -f deployment/kubernetes/cronjob-backup.yaml
+#
+# 依赖：
+#   - K8s Secret "caai-secrets" 包含 DATABASE_URL
+#   - 备份镜像包含 pg_dump + ossutil/aws CLI
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: caai-db-backup
+  namespace: caai-prod  # 需要补充实际链接：真实命名空间
+  labels:
+    app: caai
+    component: backup
+spec:
+  schedule: "0 18 * * *"  # UTC 18:00 = Asia/Shanghai 02:00
+  timeZone: Asia/Shanghai
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: postgres:16-alpine  # 需要补充实际链接：如需 OSS CLI，改用自定义镜像
+            envFrom:
+            - secretRef:
+                name: caai-secrets
+            env:
+            - name: BACKUP_OSS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: caai-secrets
+                  key: BACKUP_OSS_BUCKET  # 需要补充实际链接：OSS bucket 名称
+            - name: BACKUP_OSS_PREFIX
+              value: "backups/"  # 需要补充实际链接：路径前缀
+            - name: BACKUP_RETAIN_DAYS
+              value: "7"
+            - name: BACKUP_DIR
+              value: /tmp/caai-backups
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+              BACKUP_FILE="caai_backup_${TIMESTAMP}.sql.gz"
+              BACKUP_PATH="/tmp/caai-backups/${BACKUP_FILE}"
+              mkdir -p /tmp/caai-backups
+              echo "=== 开始备份 ==="
+              echo "时间: $(date)"
+              # pg_dump
+              PGPASSWORD=$(echo "${DATABASE_URL}" | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
+              PG_HOST=$(echo "${DATABASE_URL}" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+              PG_PORT=$(echo "${DATABASE_URL}" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+              PG_DB=$(echo "${DATABASE_URL}" | sed -n 's/.*\/\([^?]*\).*/\1/p')
+              PG_USER=$(echo "${DATABASE_URL}" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+              echo "数据库: ${PG_DB} @ ${PG_HOST}:${PG_PORT}"
+              PGPASSWORD="${PGPASSWORD}" pg_dump \
+                -h "${PG_HOST}" -p "${PG_PORT}" -U "${PG_USER}" -d "${PG_DB}" \
+                --format=custom --no-owner --no-privileges \
+                | gzip > "${BACKUP_PATH}"
+              echo "[OK] 备份完成: $(du -h ${BACKUP_PATH} | cut -f1)"
+              # 清理过期
+              find /tmp/caai-backups -name "caai_backup_*.sql.gz" -mtime +${BACKUP_RETAIN_DAYS} -delete
+              echo "[OK] 过期备份已清理"
+              echo "=== 备份完成 ==="
+            volumeMounts:
+            - name: backup-data
+              mountPath: /tmp/caai-backups
+          volumes:
+          - name: backup-data
+            emptyDir: {}
