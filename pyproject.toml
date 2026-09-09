@@ -96,6 +96,7 @@ select = [
 ignore = [
     "E501",  # 行长度交给格式化器
     "B008",  # FastAPI 标准写法：Depends() 放在参数默认值
+    "UP042", # StrEnum vs (str, Enum) — 保持旧写法兼容 Python 3.10
 ]
 
 [tool.pytest.ini_options]
