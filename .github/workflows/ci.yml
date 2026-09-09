@@ -16,7 +16,7 @@ jobs:
       - run: pip install -e ".[dev,observability,security,langchain,vector,frontend,tsdb]"
       - run: ruff check .
         name: lint (ruff)
-      - run: mypy core/ agents/ services/ api/
+      - run: mypy .
         name: type-check (mypy)
       - run: PYTHONPATH=. pytest tests -q --cov=.
         name: pytest
