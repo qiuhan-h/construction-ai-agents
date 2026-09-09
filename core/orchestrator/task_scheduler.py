@@ -14,7 +14,6 @@ import logging
 from typing import Any
 
 from common.exceptions import AppException
-from common.ids import new_id
 from core.orchestrator.workflow_engine import TaskSpec
 
 logger = logging.getLogger(__name__)
@@ -105,9 +104,6 @@ def register_celery_tasks(celery_app: Any) -> None:
 
     @celery_app.task(name="orchestrator._dispatch_node", bind=True, max_retries=MAX_RETRIES)
     def _dispatch_node(self, params: dict, tenant_id: str, **kw) -> dict:  # noqa: ANN001
-        from core.a2a.message import A2AMessage, MessagePart, Task
-        from common.ids import message_id, task_id
-        from core.events import publish_sync, TOPIC_AGENT_TASK_DONE
         from common.timeutils import to_iso, utc_now
 
         node_id = kw.get("node_id", "")

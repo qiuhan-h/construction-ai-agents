@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import time
-from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
@@ -53,8 +52,9 @@ def test_mobile_project_card_schema_fields() -> None:
 # =====================================================
 def test_mobile_dashboard_response_under_5kb() -> None:
     """GET /api/v1/mobile/dashboard 响应体 < 5120 bytes。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -74,8 +74,9 @@ def test_mobile_dashboard_response_under_5kb() -> None:
 
 def test_mobile_alerts_response() -> None:
     """GET /api/v1/mobile/alerts 返回列表。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -92,8 +93,9 @@ def test_mobile_alerts_response() -> None:
 
 def test_mobile_projects_response() -> None:
     """GET /api/v1/mobile/projects 返回列表。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -133,7 +135,7 @@ def test_dingtalk_oauth_state_mismatch_403() -> None:
 # =====================================================
 def test_dingtalk_oauth_timestamp_expired_403() -> None:
     """DingTalkApp.oauth_callback timestamp >300s → HTTPException 403。"""
-    from services.embedded_apps.dingtalk_app import DingTalkApp, OAUTH_STATE_TTL
+    from services.embedded_apps.dingtalk_app import DingTalkApp
 
     app = DingTalkApp()
     # 生成 state

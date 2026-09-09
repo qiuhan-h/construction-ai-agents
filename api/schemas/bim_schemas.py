@@ -26,7 +26,7 @@ class BIMProjectTreeNode(BaseModel):
     id: str = Field(..., description="节点 ID")
     type: str = Field(default="", description="IFC 类型")
     name: str = Field(default="", description="节点名称")
-    children: list["BIMProjectTreeNode"] = Field(
+    children: list[BIMProjectTreeNode] = Field(
         default_factory=list, description="子节点"
     )
 

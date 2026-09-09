@@ -69,15 +69,15 @@ def t_ids_phase2():
 # A2A 协议层
 # =====================================================
 def t_a2a_protocol():
+    from common.exceptions import A2AProtocolVersionMismatchError
     from core.a2a.protocol import (
-        A2AErrorCode,
-        A2AMethod,
         PROTOCOL_VERSION,
         SUPPORTED_PROTOCOL_VERSIONS,
+        A2AErrorCode,
+        A2AMethod,
         check_protocol_version,
         make_error,
     )
-    from common.exceptions import A2AProtocolVersionMismatchError
 
     assert PROTOCOL_VERSION == "1.0"
     assert "1.0" in SUPPORTED_PROTOCOL_VERSIONS
@@ -153,7 +153,7 @@ def t_a2a_serializers():
 
 
 def t_a2a_agent_card():
-    from core.a2a.agent_card import AgentCard, Capabilities, Skill
+    from core.a2a.agent_card import AgentCard, Skill
     from core.a2a.protocol import PROTOCOL_VERSION
 
     c = AgentCard(
@@ -170,9 +170,10 @@ def t_a2a_agent_card():
 
 def t_a2a_registry_and_server():
     import asyncio
-    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
+
+    from core.a2a.message import A2AMessage, MessagePart, Task
     from core.a2a.protocol import A2AMethod
-    from core.a2a.server import AgentRegistry, A2AServer, reset_registry
+    from core.a2a.server import A2AServer, AgentRegistry, reset_registry
 
     reset_registry()
     reg = AgentRegistry()
@@ -240,8 +241,8 @@ def t_a2a_registry_and_server():
 
 def t_a2a_client_middleware():
     from core.a2a.client import build_message
-    from core.a2a.middleware import RateLimiter, logging_middleware, timing_middleware
     from core.a2a.message import A2AMessage
+    from core.a2a.middleware import RateLimiter, logging_middleware, timing_middleware
 
     m = build_message(tenant_id="tnt_x", text="hello")
     assert isinstance(m, A2AMessage) and m.parts[0].text == "hello"
@@ -249,6 +250,7 @@ def t_a2a_client_middleware():
 
     # 中间件不应抛错
     import asyncio
+
     from core.a2a.serializers import JSONRPCRequest
 
     async def _run():
@@ -292,6 +294,7 @@ def t_mcp_registration():
 def t_mcp_call_tool():
     """注意：不调用 reset_mcp_service()，否则会丢失装饰器时注册的条目。"""
     import asyncio
+
     from core.mcp.server import get_mcp_service
 
     svc = get_mcp_service()
@@ -325,6 +328,7 @@ def t_mcp_call_tool():
 
 def t_mcp_render_prompt():
     import asyncio
+
     from core.mcp.server import get_mcp_service
 
     svc = get_mcp_service()
@@ -343,8 +347,9 @@ def t_mcp_render_prompt():
 
 def t_mcp_read_resource():
     import asyncio
-    from core.mcp.server import get_mcp_service
+
     from common.exceptions import MCPResourceNotFoundError
+    from core.mcp.server import get_mcp_service
 
     svc = get_mcp_service()
     # regulation 不存在时返回 available=False，但内部抛错
@@ -370,13 +375,14 @@ def t_mcp_client():
 # =====================================================
 def t_event_bus():
     import asyncio
+
     from core.events import (
-        Event,
-        get_event_bus,
-        reset_event_bus,
-        publish,
         TOPIC_INSPECTION_COMPLETED,
         TOPIC_VIOLATION_CREATED,
+        Event,
+        get_event_bus,
+        publish,
+        reset_event_bus,
     )
 
     reset_event_bus()
@@ -427,9 +433,10 @@ def t_event_bus():
 # =====================================================
 def t_base_agent():
     import asyncio
+
     from agents.base_agent import BaseAgent
     from core.a2a.agent_card import Skill
-    from core.a2a.message import Task, TaskState
+    from core.a2a.message import TaskState
     from core.a2a.server import reset_registry
 
     reset_registry()
@@ -481,15 +488,15 @@ def t_base_agent():
 # =====================================================
 def t_api_schemas():
     from typing import Any
+
     from api.schemas import (
+        A2AMessageDTO,
+        A2ASendMessageRequest,
+        AgentSummary,
         ApiResponse,
         ErrorResponse,
         Page,
         PaginationQuery,
-        AgentSummary,
-        AgentCardDTO,
-        A2ASendMessageRequest,
-        A2AMessageDTO,
     )
 
     ok = ApiResponse[str].ok("hi")
@@ -535,9 +542,9 @@ def t_routers_construct():
 # scripts 入口（仅校验 build_app 不抛错）
 # =====================================================
 def t_scripts_apps():
+    from core.a2a.server import reset_registry
     from scripts.start_a2a_server import build_app as build_a2a_app
     from scripts.start_mcp_server import build_app as build_mcp_app
-    from core.a2a.server import reset_registry
     # 注意：不重置 MCP 服务，避免丢失装饰器注册的资源/工具/提示词
 
     reset_registry()
@@ -552,11 +559,12 @@ def t_scripts_apps():
 def t_integration_a2a_mcp_events():
     """A2A 智能体处理一条消息时通过 MCP 工具算荷载并发布事件。"""
     import asyncio
-    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
-    from core.a2a.server import A2AServer, AgentRegistry, reset_registry
-    from core.mcp.server import get_mcp_service
-    from core.events import get_event_bus, reset_event_bus, Event, TOPIC_INSPECTION_COMPLETED
+
     from core.a2a.agent_card import AgentCard
+    from core.a2a.message import A2AMessage, MessagePart, Task
+    from core.a2a.server import A2AServer, AgentRegistry, reset_registry
+    from core.events import TOPIC_INSPECTION_COMPLETED, Event, get_event_bus, reset_event_bus
+    from core.mcp.server import get_mcp_service
 
     reset_registry()
     reset_event_bus()

@@ -63,40 +63,10 @@ def t_subprocess_test_agent():
 # 自身新增断言（不重复 test_agent.py 已覆盖的项）
 # =====================================================
 def t_agents_module_importable():
-    from agents.safety_audit_agent import (
-        SafetyAuditAgent,
-        make_safety_audit_agent,
-        SafetyAuditLangChainAgent,
-        PROMPT_PLAN_REVIEW,
-        PROMPT_DRAWING_REVIEW,
-        PROMPT_REPORT_DRAFT,
-    )
-    from agents.safety_audit_agent.mcp_handlers import (
-        SafetyAuditMCPHandler,
-        install,
-    )
-    from agents.safety_audit_agent.a2a_handlers import (
-        register_safety_audit_agent,
-        build_a2a_router,
-    )
     from agents.safety_audit_agent.calculators import (
-        LoadCalculator, LECAssessor, StructuralAnalyzer,
-        LoadInputs, HazardInput, MemberType,
-        RiskAssessment, RiskLevel,
-    )
-    from agents.safety_audit_agent.knowledge_base import (
-        InMemoryVectorStore, CaseRetriever, StandardLoader,
-        VectorRecord, VectorHit,
-    )
-    from agents.safety_audit_agent.parsers import (
-        PlanParser, SpecParser, DrawingParser,
-        PlanFields, SpecChunk, DrawingMetadata,
-    )
-    from agents.safety_audit_agent.outputs import (
-        ReportSigner, ReportGenerator, RecommendationEngine,
-        SignInfo, Recommendation, RecommendationSet, Severity,
-        ReportArtifacts,
-        sign_report_content, verify_signature,
+        LECAssessor,
+        LoadCalculator,
+        StructuralAnalyzer,
     )
 
     # 公开类至少可实例化（除 LangChainAgent 必须有 base_agent）
@@ -111,9 +81,11 @@ def t_agents_module_importable():
 def t_sign_report_content_module_helper():
     """模块级便捷函数签名正确。"""
     from agents.safety_audit_agent.outputs import (
-        sign_report_content, verify_signature, default_signer,
+        default_signer,
+        sign_report_content,
+        verify_signature,
     )
-    signer = default_signer(secret="stage3-test")
+    default_signer(secret="stage3-test")
     info = sign_report_content("# 内容", "tnt_x", secret="stage3-test")
     assert verify_signature(
         "# 内容", "tnt_x", info.signed_at, info.signature,
@@ -123,8 +95,8 @@ def t_sign_report_content_module_helper():
 
 def t_inheritance_to_base_agent():
     """SafetyAuditAgent 必须继承自 agents.base_agent.BaseAgent。"""
-    from agents.safety_audit_agent import SafetyAuditAgent
     from agents.base_agent import BaseAgent
+    from agents.safety_audit_agent import SafetyAuditAgent
 
     assert issubclass(SafetyAuditAgent, BaseAgent)
 

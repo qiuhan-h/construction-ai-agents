@@ -29,9 +29,9 @@ from core.vector_store.base import (
     VectorStoreError,
 )
 from core.vector_store.factory import (
+    get_vector_store,
     list_backends,
     reset_default_vector_store,
-    get_vector_store,
 )
 
 __all__ = [

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 def reconcile(month: str, tenant_id: str | None = None) -> int:
     """对账主逻辑。"""
     print("=" * 72)
-    print(f"7e-3 租户计费对账")
+    print("7e-3 租户计费对账")
     print(f"月份: {month}")
     if tenant_id:
         print(f"租户: {tenant_id}")
@@ -80,11 +80,11 @@ def reconcile(month: str, tenant_id: str | None = None) -> int:
                 if t.quota_used > 0 and audit_count > 0:
                     print(f"    配额已用: {t.quota_used}, 审计记录: {audit_count}")
                     if t.quota_used >= audit_count * 0.5:
-                        print(f"    [OK] 配额使用合理")
+                        print("    [OK] 配额使用合理")
                     else:
-                        print(f"    [WARN] 配额与审计记录差异较大")
+                        print("    [WARN] 配额与审计记录差异较大")
                 else:
-                    print(f"    [INFO] 无调用记录")
+                    print("    [INFO] 无调用记录")
                 results.append(True)
     except Exception as e:
         print(f"  [FAIL] 审计日志对账失败: {e}")
@@ -126,7 +126,7 @@ def reconcile(month: str, tenant_id: str | None = None) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="7e-3 租户计费对账")
-    parser.add_argument("--month", default=datetime.now(timezone.utc).strftime("%Y-%m"), help="对账月份（YYYY-MM）")
+    parser.add_argument("--month", default=datetime.now(UTC).strftime("%Y-%m"), help="对账月份（YYYY-MM）")
     parser.add_argument("--tenant", default=None, help="指定租户 ID")
     args = parser.parse_args()
 

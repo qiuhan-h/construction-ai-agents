@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any
 
@@ -98,7 +97,7 @@ def build_websocket_router() -> APIRouter:
                     event = await asyncio.wait_for(
                         queue.get(), timeout=PING_INTERVAL_SECONDS
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await ws.send_json({"type": "ping"})
                     continue
 

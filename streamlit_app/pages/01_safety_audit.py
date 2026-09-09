@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 from typing import Any
 
@@ -21,7 +20,6 @@ from streamlit_app.utils import (
     api_client,
     get_state,
 )
-
 
 AGENT_NAME = "safety_audit_agent"
 PAGE_TITLE = "安全审核"
@@ -133,9 +131,9 @@ def _render_invoke_form() -> None:
     )
 
     default_msg = (
-        "请对项目 {prj} 的方案 {plan} 进行 {sk}，"
+        f"请对项目 {project_id} 的方案 {plan_id} 进行 {skill}，"
         "重点关注 GB 50016 防火规范与 GB 50011 抗震规范。"
-    ).format(prj=project_id, plan=plan_id, sk=skill)
+    )
     message = st.text_area(
         "审核要求（文本）",
         value=default_msg,

@@ -20,7 +20,6 @@ from streamlit_app.utils import (
     get_state,
 )
 
-
 PAGE_TITLE = "智能体管理"
 
 
@@ -115,7 +114,7 @@ def _render_free_invoke() -> None:
     """自由调用表单（method + params JSON）。"""
     cli = _api()
     st.markdown("### 自由调用（高级）")
-    state = get_state()
+    get_state()
     try:
         supported = cli.list_supported_agents()
     except APIError:

@@ -55,7 +55,7 @@ class Page(BaseModel, Generic[T]):
         *,
         page: int = 1,
         page_size: int = 20,
-    ) -> "Page[T]":
+    ) -> Page[T]:
         total_pages = math.ceil(total / page_size) if page_size > 0 else 0
         return cls(
             items=items,
@@ -68,7 +68,7 @@ class Page(BaseModel, Generic[T]):
         )
 
     @classmethod
-    def empty(cls, *, page: int = 1, page_size: int = 20) -> "Page[T]":
+    def empty(cls, *, page: int = 1, page_size: int = 20) -> Page[T]:
         return cls.of([], 0, page=page, page_size=page_size)
 
 

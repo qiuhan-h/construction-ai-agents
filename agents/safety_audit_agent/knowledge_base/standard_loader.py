@@ -14,15 +14,14 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from common.constants import DocType, ResourceType
-from common.exceptions import AgentParseError
-from common.ids import project_id as _project_id_factory  # 防重名
-from common.timeutils import to_iso, utc_now
-
 from agents.safety_audit_agent.knowledge_base.vector_store import (
     VectorRecord,
     get_default_vector_store,
 )
+from common.constants import DocType, ResourceType
+from common.exceptions import AgentParseError
+from common.ids import project_id as _project_id_factory  # 防重名
+from common.timeutils import to_iso, utc_now
 
 logger = logging.getLogger("agents.safety_audit_agent.knowledge_base.standard_loader")
 

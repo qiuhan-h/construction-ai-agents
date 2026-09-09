@@ -22,7 +22,6 @@ def install(app: Any) -> None:
     """向 FastAPI app 注册 trace 中间件。"""
     if _tracer is None:
         setup()
-    from starlette.middleware.base import BaseHTTPMiddleware  # type: ignore
     from starlette.requests import Request  # type: ignore
     from starlette.responses import Response  # type: ignore
 

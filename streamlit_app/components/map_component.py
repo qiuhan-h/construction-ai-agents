@@ -14,7 +14,6 @@ from typing import Any, Literal
 import pandas as pd
 import streamlit as st
 
-
 MapKind = Literal["markers", "heatmap", "polygon"]
 
 

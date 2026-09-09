@@ -65,7 +65,7 @@ def build_orchestrator_router() -> APIRouter:
     @router.get("/workflows", response_model=ApiResponse[dict])
     async def list_workflows(
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         orch = get_orchestrator()
         items = orch.list_workflows()
         return ApiResponse[dict].ok({"workflows": items, "total": len(items)})
@@ -74,7 +74,7 @@ def build_orchestrator_router() -> APIRouter:
     async def get_workflow(
         name: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         """读取单个工作流的完整定义（节点 + 依赖 + 参数模板）。
 
         4e 起供编排可视化 dashboard 详情面板使用。
@@ -116,7 +116,7 @@ def build_orchestrator_router() -> APIRouter:
         payload: str | None = None,
         body: dict[str, Any] | None = Body(default=None),
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         # 解析 payload：query 字符串优先（兼容 URL 调用），否则 body JSON
         merged: dict[str, Any] = {}
         qp = _coerce_payload(payload)
@@ -174,7 +174,7 @@ def build_orchestrator_router() -> APIRouter:
     async def get_run(
         run_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         orch = get_orchestrator()
         info = orch.get_run(run_id)
         if info is None:
@@ -196,7 +196,7 @@ def build_orchestrator_router() -> APIRouter:
         limit: int | None = Query(
             default=None, ge=1, le=500, description="最多返回条数（按 ts 倒序）"
         ),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         orch = get_orchestrator()
         items = orch.collaboration.get_timeline_by_tenant(auth.tenant_id)
         # 按 ts 倒序
@@ -215,7 +215,7 @@ def build_orchestrator_router() -> APIRouter:
     @router.get("/stats", response_model=ApiResponse[dict])
     async def get_stats(
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         """编排器运行统计（4e dashboard 使用）。
 
         返回 workflow 数 / 运行总数 / 今日触发 / 失败 / 最近 run。

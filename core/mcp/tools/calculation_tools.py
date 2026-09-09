@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from common.timeutils import to_iso, utc_now

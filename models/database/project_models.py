@@ -93,7 +93,7 @@ class ProjectTable(TenantMixin, IDMixin, TimestampMixin, Base):
 
     # project_id -> plans 通过真实外键建立关系；
     # 跨租户通过 tenant_id 字段过滤（不建物理关系避免跨租户级联）
-    plans: Mapped[list["ConstructionPlanTable"]] = relationship(back_populates="project")
+    plans: Mapped[list[ConstructionPlanTable]] = relationship(back_populates="project")
 
 
 class ConstructionPlanTable(TenantMixin, IDMixin, TimestampMixin, Base):
@@ -116,4 +116,4 @@ class ConstructionPlanTable(TenantMixin, IDMixin, TimestampMixin, Base):
         enum_column(PlanStatus), nullable=False, default=PlanStatus.DRAFT.value
     )
 
-    project: Mapped["ProjectTable"] = relationship(back_populates="plans")
+    project: Mapped[ProjectTable] = relationship(back_populates="plans")

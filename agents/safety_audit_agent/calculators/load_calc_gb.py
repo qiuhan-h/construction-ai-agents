@@ -18,11 +18,9 @@ from typing import Any, Literal
 
 from .load_calculator import (
     FLOOR_LIVE_LOAD_KPA,
-    LoadInputs,
-    LoadResult,
     MATERIAL_SELF_WEIGHT_KN_M3,
+    LoadInputs,
 )
-
 
 # =====================================================
 # GB 50009-2012 §3.2.4 系数表
@@ -104,7 +102,7 @@ class GB50009LoadCalculator:
         self, inputs: LoadInputs, region: str | None
     ) -> LoadCombinationResult:
         d = inputs.dead_load_kpa
-        l = inputs.live_load_kpa
+        live = inputs.live_load_kpa
         w = (
             inputs.wind_vibration_coef
             * inputs.wind_shape_coef
@@ -126,16 +124,16 @@ class GB50009LoadCalculator:
         formulae: dict[str, str] = {}
 
         # 1) 1.2G + 1.4Q（Q 取控制可变荷载）
-        q_max = max(l, w, s)
+        q_max = max(live, w, s)
         basic["G+Q"] = GAMMA_G_UNFAVORABLE * d + GAMMA_Q * q_max
         formulae["G+Q"] = "1.2·G + 1.4·Q"
 
         # 2) 1.2G + 1.4L + 0.6·1.4W（风与活载）
-        basic["G+L+0.6W"] = GAMMA_G_UNFAVORABLE * d + GAMMA_Q * l + GAMMA_Q * PSI_C_TWO * w
+        basic["G+L+0.6W"] = GAMMA_G_UNFAVORABLE * d + GAMMA_Q * live + GAMMA_Q * PSI_C_TWO * w
         formulae["G+L+0.6W"] = "1.2·G + 1.4·L + 1.4×0.7·W"
 
         # 3) 1.2G + 1.4W + 0.6·1.4L（风控制）
-        basic["G+W+0.6L"] = GAMMA_G_UNFAVORABLE * d + GAMMA_Q * w + GAMMA_Q * PSI_C_TWO * l
+        basic["G+W+0.6L"] = GAMMA_G_UNFAVORABLE * d + GAMMA_Q * w + GAMMA_Q * PSI_C_TWO * live
         formulae["G+W+0.6L"] = "1.2·G + 1.4·W + 1.4×0.7·L"
 
         # 4) 1.2G + 1.4W + 0.6·1.4S（风+雪）
@@ -147,20 +145,20 @@ class GB50009LoadCalculator:
         formulae["G+S+0.6W"] = "1.2·G + 1.4·S + 1.4×0.6·W"
 
         # 6) 1.35G + 1.4×0.7·Q（永久荷载控制）
-        basic["1.35G+0.7Q"] = 1.35 * d + GAMMA_Q * PSI_C_TWO * l
+        basic["1.35G+0.7Q"] = 1.35 * d + GAMMA_Q * PSI_C_TWO * live
         formulae["1.35G+0.7Q"] = "1.35·G + 1.4×0.7·Q"
 
         # --- §3.2.7 标准组合（正常使用极限状态）---
-        standard = d + l + PSI_C_TWO * w
+        standard = d + live + PSI_C_TWO * w
 
         # --- §3.2.8 准永久组合 ---
         psi_q = PSI_Q_ROOF if inputs.snow_pressure_kpa > 0 else PSI_Q_FLOOR
-        quasi_perm = d + psi_q * l + 0.2 * w + 0.2 * s
+        quasi_perm = d + psi_q * live + 0.2 * w + 0.2 * s
 
         # --- 抗倾覆验算 ---
         overturn = {
             "stabilizing": GAMMA_G_OVERTURN * d,
-            "destabilizing": GAMMA_Q * w + GAMMA_Q * l,
+            "destabilizing": GAMMA_Q * w + GAMMA_Q * live,
         }
 
         return LoadCombinationResult(

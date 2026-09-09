@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 import streamlit as st
@@ -23,7 +22,6 @@ from streamlit_app.utils import (
     build_ws_base_from_http,
     get_state,
 )
-
 
 AGENT_NAME = "site_monitor_agent"
 PAGE_TITLE = "现场监控"
@@ -146,9 +144,9 @@ def _render_invoke_form() -> None:
     )
 
     default_msg = (
-        "请对项目 {prj} 的告警 {alt} 执行 {sk}。"
+        f"请对项目 {project_id} 的告警 {alert_id} 执行 {skill}。"
         "若为 critical 级别，立即触发 safety_audit_agent 复审。"
-    ).format(prj=project_id, alt=alert_id, sk=skill)
+    )
     message = st.text_area(
         "监控要求（文本）",
         value=default_msg,

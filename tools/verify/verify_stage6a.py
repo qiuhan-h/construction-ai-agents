@@ -93,7 +93,8 @@ def check_gb_algorithms() -> None:
     from agents.safety_audit_agent.calculators.load_calc_gb import GB50009LoadCalculator
     from agents.safety_audit_agent.calculators.load_calculator import LoadInputs
     from agents.safety_audit_agent.calculators.structural_check_gb import (
-        ConcreteBeamInput, GB50010StructuralAnalyzer,
+        ConcreteBeamInput,
+        GB50010StructuralAnalyzer,
     )
     from agents.safety_audit_agent.knowledge_base.standard_kb import StandardKnowledgeBase
 
@@ -184,7 +185,8 @@ def check_llm_injection() -> None:
 
     # 双语 prompts
     from core.llm.prompts import (
-        build_compliance_messages, build_safety_messages,
+        build_compliance_messages,
+        build_safety_messages,
     )
     zh = build_safety_messages("文档", lang="zh")
     en = build_safety_messages("doc", lang="en")

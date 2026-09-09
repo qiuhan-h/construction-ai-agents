@@ -88,7 +88,7 @@ def t_load_calculator() -> None:
             # 兼容字段名差异：取数值型结果
             nums = [
                 v for v in vars(result).values()
-                if isinstance(v, (int, float))
+                if isinstance(v, int | float)
             ]
             assert nums, f"LoadResult 无数值字段: {vars(result)}"
             combo = max(nums)

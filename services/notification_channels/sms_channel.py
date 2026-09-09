@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 
-from services.notification_channels.base_channel import BaseChannel, NotifierError, register_channel
+from services.notification_channels.base_channel import BaseChannel, register_channel
 
 logger = logging.getLogger(__name__)
 

@@ -45,7 +45,7 @@ class ApiResponse(BaseModel, Generic[T]):
         *,
         message: str = "ok",
         request_id: str | None = None,
-    ) -> "ApiResponse[T]":
+    ) -> ApiResponse[T]:
         from common.timeutils import to_iso, utc_now
 
         return cls(
@@ -65,7 +65,7 @@ class ApiResponse(BaseModel, Generic[T]):
         details: dict[str, Any] | None = None,
         request_id: str | None = None,
         http_status: int | None = None,
-    ) -> "ApiResponse[T]":
+    ) -> ApiResponse[T]:
         from common.timeutils import to_iso, utc_now
 
         data: Any = None
@@ -85,7 +85,7 @@ class ApiResponse(BaseModel, Generic[T]):
         exc: Exception,
         *,
         request_id: str | None = None,
-    ) -> "ApiResponse[Any]":
+    ) -> ApiResponse[Any]:
         """从 AppException 派生响应。"""
         from common.exceptions import AppException
         from common.timeutils import to_iso, utc_now

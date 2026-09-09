@@ -32,7 +32,7 @@ from common.ids import message_id
 from common.timeutils import to_iso, utc_now
 from core.a2a.message import A2AMessage
 from core.a2a.protocol import PROTOCOL_VERSION
-from core.a2a.serializers import JSONRPCRequest, decode_request, encode_request
+from core.a2a.serializers import JSONRPCRequest, encode_request
 
 logger = logging.getLogger("core.a2a.client")
 
@@ -60,7 +60,7 @@ class A2AClient:
         self._client = client
         self._owns_client = client is None
 
-    async def __aenter__(self) -> "A2AClient":
+    async def __aenter__(self) -> A2AClient:
         if self._client is None:
             self._client = httpx.AsyncClient(timeout=self.timeout_seconds)
         return self
@@ -130,7 +130,7 @@ class A2AClient:
         for attempt in range(self.max_retries + 1):
             try:
                 resp = await client.post(url, json=body)
-            except httpx.TimeoutException as e:
+            except httpx.TimeoutException:
                 last_exc = A2ATimeoutError(f"A2A 调用超时: {url}")
                 logger.warning("A2A 超时 attempt=%d url=%s", attempt, url)
             except httpx.HTTPError as e:

@@ -15,7 +15,6 @@ from typing import Any, Literal
 import pandas as pd
 import streamlit as st
 
-
 ChartKind = Literal["line", "bar", "pie", "scatter"]
 
 
@@ -244,7 +243,7 @@ def _render_native(
 def render_kpi_row(metrics: dict[str, Any], *, container_key: str = "kpi_root") -> None:
     """渲染一行 KPI 指标卡（4 列布局）。"""
     cols = st.columns(min(4, max(1, len(metrics))))
-    for col, (label, value) in zip(cols, metrics.items()):
+    for col, (label, value) in zip(cols, metrics.items(), strict=False):
         with col:
             st.metric(label=label, value=value)
 
@@ -260,7 +259,6 @@ def render_event_timeline(
 
     events 形如 [{"ts": "...", "topic": "...", "payload": {...}}, ...]
     """
-    import collections
 
     if not events:
         st.info("无事件数据。")

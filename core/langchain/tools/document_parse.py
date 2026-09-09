@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from core.langchain.tools import MCPToolAdapter, register_tool
 
-
 _DESC_PLAN = "施工方案校验：title 非空 + risk_level 枚举 + hazards 至少 1 条"
 _DESC_DRAWING = "图纸校验：file_uri 必须是 file:// 或 http(s)://"
 _DESC_DOCUMENT = "文档校验：size_bytes > 0 + mime_type 非空"

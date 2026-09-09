@@ -20,7 +20,6 @@ from streamlit_app.utils import (
     get_state,
 )
 
-
 AGENT_NAME = "compliance_agent"
 PAGE_TITLE = "合规校验"
 _FALLBACK_SKILLS = ["fire_review", "seismic_review", "energy_review", "green_review"]
@@ -132,10 +131,10 @@ def _render_invoke_form() -> None:
     )
 
     default_msg = (
-        "请对项目 {prj} 的巡检 {insp} 执行 {sk}，"
+        f"请对项目 {project_id} 的巡检 {inspection_id} 执行 {skill}，"
         "依据 GB 50016（防火）/ GB 50011（抗震）/ GB 50189（节能）/"
         "GB 50378（绿色建筑）规范条款。"
-    ).format(prj=project_id, insp=inspection_id, sk=skill)
+    )
     message = st.text_area(
         "校验要求（文本）",
         value=default_msg,

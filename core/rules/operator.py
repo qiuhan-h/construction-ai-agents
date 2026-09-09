@@ -40,7 +40,7 @@ def _coerce(v: Any) -> Any:
     """尽量转 float；不能转就保留原值。"""
     if v is None:
         return None
-    if isinstance(v, (int, float)):
+    if isinstance(v, int | float):
         return float(v)
     if isinstance(v, str):
         try:

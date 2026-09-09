@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +45,7 @@ class StructuredRule:
 
     SUPPORTED_OPS = {">=", "<=", "==", "!=", ">", "<", "in", "not_in"}
 
-    def evaluate(self, design_doc: dict[str, Any]) -> "RuleResult":
+    def evaluate(self, design_doc: dict[str, Any]) -> RuleResult:
         """执行规则判定。"""
         actual = self._resolve_value(design_doc)
         if actual is None:
@@ -95,9 +95,9 @@ class StructuredRule:
         #   2) expected 为一般可迭代对象       → 成员判定 actual in expected
         if op == "in":
             if (
-                isinstance(expected, (list, tuple))
+                isinstance(expected, list | tuple)
                 and len(expected) == 2
-                and all(isinstance(x, (int, float)) for x in expected)
+                and all(isinstance(x, int | float) for x in expected)
             ):
                 lo, hi = min(expected), max(expected)
                 try:
@@ -110,9 +110,9 @@ class StructuredRule:
                 return False
         if op == "not_in":
             if (
-                isinstance(expected, (list, tuple))
+                isinstance(expected, list | tuple)
                 and len(expected) == 2
-                and all(isinstance(x, (int, float)) for x in expected)
+                and all(isinstance(x, int | float) for x in expected)
             ):
                 lo, hi = min(expected), max(expected)
                 try:

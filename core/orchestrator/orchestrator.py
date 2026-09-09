@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from common.ids import new_id
 from common.timeutils import utc_now
 from core.events import (
     TOPIC_ALERT_TRIGGERED,
@@ -25,7 +24,6 @@ from core.events import (
 from core.orchestrator.collaboration_manager import CollaborationManager
 from core.orchestrator.workflow_engine import (
     AgentManagerProtocol,
-    Workflow,
     WorkflowEngine,
 )
 

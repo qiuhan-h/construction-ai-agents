@@ -80,7 +80,7 @@ async def _publish_regulation_updated(
 ) -> None:
     """发布 regulation.updated 事件（fire-and-forget）。"""
     try:
-        from core.events import publish, TOPIC_REGULATION_UPDATED
+        from core.events import TOPIC_REGULATION_UPDATED, publish
     except Exception as e:  # noqa: BLE001
         logger.debug("event_bus 不可用（跳过事件）: %s", e)
         return

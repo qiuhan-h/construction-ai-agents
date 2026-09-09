@@ -24,11 +24,9 @@ import threading
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime
-from typing import Any, Iterable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from agents.site_monitor_agent.gis_monitoring.geofencing import FenceViolation
-from common.timeutils import utc_now
-from models.domain import GeoPoint
 
 logger = logging.getLogger(__name__)
 

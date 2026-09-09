@@ -56,7 +56,7 @@ class ReportSigner:
             raise ValueError("签章内容不能为空")
         sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
         signed_at = to_iso(utc_now())
-        msg = f"{sha}|{tenant_id}|{signed_at}".encode("utf-8")
+        msg = f"{sha}|{tenant_id}|{signed_at}".encode()
         sig = hmac.new(self.secret, msg, hashlib.sha256).hexdigest()
         return SignInfo(
             sha256=sha, signature=sig, signed_at=signed_at, signer=self.signer
@@ -73,7 +73,7 @@ class ReportSigner:
         if not content or not signature:
             return False
         sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
-        msg = f"{sha}|{tenant_id}|{signed_at}".encode("utf-8")
+        msg = f"{sha}|{tenant_id}|{signed_at}".encode()
         expected = hmac.new(self.secret, msg, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)
 

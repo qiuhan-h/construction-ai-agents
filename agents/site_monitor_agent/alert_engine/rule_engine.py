@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any
 
 from core.rules.operator import compare
 from core.rules.rule import AlertRule as _BaseAlertRule

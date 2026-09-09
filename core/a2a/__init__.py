@@ -28,10 +28,10 @@ from core.a2a.middleware import (
     timing_middleware,
 )
 from core.a2a.protocol import (
-    A2AErrorCode,
-    A2AMethod,
     PROTOCOL_VERSION,
     SUPPORTED_PROTOCOL_VERSIONS,
+    A2AErrorCode,
+    A2AMethod,
     check_protocol_version,
     make_error,
 )

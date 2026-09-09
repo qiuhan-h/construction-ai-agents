@@ -18,7 +18,8 @@ import math
 import re
 import threading
 from collections import Counter
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from core.vector_store.base import VectorHit, VectorRecord, VectorStoreError
 
@@ -27,7 +28,7 @@ _STOP_WORDS: set[str] = {
     "的", "了", "和", "与", "或", "在", "是", "我", "你", "他", "她", "它",
     "我们", "你们", "他们", "这", "那", "这个", "那个", "以及", "等", "为",
     "于", "由", "从", "向", "对", "按", "以", "可", "能", "会", "应", "须",
-    "需", "要", "不", "没", "无", "的", "了", "过", "着", "吗", "呢",
+    "需", "要", "不", "没", "无", "过", "着", "吗", "呢",
 }
 
 _TOKEN_PATTERN = re.compile(r"[\w]+", re.UNICODE)
@@ -55,7 +56,7 @@ def _to_vector(tokens: list[str]) -> list[float]:
 def _cosine(a: list[float], b: list[float]) -> float:
     if not a or not b:
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(x * x for x in b))
     if na == 0.0 or nb == 0.0:

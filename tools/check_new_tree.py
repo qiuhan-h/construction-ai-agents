@@ -55,10 +55,14 @@ for p in root.rglob('*'):
 print(f'期望: 目录 {len(expected_dirs)} / 文件 {len(expected_files)}')
 print(f'实际: 目录 {len(actual_dirs)} / 文件 {len(actual_files)}')
 print()
-print('=== 缺少的文件 ==='); [print(' ', f) for f in sorted(expected_files - actual_files)] or print('  (无)')
-print('=== 缺少的目录 ==='); [print(' ', d) for d in sorted(expected_dirs - actual_dirs)] or print('  (无)')
-print('=== 多余的文件 ==='); [print(' ', f) for f in sorted(actual_files - expected_files)] or print('  (无)')
-print('=== 多余的目录 ==='); [print(' ', d) for d in sorted(actual_dirs - expected_dirs)] or print('  (无)')
+print('=== 缺少的文件 ===')
+[print(' ', f) for f in sorted(expected_files - actual_files)] or print('  (无)')
+print('=== 缺少的目录 ===')
+[print(' ', d) for d in sorted(expected_dirs - actual_dirs)] or print('  (无)')
+print('=== 多余的文件 ===')
+[print(' ', f) for f in sorted(actual_files - expected_files)] or print('  (无)')
+print('=== 多余的目录 ===')
+[print(' ', d) for d in sorted(actual_dirs - expected_dirs)] or print('  (无)')
 
 # 空文件统计
 non_empty = [f for f in sorted(actual_files) if (root / f).stat().st_size > 0]

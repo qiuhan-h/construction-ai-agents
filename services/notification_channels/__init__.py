@@ -1,7 +1,7 @@
 """notification_channels 包级 re-export。"""
 
-# 触发 @register_channel 装饰器执行
-from services.notification_channels import (
+# 触发 @register_channel 装饰器执行（副作用导入，非直接使用）
+from services.notification_channels import (  # noqa: F401
     base_channel,
     dingtalk_channel,
     dingtalk_real_channel,  # 5b.4

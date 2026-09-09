@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from core.events import (  # noqa: E402
-    Event,
     TOPIC_ALERT_TRIGGERED,
+    Event,
     get_event_bus,
     reset_event_bus,
 )

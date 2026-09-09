@@ -14,12 +14,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from common.timeutils import to_iso, utc_now
 from common.ids import event_id
-
+from common.timeutils import to_iso, utc_now
 
 # =====================================================
 # 主题常量（供订阅端 / 业务端统一引用）
@@ -87,7 +86,7 @@ class Event:
         source: str,
         payload: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> "Event":
+    ) -> Event:
         return cls(
             topic=topic,
             tenant_id=tenant_id,

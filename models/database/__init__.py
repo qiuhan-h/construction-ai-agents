@@ -7,7 +7,6 @@ from models.database.audit_models import (
 )
 from models.database.base import Base, enum_column
 from models.database.billing_models import BillTable, UsageRecordTable
-from models.database.security_audit_log import SecurityAuditLogTable
 from models.database.geofence_models import (
     GeofenceTable,
     GeofenceViolationTable,
@@ -23,6 +22,7 @@ from models.database.regulation_models import (
     RegulationTable,
     StandardTable,
 )
+from models.database.security_audit_log import SecurityAuditLogTable
 
 __all__ = [
     "AlertTable",

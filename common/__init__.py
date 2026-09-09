@@ -40,8 +40,10 @@ from common.exceptions import (
     ValidationError,
 )
 from common.ids import (
+    alert_id,
     case_id,
     event_id,
+    inspection_id,
     message_id,
     new_id,
     new_ulid,
@@ -53,10 +55,8 @@ from common.ids import (
     task_id,
     tenant_id,
     violation_id,
-    alert_id,
-    inspection_id,
 )
-from common.timeutils import ensure_utc, utc_now, to_iso, from_iso
+from common.timeutils import ensure_utc, from_iso, to_iso, utc_now
 
 __all__ = [
     # 常量

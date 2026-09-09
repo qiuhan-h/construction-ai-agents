@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from datetime import date
-from typing import Any
+from dataclasses import dataclass
 
 from common.constants import AlertLevel
 from models.domain import Alert

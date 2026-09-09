@@ -19,12 +19,11 @@ from __future__ import annotations
 import asyncio
 import fnmatch
 import logging
-import re
 from collections import defaultdict
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from common.exceptions import EventPublishError, EventSubscribeError
-from common.timeutils import to_iso, utc_now
 from core.events.events import Event
 
 logger = logging.getLogger("core.events.event_bus")

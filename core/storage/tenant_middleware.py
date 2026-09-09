@@ -123,7 +123,7 @@ class TenantMiddleware:
                 params: dict[str, Any] = {}
                 if isinstance(parameters, dict):
                     params = dict(parameters)
-                elif isinstance(parameters, (tuple, list)) and parameters:
+                elif isinstance(parameters, tuple | list) and parameters:
                     # 位置参数 → 转为命名参数（仅当注入时需要追加）
                     params = {f"arg_{i}": v for i, v in enumerate(parameters)}
 
@@ -132,7 +132,7 @@ class TenantMiddleware:
                 # 如果参数格式变了，需要转换回原始格式
                 if isinstance(parameters, dict):
                     return new_sql, new_params
-                elif isinstance(parameters, (tuple, list)) and parameters:
+                elif isinstance(parameters, tuple | list) and parameters:
                     # 位置参数：追加 tenant_id 到末尾
                     return new_sql, tuple(parameters) + (new_params.get(_PARAM_KEY),)
                 else:
@@ -154,7 +154,7 @@ class TenantMiddleware:
     ) -> str | None:
         """用 sqlparse 精确注入 WHERE 子句。"""
         try:
-            import sqlparse
+            import sqlparse  # type: ignore[import-not-found]
         except ImportError:
             return None
 
@@ -174,8 +174,8 @@ class TenantMiddleware:
             placeholder = f":{_PARAM_KEY}"
             if where_idx is not None:
                 # 已有 WHERE → 在 WHERE 后插入 AND tenant_id = :_tenant_id
-                insert_token = sqlparse.tokens.Whitespace(" ")
-                and_token = sqlparse.tokens.Keyword("AND")
+                sqlparse.tokens.Whitespace(" ")
+                sqlparse.tokens.Keyword("AND")
                 cond = f" tenant_id = {placeholder}"
                 tokens.insert(where_idx + 1, sqlparse.tokens.Keyword(cond))
                 return "".join(str(t) for t in tokens)

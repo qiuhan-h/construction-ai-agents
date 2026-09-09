@@ -6,14 +6,6 @@ import asyncio
 import logging
 from typing import Any
 
-from common.constants import AgentName
-from common.exceptions import AgentParseError, AppException
-from common.ids import event_id, message_id
-from common.timeutils import to_iso, utc_now
-from core.a2a.agent_card import Skill
-from core.a2a.message import A2AMessage, MessagePart, Task
-from core.events import Event, get_event_bus
-
 from agents.base_agent import BaseAgent, register_agent
 from agents.compliance_agent.checkers import (
     EnergyChecker,
@@ -35,6 +27,13 @@ from agents.compliance_agent.regulation_engine import (
 )
 from agents.compliance_agent.validators import DocumentValidator, DrawingValidator
 from agents.safety_audit_agent.outputs.report_signer import sign_report_content
+from common.constants import AgentName
+from common.exceptions import AgentParseError, AppException
+from common.ids import message_id
+from common.timeutils import to_iso, utc_now
+from core.a2a.agent_card import Skill
+from core.a2a.message import A2AMessage, MessagePart, Task
+from core.events import Event, get_event_bus
 
 logger = logging.getLogger("agents.compliance_agent")
 
@@ -73,8 +72,8 @@ class ComplianceAgent(BaseAgent):
         self._loader.bootstrap()
         self._index = RegulationIndex(self._loader)
         self._version_mgr = VersionManager(tenant_id, self._loader)
-        # 4 类检查器
-        self._checkers = [
+        # 4 类检查器（鸭子类型：均暴露 design_type 属性与 async check 方法）
+        self._checkers: list[Any] = [
             FireChecker(), SeismicChecker(),
             EnergyChecker(), GreenChecker(),
         ]
@@ -175,7 +174,7 @@ class ComplianceAgent(BaseAgent):
             regs_by_type[ct] = self._index.search(ct)
         # 合并去重
         seen: dict[str, Any] = {}
-        for ct, regs in regs_by_type.items():
+        for _ct, regs in regs_by_type.items():
             for r in regs:
                 key = f"{r.code}/{r.version}"
                 if key not in seen:
@@ -192,9 +191,9 @@ class ComplianceAgent(BaseAgent):
               for c in active_checkers),
             return_exceptions=False,
         )
-        violations: list = []
+        violations: list[Any] = []
         for vs in results:
-            violations.extend(vs)
+            violations.extend(vs)  # type: ignore[arg-type]  # gather(return_exceptions=False) 不含异常
 
         # 3) 校验器（图纸 + 文档）
         # 兼容 drawings 为单张(dict)/多张(list)/非法类型的情况，统一规整成 list[dict]，

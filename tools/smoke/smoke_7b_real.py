@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 
@@ -86,6 +85,7 @@ def check_db_redis() -> bool:
     # Redis
     try:
         import redis
+
         from config import get_settings
 
         s = get_settings()
@@ -126,8 +126,9 @@ def check_influxdb() -> bool:
             print("  [SKIP] TSDB_URL 占位，跳过 InfluxDB 真实联调")
             return True
 
-        from core.timeseries.client import InfluxDBWriter
         import inspect
+
+        from core.timeseries.client import InfluxDBWriter
 
         token = s.tsdb_token.get_secret_value() if s.tsdb_token else ""
         writer = InfluxDBWriter(

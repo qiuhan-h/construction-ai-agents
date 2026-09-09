@@ -6,7 +6,6 @@ import hashlib
 import logging
 import secrets
 from dataclasses import dataclass, field
-from typing import Any
 
 from common.timeutils import to_iso, utc_now
 
@@ -54,7 +53,7 @@ class DocumentService:
         filename: str,
     ) -> str:
         """上传并返回 storage_key。"""
-        if not isinstance(file, (bytes, bytearray)):
+        if not isinstance(file, bytes | bytearray):
             raise TypeError("file 须为 bytes")
         storage_key = f"doc-{secrets.token_hex(8)}"
         self._blobs[storage_key] = bytes(file)

@@ -5,8 +5,6 @@ F7 原则：默认拒绝 + 最小权限；未声明的 role/resource 组合 → 
 
 from __future__ import annotations
 
-from typing import Any
-
 # 角色枚举
 ROLES = ("admin", "engineer", "reviewer", "viewer")
 

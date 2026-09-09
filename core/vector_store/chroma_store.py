@@ -20,7 +20,8 @@ import asyncio
 import logging
 import os
 import threading
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from core.vector_store.base import (
     BackendUnavailableError,
@@ -115,7 +116,7 @@ class ChromaVectorStore:
         assert self._collection is not None
         ids: list[str] = []
         documents: list[str] = []
-        embeddings: list[list[float]] | None = []
+        embeddings: list[list[float]] = []
         metadatas: list[dict[str, Any]] = []
         has_emb = True
         for r in records:

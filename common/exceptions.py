@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from common.error_codes import ErrorCodes, ErrorCode
+from common.error_codes import ErrorCode, ErrorCodes
 
 
 class AppException(Exception):

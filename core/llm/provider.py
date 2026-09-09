@@ -209,7 +209,7 @@ class ProviderRouter:
             raise ValueError("ProviderRouter 至少需要一个 provider")
         self._providers = providers
 
-    def register(self, model: str) -> "ProviderRouter":
+    def register(self, model: str) -> ProviderRouter:
         """追加备用模型（配置沿用全局 Settings）。"""
         self._providers.append(OpenAICompatibleProvider(get_llm_model_config(model)))
         return self

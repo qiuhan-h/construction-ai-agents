@@ -14,13 +14,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable, Awaitable
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from pydantic import BaseModel
 
 from common.exceptions import A2AAgentNotFoundError, A2AMessageInvalidError
 from common.ids import task_id
-from common.timeutils import to_iso, utc_now
 from core.a2a.message import A2AMessage, Task, TaskState
-from core.a2a.protocol import A2AMethod, PROTOCOL_VERSION, make_error
+from core.a2a.protocol import PROTOCOL_VERSION, A2AMethod
 from core.a2a.serializers import (
     CancelTaskParams,
     GetTaskParams,
@@ -234,7 +236,7 @@ class A2AServer:
 # =====================================================
 # 工具函数
 # =====================================================
-def _validate_params(model_cls: type, params: Any) -> Any:
+def _validate_params(model_cls: type[BaseModel], params: Any) -> Any:
     try:
         return model_cls.model_validate(params or {})
     except Exception as e:

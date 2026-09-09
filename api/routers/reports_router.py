@@ -185,7 +185,7 @@ def build_reports_router() -> APIRouter:
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=200),
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         store = get_report_store()
         offset = (page - 1) * page_size
         items, total = store.list(auth.tenant_id, project_id, page_size, offset)
@@ -213,7 +213,7 @@ def build_reports_router() -> APIRouter:
     async def get_report(
         report_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         if not report_id.startswith("rpt_"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

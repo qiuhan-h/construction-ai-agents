@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from agents.safety_audit_agent.agent import SafetyAuditAgent
 from common.exceptions import A2AAgentNotFoundError
 from core.a2a.server import (
     A2AServer,
@@ -12,8 +13,6 @@ from core.a2a.server import (
     get_registry,
     reset_registry,
 )
-
-from agents.safety_audit_agent.agent import SafetyAuditAgent
 
 logger = logging.getLogger("agents.safety_audit_agent.a2a_handlers")
 

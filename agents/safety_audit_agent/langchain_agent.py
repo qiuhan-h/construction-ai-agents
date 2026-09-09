@@ -14,10 +14,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from core.a2a.message import A2AMessage, Task
-from common.constants import AgentName
-
 from agents.safety_audit_agent.agent import SafetyAuditAgent
+from common.constants import AgentName
+from core.a2a.message import A2AMessage, Task
 
 logger = logging.getLogger("agents.safety_audit_agent.langchain")
 

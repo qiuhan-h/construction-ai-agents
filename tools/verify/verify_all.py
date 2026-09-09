@@ -61,7 +61,7 @@ def run_verify_scripts() -> tuple[int, int, list[tuple[str, int, float]]]:
         pass_count = 0
         fail_count = 0
         for line in r.stdout.splitlines():
-            line_lower = line.lower()
+            line.lower()
             if "通过" in line and "失败" in line:
                 # 格式: "XXX 自检结果: N 通过, M 失败"
                 parts = line.replace("：", ":").split(":")
@@ -176,17 +176,16 @@ def main() -> int:
     print(f"  verify 脚本:  {v_passed}/{total_verify} 通过")
     print(f"  pytest:       {'通过' if p_exit == 0 else '失败'} "
           f"({p_passed} tests)")
-    print(f"  ─────────────────────────────")
+    print("  ─────────────────────────────")
     print(f"  总计:         {total_passed}/{total_scripts} 通过, "
           f"{total_failed} 失败")
 
     # 断言项累计
-    total_assertions = 0
-    for script, exit_code, _ in details:
+    for _script, exit_code, _ in details:
         if exit_code == 0:
             # 从输出提取断言数（粗略，不精确）
             pass
-    print(f"\n  阶段六断言总数: 33(6a) + 44(6b) + 48(6c) + 38(6d) = 163")
+    print("\n  阶段六断言总数: 33(6a) + 44(6b) + 48(6c) + 38(6d) = 163")
     print(f"  pytest 测试用例: {p_passed}")
 
     pass_rate = (total_passed / total_scripts) * 100

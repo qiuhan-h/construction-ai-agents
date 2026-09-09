@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-import logging
+import logging  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("smoke_7b")
@@ -91,13 +91,13 @@ def check_redis_degradation() -> bool:
         try:
             r = redis.from_url(url if not is_placeholder else "redis://localhost:6379/0")
             r.ping()
-            print(f"  [WARN] Redis: 意外连接成功（应有真实实例）")
+            print("  [WARN] Redis: 意外连接成功（应有真实实例）")
             return True
         except Exception:
             print(f"  [PASS] Redis: url={'占位' if is_placeholder else '真实'}, 连接失败但不崩溃 → 内存降级")
             return True
     except ImportError:
-        print(f"  [PASS] Redis: redis 库未装 → 内存降级")
+        print("  [PASS] Redis: redis 库未装 → 内存降级")
         return True
     except Exception as e:
         print(f"  [FAIL] Redis 降级异常: {e}")
@@ -212,7 +212,6 @@ def check_bim_degradation() -> bool:
     try:
         from agents.site_monitor_agent.bim_integration import (
             BIMRealConnector,
-            make_bim_real_connector,
         )
 
         # 占位凭据 → _has_credentials=False

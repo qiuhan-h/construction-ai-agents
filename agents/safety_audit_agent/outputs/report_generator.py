@@ -23,27 +23,26 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from common.constants import (
-    AgentName,
-    AuditConclusion,
-    ReportStatus,
-    ViolationSeverity,
-)
-from common.ids import inspection_id, report_id
-from common.timeutils import utc_now
-from models.domain import Inspection, ReviewReport, Violation
-
 from agents.safety_audit_agent.calculators.load_calculator import LoadResult
 from agents.safety_audit_agent.calculators.risk_assessor import (
     RiskAssessment,
     RiskLevel,
 )
 from agents.safety_audit_agent.knowledge_base.case_retriever import CaseHit
-from agents.safety_audit_agent.parsers.plan_parser import PlanFields
 from agents.safety_audit_agent.outputs.recommendation_engine import (
     RecommendationSet,
     Severity,
 )
+from agents.safety_audit_agent.parsers.plan_parser import PlanFields
+from common.constants import (
+    AgentName,
+    AuditConclusion,
+    ReportStatus,
+    ViolationSeverity,
+)
+from common.ids import report_id
+from common.timeutils import utc_now
+from models.domain import Inspection, ReviewReport, Violation
 
 
 @dataclass
@@ -280,9 +279,9 @@ class ReportGenerator:
         if recommendations.items:
             lines.append("## 六、整改建议")
             lines.append("")
-            for r in recommendations.items:
+            for rec in recommendations.items:
                 lines.append(
-                    f"- **[{r.severity.value}]** {r.title}：{r.detail}"
+                    f"- **[{rec.severity.value}]** {rec.title}：{rec.detail}"
                 )
             lines.append("")
 

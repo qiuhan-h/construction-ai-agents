@@ -67,7 +67,8 @@ class HumanReviewRepository:
                 # （HumanReviewTable）则用 ORM 实例入库，否则仅记日志并落内存。
                 db_ok = False
                 try:
-                    from models.database import HumanReviewTable  # type: ignore
+                    # HumanReviewTable 尚未在 ORM 建模；导入失败时静默降级到内存仓储
+                    from models.database import HumanReviewTable  # type: ignore[attr-defined]  # type: ignore
                     db_row = HumanReviewTable(
                         id=row.id,
                         tenant_id=row.tenant_id,
@@ -128,7 +129,8 @@ class HumanReviewRepository:
             # H13 修正：DB 模式下也需落库
             if self._sf is not None:
                 try:
-                    from models.database import HumanReviewTable
+                    # HumanReviewTable 尚未在 ORM 建模；导入失败时静默降级到内存仓储
+                    from models.database import HumanReviewTable  # type: ignore[attr-defined]
                     with self._sf() as s:
                         db_row = s.get(HumanReviewTable, request_id)
                         if db_row is not None:

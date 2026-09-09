@@ -36,7 +36,7 @@ class ReviewReport(BaseModel):
     updated_at: datetime = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
-    def _validate_regulation_versions(self) -> "ReviewReport":
+    def _validate_regulation_versions(self) -> ReviewReport:
         # L5 修补：法规版本快照是结论可追溯的依据。规范库未加载 / 无匹配
         # 法规时报告结论为 PASS，允许空快照；但 FAIL / CONDITIONAL_PASS
         # 必然源自具体法规条文，必须携带版本快照，否则结论不可追溯。

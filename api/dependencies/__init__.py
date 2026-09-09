@@ -8,9 +8,9 @@
 
 from api.dependencies.agent_manager import (
     AgentManager,
+    get_agent_manager,
     init_agent_manager,
     reset_agent_manager,
-    get_agent_manager,
 )
 from api.dependencies.auth import (
     AuthContext,

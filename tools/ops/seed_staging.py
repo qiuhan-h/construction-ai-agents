@@ -15,8 +15,7 @@
 from __future__ import annotations
 
 import sys
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,8 +27,8 @@ def run_alembic() -> bool:
     print("--- 1. 数据库建表 ---")
     # 优先尝试 alembic（PostgreSQL 真实联调时）
     try:
-        from alembic.config import Config
         from alembic import command
+        from alembic.config import Config
 
         cfg = Config(str(ROOT / "alembic.ini"))
         cfg.set_main_option("script_location", str(ROOT / "models" / "database" / "migrations"))
@@ -99,8 +98,8 @@ def seed_tenants() -> bool:
                     plan=t_data["plan"],
                     trial_expires_at=t_data["trial_expires_at"],
                     quota_used=t_data["quota_used"],
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
                 )
                 session.add(t)
                 print(f"  [OK] 创建租户: {t_data['id']} ({t_data['name']})")
@@ -132,7 +131,7 @@ def verify_isolation() -> bool:
                 print(f"  [OK] 租户总数: {count}")
                 print(f"  [OK] Alpha: id={alpha.id}, name={alpha.name}, plan={alpha.plan}")
                 print(f"  [OK] Beta:  id={beta.id}, name={beta.name}, plan={beta.plan}")
-                print(f"  [OK] 两租户数据隔离验证通过")
+                print("  [OK] 两租户数据隔离验证通过")
                 return True
             else:
                 print(f"[FAIL] 租户查询失败: alpha={alpha}, beta={beta}")

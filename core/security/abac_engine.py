@@ -16,8 +16,9 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from datetime import datetime, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger("core.security.abac")
 
@@ -74,7 +75,7 @@ def _rule_time_window(
     """时间窗规则：工作时段外拒绝（可通过 env['time_window_enabled']=False 关闭）。"""
     if not env.get("time_window_enabled", True):
         return True
-    now: datetime = env.get("now") or datetime.now(timezone.utc)
+    now: datetime = env.get("now") or datetime.now(UTC)
     # UTC+8 工作时段
     hour = (now.hour + 8) % 24
     return WORK_HOUR_START <= hour < WORK_HOUR_END

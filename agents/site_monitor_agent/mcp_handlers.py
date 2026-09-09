@@ -3,19 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
-
-from core.mcp.server import (
-    MCPService,
-    get_mcp_service,
-)
 
 from agents.site_monitor_agent.alert_engine import AlertRepository
 from agents.site_monitor_agent.gis_monitoring import Geofencing, RiskHeatmap
 from agents.site_monitor_agent.outputs import (
     DailyReportGenerator,
-    DashboardDataProvider,
-    TrendAnalyzer,
+)
+from core.mcp.server import (
+    MCPService,
+    get_mcp_service,
 )
 
 logger = logging.getLogger("agents.site_monitor_agent.mcp_handlers")

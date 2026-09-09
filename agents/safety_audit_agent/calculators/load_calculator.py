@@ -18,7 +18,6 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # =====================================================
 # 典型材料自重（kN/m³）— 节选自 GB 50009 附录 A
 # =====================================================

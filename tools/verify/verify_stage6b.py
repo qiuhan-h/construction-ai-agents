@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3] / "construction-ai-agents"
@@ -61,18 +61,18 @@ def check_tenant_saas() -> None:
         reset_tenant_repository,
         set_tenant_repository_override,
     )
-    from services.tenant_service import (
-        get_tenant_service,
-        reset_tenant_service,
+    from services.billing_service import (
+        get_billing_service,
+        reset_billing_service,
     )
     from services.quota_service import (
         QuotaExceededError,
         get_quota_service,
         reset_quota_service,
     )
-    from services.billing_service import (
-        get_billing_service,
-        reset_billing_service,
+    from services.tenant_service import (
+        get_tenant_service,
+        reset_tenant_service,
     )
 
     # 隔离：内存后端
@@ -154,7 +154,7 @@ def check_abac() -> None:
     engine = ABACEngine()
 
     # TR-6.1: 时间窗 — 非工作时段拒绝
-    fake_night = datetime(2026, 9, 4, 19, 0, 0, tzinfo=timezone.utc)  # 03:00 UTC+8
+    fake_night = datetime(2026, 9, 4, 19, 0, 0, tzinfo=UTC)  # 03:00 UTC+8
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -164,7 +164,7 @@ def check_abac() -> None:
     check("ABAC 时间窗：非工作时段 → False", result is False)
 
     # 工作时段允许
-    fake_day = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)  # 10:00 UTC+8
+    fake_day = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)  # 10:00 UTC+8
     result2 = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -352,6 +352,7 @@ def check_auth_role() -> None:
     # JWT token（jose 可用时）
     try:
         from jose import jwt
+
         from config import get_settings
 
         settings = get_settings()

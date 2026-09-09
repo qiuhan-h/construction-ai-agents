@@ -32,8 +32,9 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ class LCTBusinessChain:
         for _pt_path in ("langchain_core.prompts", "langchain.prompts"):
             try:
                 _pt_mod = __import__(_pt_path, fromlist=["PromptTemplate"])
-                prompt_cls = getattr(_pt_mod, "PromptTemplate")
+                prompt_cls = _pt_mod.PromptTemplate
                 break
             except Exception:  # noqa: BLE001
                 continue
@@ -240,7 +241,9 @@ class LCTBusinessChain:
                 return await MockBusinessChain(self.name).run(tenant_id, payload)
         else:
             # 旧版 LLMChain
-            chain = self._llm_chain_cls(llm=llm, prompt=prompt)
+            cls = self._llm_chain_cls
+            assert cls is not None, "LLMChain should be set when _use_lcel=False"
+            chain = cls(llm=llm, prompt=prompt)
             text = await asyncio.to_thread(chain.run, **inputs)
         return {
             "raw": text,
@@ -293,9 +296,9 @@ def _ensure_default_registry() -> None:
             return
         # 触发子模块 import（子模块内部完成注册）
         try:
-            from core.langchain.chains import safety_chain as _safety  # type: ignore  # noqa: F401
             from core.langchain.chains import compliance_chain as _comp  # type: ignore  # noqa: F401
             from core.langchain.chains import monitoring_chain as _mon  # type: ignore  # noqa: F401
+            from core.langchain.chains import safety_chain as _safety  # type: ignore  # noqa: F401
         except ImportError as e:
             logger.warning("chains 子模块 import 失败，仅保留 MockBusinessChain 兜底: %s", e)
         except Exception as e:  # noqa: BLE001

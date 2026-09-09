@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from datetime import UTC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,7 +65,7 @@ def check_rollback_readiness() -> tuple[list[str], list[str]]:
     if not compose_file.exists():
         warnings.append("docker-compose.yml 不存在（回滚备用配置）")
     else:
-        print(f"  [OK] docker-compose.yml 存在")
+        print("  [OK] docker-compose.yml 存在")
 
     # 4. K8s Secret YAML
     secret_yaml = ROOT / "deployment" / "kubernetes" / "secrets.yaml"
@@ -91,9 +92,10 @@ def test_alembic_downgrade_upgrade() -> bool:
     """
     print("\n--- Alembic downgrade/upgrade 往返 ---")
     try:
+        from datetime import datetime
+
         from core.storage.sqlalchemy_repos import _ensure_schema, get_session_scope
         from models.database import TenantTable
-        from datetime import datetime, timezone
 
         # 模拟 downgrade：删除表数据
         print("  [STEP] 模拟 downgrade（清空测试数据）...")
@@ -123,8 +125,8 @@ def test_alembic_downgrade_upgrade() -> bool:
                     plan="starter",
                     trial_expires_at=None,
                     quota_used=0,
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
                 )
                 session.add(t)
         print("  [OK] 演练租户创建成功")
@@ -169,12 +171,12 @@ def main() -> int:
         ok = test_alembic_downgrade_upgrade()
         elapsed = time.monotonic() - start
 
-        print(f"\n--- 回滚耗时 ---")
+        print("\n--- 回滚耗时 ---")
         print(f"  往返耗时: {elapsed:.2f}s")
         if elapsed > 300:
             print("  [WARN] 回滚耗时 > 5 分钟，需优化")
         else:
-            print(f"  [OK] 回滚耗时 < 5 分钟")
+            print("  [OK] 回滚耗时 < 5 分钟")
 
         if not ok:
             print("\n>>> 演练失败：往返验证未通过 <<<")
@@ -184,6 +186,7 @@ def main() -> int:
     print("\n--- 2. 回滚后健康检查 ---")
     try:
         from fastapi.testclient import TestClient
+
         from api.main import create_app
 
         app = create_app()

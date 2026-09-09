@@ -14,19 +14,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from common.exceptions import AgentError, AgentParseError
-from core.mcp.server import (
-    MCPService,
-    get_mcp_service,
-    register_prompt as _register_prompt_global,
-)
-
 from agents.safety_audit_agent.knowledge_base import (
     CaseRetriever,
     StandardLoader,
 )
 from agents.safety_audit_agent.prompts import (
     PROMPT_PLAN_REVIEW,
+)
+from common.exceptions import AgentError, AgentParseError
+from core.mcp.server import (
+    MCPService,
+    get_mcp_service,
 )
 
 logger = logging.getLogger("agents.safety_audit_agent.mcp_handlers")

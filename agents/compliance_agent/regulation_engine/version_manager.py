@@ -5,12 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from common.timeutils import to_iso, utc_now
-from core.events import get_event_bus
-
 from agents.compliance_agent.regulation_engine.mcp_loader import (
     RegulationLoader,
 )
+from core.events import get_event_bus
 
 logger = logging.getLogger(__name__)
 

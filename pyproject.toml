@@ -95,6 +95,7 @@ select = [
 ]
 ignore = [
     "E501",  # 行长度交给格式化器
+    "B008",  # FastAPI 标准写法：Depends() 放在参数默认值
 ]
 
 [tool.pytest.ini_options]
@@ -106,4 +107,39 @@ asyncio_mode = "auto"
 addopts = "-q --continue-on-collection-errors"
 # 4c 编排器测试是脚本式自检（24/24 通过），但同一份逻辑也提供了
 # ``tests/orchestrator/test_orchestrator_pytest.py`` 给 pytest 跑。两边一一对应。
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+# 可选依赖（redis/yaml/jose/paho/alembic/chromadb/langchain 等）无类型 stub，
+# 运行时均有 try/except 降级；类型检查统一忽略缺失导入。
+ignore_missing_imports = true
+# 测试 / 运维脚本 / 工具 / Streamlit 前端不纳入严格类型检查（mypy 对无
+# __init__.py 的脚本目录按顶层模块解析，overrides 无法覆盖，直接 exclude）。
+exclude = [
+    '(^|/)(tests|tools|scripts|streamlit_app)(/|$)',
+    '(^|/)migrations(/|$)',
+]
+
+# 第三方可选依赖：已安装但无类型 stub（运行时均有 try/except 降级）。
+[[tool.mypy.overrides]]
+module = [
+    "redis", "redis.*",
+    "yaml", "yaml.*",
+    "jose", "jose.*",
+    "paho", "paho.*",
+    "sqlparse", "sqlparse.*",
+    "alembic", "alembic.*",
+    "chromadb", "chromadb.*",
+    "langchain", "langchain.*",
+    "gmssl", "gmssl.*",
+    "ifcopenshell", "ifcopenshell.*",
+    "influxdb_client", "influxdb_client.*",
+    "streamlit", "streamlit.*",
+    "geopandas", "geopandas.*",
+    "shapely", "shapely.*",
+]
+ignore_missing_imports = true
 

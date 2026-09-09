@@ -20,9 +20,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
+from api.schemas.response_schemas import ApiResponse
 from common.exceptions import AppException
 from core.mcp.server import MCPServer, get_mcp_service
-from api.schemas.response_schemas import ApiResponse
 
 logger = logging.getLogger("api.routers.mcp")
 
@@ -47,11 +47,11 @@ def build_mcp_router() -> APIRouter:
     @router.get("/resources", response_model=ApiResponse[dict])
     async def list_resources(
         prefix: str | None = Query(default=None, description="按 URI 前缀过滤"),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         return ApiResponse[dict].ok({"resources": service.list_resources(prefix)})
 
     @router.get("/resources/read", response_model=ApiResponse[dict])
-    async def read_resource(uri: str = Query(..., description="资源 URI")) -> dict[str, Any]:
+    async def read_resource(uri: str = Query(..., description="资源 URI")) -> ApiResponse[dict[str, Any]]:
         try:
             data = await service.read_resource(uri)
         except AppException as e:
@@ -60,11 +60,11 @@ def build_mcp_router() -> APIRouter:
 
     # ---------- 工具 ----------
     @router.get("/tools", response_model=ApiResponse[dict])
-    async def list_tools() -> dict[str, Any]:
+    async def list_tools() -> ApiResponse[dict[str, Any]]:
         return ApiResponse[dict].ok({"tools": service.list_tools()})
 
     @router.post("/tools/call", response_model=ApiResponse[dict])
-    async def call_tool(payload: dict[str, Any]) -> dict[str, Any]:
+    async def call_tool(payload: dict[str, Any]) -> ApiResponse[dict[str, Any]]:
         name = payload.get("name")
         arguments = payload.get("arguments") or {}
         if not name:
@@ -80,11 +80,11 @@ def build_mcp_router() -> APIRouter:
 
     # ---------- 提示词 ----------
     @router.get("/prompts", response_model=ApiResponse[dict])
-    async def list_prompts() -> dict[str, Any]:
+    async def list_prompts() -> ApiResponse[dict[str, Any]]:
         return ApiResponse[dict].ok({"prompts": service.list_prompts()})
 
     @router.post("/prompts/get", response_model=ApiResponse[dict])
-    async def get_prompt(payload: dict[str, Any]) -> dict[str, Any]:
+    async def get_prompt(payload: dict[str, Any]) -> ApiResponse[dict[str, Any]]:
         name = payload.get("name")
         arguments = payload.get("arguments") or {}
         if not name:
@@ -109,7 +109,7 @@ def build_mcp_router() -> APIRouter:
 
     # ---------- 健康 ----------
     @router.get("/health", response_model=ApiResponse[dict])
-    async def health() -> dict[str, Any]:
+    async def health() -> ApiResponse[dict[str, Any]]:
         from common.timeutils import to_iso, utc_now
         from core.mcp.server import MCP_PROTOCOL_VERSION
 

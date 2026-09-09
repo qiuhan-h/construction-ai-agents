@@ -23,12 +23,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from common.ids import message_id  # noqa: E402
 from core.a2a.message import A2AMessage  # noqa: E402
 from core.events import (  # noqa: E402
-    Event,
     TOPIC_ALERT_TRIGGERED,
     TOPIC_INSPECTION_COMPLETED,
+    Event,
     get_event_bus,
     reset_event_bus,
 )

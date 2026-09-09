@@ -20,13 +20,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from common.constants import AgentName, ReportStatus
-from common.exceptions import AgentParseError
-from common.ids import event_id, message_id
-from common.timeutils import to_iso, utc_now
-from core.a2a.agent_card import Skill
-from core.a2a.message import A2AMessage, MessagePart, Task
-
 # 注意：避免在 import 期触发 self.import 自引用
 from agents.base_agent import BaseAgent, register_agent
 from agents.safety_audit_agent.calculators import (
@@ -43,18 +36,26 @@ from agents.safety_audit_agent.knowledge_base import (
     CaseRetriever,
     StandardLoader,
 )
-from agents.safety_audit_agent.parsers import PlanParser
 from agents.safety_audit_agent.outputs import (
     RecommendationEngine,
     ReportArtifacts,
     ReportGenerator,
     sign_report_content,
 )
+from agents.safety_audit_agent.parsers import PlanParser
 from agents.safety_audit_agent.prompts import (
     PROMPT_PLAN_REVIEW,
     PROMPT_REPORT_DRAFT,
+)
+from agents.safety_audit_agent.prompts import (
     list_prompts as _list_safety_prompts,
 )
+from common.constants import AgentName, ReportStatus
+from common.exceptions import AgentParseError
+from common.ids import message_id
+from common.timeutils import to_iso, utc_now
+from core.a2a.agent_card import Skill
+from core.a2a.message import A2AMessage, MessagePart, Task
 
 logger = logging.getLogger("agents.safety_audit_agent")
 

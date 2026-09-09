@@ -20,11 +20,11 @@ from typing import Any
 import streamlit as st
 
 from streamlit_app.components.mobile_card import (
+    inject_mobile_css,
     render_alert_list,
     render_kpi_grid,
     render_project_grid,
     render_refresh_row,
-    inject_mobile_css,
 )
 from streamlit_app.utils import APIError, api_client, get_state
 
@@ -80,12 +80,12 @@ def _build_kpis(dashboard: dict | None) -> list[dict[str, Any]]:
 
 def render() -> None:
     """渲染移动端响应式首页。"""
-    state = get_state()
+    get_state()
     inject_mobile_css()
 
     # 顶部标题 + 刷新
     st.markdown(
-        f'<div class="caai-mobile caai-mobile-container">',
+        '<div class="caai-mobile caai-mobile-container">',
         unsafe_allow_html=True,
     )
     st.markdown("</div>", unsafe_allow_html=True)

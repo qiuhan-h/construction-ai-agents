@@ -54,7 +54,7 @@ class MQTTConnector:
             self._mock_mode = True
             return
         try:
-            import paho.mqtt.client as mqtt
+            import paho.mqtt.client as mqtt  # type: ignore[import-not-found]
 
             self._client = mqtt.Client(client_id=self._client_id)
             self._client.on_message = self._on_message

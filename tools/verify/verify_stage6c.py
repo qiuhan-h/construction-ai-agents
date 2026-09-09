@@ -57,8 +57,9 @@ def check_scan() -> None:
 # =====================================================
 def check_mobile_api() -> None:
     print("\n[B] 6c.1 移动端 API 端点")
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -195,8 +196,8 @@ def check_api_client_methods() -> None:
 # =====================================================
 def check_page_registration() -> None:
     print("\n[F] 6c.2 移动端页面注册（TR-9.1）")
-    from streamlit_app.pages import _IMPLEMENTED, _PAGE_MODULES
     from streamlit_app.app import PAGES
+    from streamlit_app.pages import _IMPLEMENTED, _PAGE_MODULES
 
     check("07_mobile 在 _PAGE_MODULES",
           "07_mobile" in _PAGE_MODULES)
@@ -221,8 +222,9 @@ def check_page_registration() -> None:
 # =====================================================
 def check_responsive_css_and_cards() -> None:
     print("\n[G] 6c.2 响应式 CSS + 卡片组件")
-    from streamlit_app.components import mobile_card
     from pathlib import Path as _Path
+
+    from streamlit_app.components import mobile_card
 
     # ---- TR-9.3: CSS 文件 + 断点 ----
     css_path = (

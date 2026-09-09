@@ -14,8 +14,9 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from common.exceptions import (
     AppException,
@@ -181,7 +182,7 @@ class MCPService:
         if desc is None:
             best_uri: str | None = None
             best_len = -1
-            for reg_uri, reg_desc in self._resources.items():
+            for reg_uri, _reg_desc in self._resources.items():
                 if reg_uri.endswith("*"):
                     prefix = reg_uri[:-1]
                     if uri.startswith(prefix) and len(prefix) > best_len:
@@ -275,9 +276,9 @@ def reset_mcp_service() -> None:
 def _bootstrap_default_registry(service: MCPService) -> None:
     """加载并执行 resources / tools / prompts 三个子包的顶层模块，
     让它们的 @register_* 装饰器生效。"""
-    from core.mcp.resources import regulation_resource, standard_resource, case_resource  # noqa: F401
-    from core.mcp.tools import calculation_tools, validation_tools, analysis_tools  # noqa: F401
     from core.mcp.prompts import safety_prompts  # noqa: F401
+    from core.mcp.resources import case_resource, regulation_resource, standard_resource  # noqa: F401
+    from core.mcp.tools import analysis_tools, calculation_tools, validation_tools  # noqa: F401
 
 
 # =====================================================

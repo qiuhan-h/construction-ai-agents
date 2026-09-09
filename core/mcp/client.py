@@ -54,7 +54,7 @@ class MCPClient:
         self._client = client
         self._owns_client = client is None
 
-    async def __aenter__(self) -> "MCPClient":
+    async def __aenter__(self) -> MCPClient:
         if self._client is None:
             self._client = httpx.AsyncClient(timeout=self.timeout_seconds)
         return self
@@ -106,7 +106,7 @@ class MCPClient:
             client = self._ensure_client()
             try:
                 resp = await client.post(url, json=body)
-            except httpx.TimeoutException as e:
+            except httpx.TimeoutException:
                 last_exc = MCPError(f"MCP 调用超时: {method}", details={"method": method})
                 logger.warning("MCP 超时 attempt=%d method=%s", attempt, method)
             except httpx.HTTPError as e:

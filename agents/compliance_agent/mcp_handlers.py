@@ -5,13 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from common.exceptions import AgentError, AgentParseError
-from core.llm import get_prompt_manager
-from core.mcp.server import (
-    MCPService,
-    get_mcp_service,
-)
-
+from agents.compliance_agent.outputs import ViolationRepository
 from agents.compliance_agent.prompts import (
     PROMPT_ENERGY_REVIEW,
     PROMPT_FIRE_REVIEW,
@@ -22,7 +16,12 @@ from agents.compliance_agent.regulation_engine import (
     RegulationIndex,
     RegulationLoader,
 )
-from agents.compliance_agent.outputs import ViolationRepository
+from common.exceptions import AgentError, AgentParseError
+from core.llm import get_prompt_manager
+from core.mcp.server import (
+    MCPService,
+    get_mcp_service,
+)
 
 logger = logging.getLogger("agents.compliance_agent.mcp_handlers")
 

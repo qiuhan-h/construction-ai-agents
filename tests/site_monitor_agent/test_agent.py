@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import traceback
+from datetime import UTC
 from pathlib import Path
 
 # 文件路径：tests/site_monitor_agent/test_agent.py
@@ -155,7 +156,7 @@ def t_data_pipeline_run() -> None:
         # 等 runner 自然退出
         try:
             await asyncio.wait_for(runner, timeout=0.5)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             runner.cancel()
         assert len(loop_out) >= 1
     asyncio.run(_run_loop())
@@ -178,10 +179,11 @@ def t_data_pipeline_queue_full_drop() -> None:
 # d) TSDBWriter
 # =====================================================
 def t_tsdb_writer() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from agents.site_monitor_agent.iot_integration import TSDBWriter
     w = TSDBWriter()
-    ts = datetime(2026, 9, 2, 12, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 9, 2, 12, 0, 0, tzinfo=UTC)
     ok = asyncio.run(w.write_point("sensor", {"device_id": "d1"}, {"load": 1.5}, ts))
     assert ok is True
     rows = asyncio.run(w.query_range("sensor", {"device_id": "d1"}, ts, ts))
@@ -336,8 +338,8 @@ def t_rule_engine_operators() -> None:
 # =====================================================
 def t_alert_dispatcher_dedup() -> None:
     from agents.site_monitor_agent.alert_engine import AlertDispatcher
-    from models.domain import Alert
     from common.constants import AlertLevel
+    from models.domain import Alert
 
     captured: list[dict] = []
 
@@ -366,8 +368,8 @@ def t_alert_dispatcher_dedup() -> None:
 def t_alert_dispatcher_critical_escalation() -> None:
     """CRITICAL 触发 notifier 升级调用。"""
     from agents.site_monitor_agent.alert_engine import AlertDispatcher
-    from models.domain import Alert
     from common.constants import AlertLevel
+    from models.domain import Alert
 
     sent: list[dict] = []
 
@@ -404,8 +406,8 @@ def t_alert_dispatcher_critical_escalation() -> None:
 # =====================================================
 def t_alert_repository_tenant_isolation() -> None:
     from agents.site_monitor_agent.alert_engine import AlertRepository
-    from models.domain import Alert
     from common.constants import AlertLevel
+    from models.domain import Alert
 
     repo = AlertRepository()  # mock 模式
     a_a = Alert(tenant_id="tenant_a", project_id="p1", source="sensor",
@@ -428,11 +430,12 @@ def t_alert_repository_tenant_isolation() -> None:
 # m) DailyReport / TrendAnalyzer / DashboardDataProvider
 # =====================================================
 def t_daily_report() -> None:
-    from agents.site_monitor_agent.outputs import DailyReportGenerator
-    from agents.site_monitor_agent.alert_engine import AlertRepository
-    from models.domain import Alert
-    from common.constants import AlertLevel
     from datetime import date
+
+    from agents.site_monitor_agent.alert_engine import AlertRepository
+    from agents.site_monitor_agent.outputs import DailyReportGenerator
+    from common.constants import AlertLevel
+    from models.domain import Alert
 
     repo = AlertRepository()
     repo.add(Alert(tenant_id="t1", project_id="p1", source="sensor",
@@ -456,11 +459,11 @@ def t_trend_analyzer() -> None:
 
 
 def t_dashboard_data() -> None:
-    from agents.site_monitor_agent.outputs import DashboardDataProvider
     from agents.site_monitor_agent.alert_engine import AlertRepository
     from agents.site_monitor_agent.iot_integration import Sensor, SensorManager
-    from models.domain import Alert
+    from agents.site_monitor_agent.outputs import DashboardDataProvider
     from common.constants import AlertLevel
+    from models.domain import Alert
 
     repo = AlertRepository()
     repo.add(Alert(tenant_id="t1", project_id="p1", source="sensor",
@@ -484,9 +487,9 @@ def t_dashboard_data() -> None:
 # =====================================================
 def t_agent_end_to_end_alert() -> None:
     from agents.site_monitor_agent import SiteMonitorAgent
-    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
     from common.ids import message_id
-    from core.events import reset_event_bus, get_event_bus
+    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
+    from core.events import get_event_bus, reset_event_bus
 
     # 重置全局 bus，并订阅 alert.triggered
     reset_event_bus()
@@ -522,8 +525,8 @@ def t_agent_end_to_end_alert() -> None:
 # =====================================================
 def t_agent_end_to_end_daily_report() -> None:
     from agents.site_monitor_agent import SiteMonitorAgent
-    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
     from common.ids import message_id
+    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
 
     agent = SiteMonitorAgent(tenant_id="tnt_dr", auto_register=False)
     msg = A2AMessage(
@@ -553,12 +556,9 @@ def t_agent_end_to_end_daily_report() -> None:
 # p) 多租户隔离端到端
 # =====================================================
 def t_multi_tenant_isolation_e2e() -> None:
-    from agents.site_monitor_agent import SiteMonitorAgent
-    from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
-    from common.ids import message_id
     from agents.site_monitor_agent.alert_engine import AlertRepository
-    from models.domain import Alert
     from common.constants import AlertLevel
+    from models.domain import Alert
 
     repo = AlertRepository()
     # tenant_a 1 条；tenant_b 2 条

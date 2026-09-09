@@ -5,9 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from core.a2a.message import A2AMessage, Task
-
 from agents.compliance_agent.agent import ComplianceAgent
+from core.a2a.message import A2AMessage, Task
 
 logger = logging.getLogger("agents.compliance_agent.langchain")
 

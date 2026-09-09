@@ -16,15 +16,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
 
 from api.dependencies.auth import AuthContext, get_auth_context
 from api.schemas.bim_schemas import (
     BIMElement,
     BIMProgressItem,
     BIMProgressResponse,
-    BIMProjectTreeNode,
 )
 from api.schemas.response_schemas import ApiResponse
 
@@ -131,7 +129,7 @@ def _compute_progress(
         tracker = ProgressTracker(deviation_threshold=10.0)
         items = tracker.compute(plan, actual)
         # 转为响应格式 + 级别
-        result_items = []
+        result_items: list[BIMProgressItem] = []
         delayed = 0
         ahead = 0
         for it in items:
@@ -150,7 +148,7 @@ def _compute_progress(
                     actual_pct=it.actual_pct,
                     deviation=round(it.deviation, 2),
                     level=level,
-                ).model_dump()
+                )
             )
         return BIMProgressResponse(
             project_id=project_id,

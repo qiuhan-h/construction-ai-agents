@@ -17,7 +17,6 @@ import importlib
 
 import streamlit as st
 
-
 # 各 page 路径；key 是 page_id，value 是模块路径（无 .py 后缀）。
 _PAGE_MODULES: dict[str, str] = {
     "01_safety_audit": "streamlit_app.pages.01_safety_audit",

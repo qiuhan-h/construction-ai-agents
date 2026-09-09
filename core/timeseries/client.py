@@ -18,16 +18,14 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import socket
 import ssl
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-from typing import Any, Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +130,7 @@ def build_line_protocol(
     if ts is not None:
         # InfluxDB v2 默认纳秒
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         ns = int(ts.timestamp() * 1_000_000_000)
         line += f" {ns}"
     return line
@@ -154,7 +152,7 @@ def _http_post(
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:  # noqa: S310
             body = resp.read().decode("utf-8", errors="replace")
             return resp.status, body
-    except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+    except (urllib.error.URLError, TimeoutError) as e:
         raise InfluxWriteError(f"POST {url} 失败: {e}") from e
 
 

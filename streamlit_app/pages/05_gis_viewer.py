@@ -18,7 +18,6 @@ import streamlit as st
 
 from streamlit_app.components import map_component
 
-
 PAGE_TITLE = "GIS 视图"
 
 # 北京示例数据（5a 默认演示）

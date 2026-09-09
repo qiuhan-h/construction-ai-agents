@@ -45,7 +45,6 @@ def tenant_id_check():
 
 
 def t_timeutils():
-    from datetime import datetime
 
     from common import utc_now
 
@@ -110,10 +109,11 @@ def t_domain():
 
 
 def t_database():
-    from models.database import Base
-    from models.database.base import enum_column
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session
+
+    from models.database import Base
+    from models.database.base import enum_column
 
     tables = Base.metadata.tables
     expected = {
@@ -142,8 +142,8 @@ def t_database():
 
 
 def t_vector():
-    from models.vector import CaseVector, DocumentVector
     from common.constants import DocType
+    from models.vector import CaseVector, DocumentVector
 
     dv = DocumentVector(tenant_id="tnt_x", doc_id="reg-1", doc_type=DocType.REGULATION, title="安规", content="条文", version="2024")
     assert dv.id.startswith("docv_")
@@ -152,7 +152,6 @@ def t_vector():
 
 
 def t_llm_config():
-    from pydantic import SecretStr
 
     from common.exceptions import LLMNotConfiguredError
     from core.llm import get_llm_model_config
@@ -167,10 +166,11 @@ def t_llm_config():
 
 
 def t_llm_parse():
+    from pydantic import SecretStr
+
+    from common.exceptions import LLMResponseInvalidError
     from core.llm import OpenAICompatibleProvider
     from core.llm.config import LLMModelConfig
-    from common.exceptions import LLMResponseInvalidError
-    from pydantic import SecretStr
 
     provider = OpenAICompatibleProvider(
         LLMModelConfig("m", "http://x", SecretStr("k"), 5.0, 0, 0.2, 2048)

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from core.langchain.tools import MCPToolAdapter, register_tool
 
-
 # 工具描述（对齐 core/mcp/tools/calculation_tools.py 的 register_tool description）
 _DESC_LOAD = (
     "结构荷载组合（恒载 + 活载 + 风载 + 雪载）→ q = 1.2DL + 1.4LL + 0.6W + 0.7S"

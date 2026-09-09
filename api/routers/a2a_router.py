@@ -24,16 +24,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from api.dependencies.auth import AuthContext, get_auth_context
-from common.constants import AgentName
-from common.exceptions import AppException
-from common.ids import message_id as new_message_id
-from common.timeutils import to_iso, utc_now
-from core.a2a.message import A2AMessage, MessagePart
-from core.a2a.protocol import PROTOCOL_VERSION
-from core.a2a.server import A2AServer, get_registry
 from api.schemas.a2a_schemas import (
     A2ACancelTaskRequest,
     A2ACancelTaskResponse,
@@ -45,6 +38,12 @@ from api.schemas.a2a_schemas import (
     A2ASendMessageResponse,
 )
 from api.schemas.response_schemas import ApiResponse
+from common.constants import AgentName
+from common.exceptions import AppException
+from common.ids import message_id as new_message_id
+from core.a2a.message import A2AMessage, MessagePart
+from core.a2a.protocol import PROTOCOL_VERSION
+from core.a2a.server import A2AServer, get_registry
 
 logger = logging.getLogger("api.routers.a2a")
 
@@ -111,7 +110,7 @@ def build_a2a_router() -> APIRouter:
     @router.get("/agents", response_model=ApiResponse[dict])
     async def list_agents(
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         from api.schemas.agent_schemas import (
             AgentCapabilitiesDTO,
             AgentListResponse,
@@ -148,7 +147,7 @@ def build_a2a_router() -> APIRouter:
     async def get_agent(
         name: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         try:
             agent = registry.get(name)
         except AppException as e:
@@ -214,13 +213,13 @@ def build_a2a_router() -> APIRouter:
             return server.get_card(name)
         except AppException as e:
             _raise_from_app_exc(e)
-        return {}  # unreachable
+        raise RuntimeError("unreachable")
 
     @router.get("/agents/{name}/health", response_model=ApiResponse[dict])
     async def agent_health(
         name: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         from api.schemas.agent_schemas import AgentHealthResponse
 
         try:
@@ -248,7 +247,7 @@ def build_a2a_router() -> APIRouter:
         name: str,
         req: A2ASendMessageRequest,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         try:
             agent = registry.get(name)
         except AppException as e:
@@ -261,7 +260,7 @@ def build_a2a_router() -> APIRouter:
             message.message_id = new_message_id()
 
         # 直接走 core.a2a.server 的核心逻辑（不经过 JSON-RPC 帧）
-        from core.a2a.message import Task, TaskState
+        from core.a2a.message import TaskState
         from core.a2a.server import _to_artifact  # 复用内部工具
 
         task = await registry.create_task(name, message)
@@ -285,7 +284,10 @@ def build_a2a_router() -> APIRouter:
             state=task.state.value,
             agent=name,
             response=_to_dto(response),
-            artifacts=[a.model_dump() if hasattr(a, "model_dump") else a for a in task.artifacts],
+            artifacts=[
+                a.model_dump() if hasattr(a, "model_dump") else {"raw": a}
+                for a in task.artifacts
+            ],
         )
         return ApiResponse[dict].ok(resp.model_dump())
 
@@ -295,7 +297,7 @@ def build_a2a_router() -> APIRouter:
         agent: str | None = Query(default=None, description="按智能体名过滤"),
         limit: int = Query(default=50, ge=1, le=500),
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         # 多租户隔离：仅返回当前租户的任务
         tasks = registry.list_tasks()
         tasks = [t for t in tasks if getattr(t, "tenant_id", "") == auth.tenant_id]
@@ -311,7 +313,7 @@ def build_a2a_router() -> APIRouter:
     async def get_task(
         task_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         try:
             task = registry.get_task(task_id)
         except AppException as e:
@@ -329,7 +331,7 @@ def build_a2a_router() -> APIRouter:
         task_id: str,
         req: A2ACancelTaskRequest,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         try:
             task = registry.get_task(task_id)
         except AppException as e:
@@ -381,6 +383,7 @@ def build_a2a_router() -> APIRouter:
             return await server.handle_raw(agent_name, body)
         except AppException as e:
             _raise_from_app_exc(e)
+        raise RuntimeError("unreachable")
 
     return router
 

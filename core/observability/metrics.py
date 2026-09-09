@@ -36,7 +36,7 @@ class _NoOpMetric:
     def observe(self, amount: float) -> None:
         pass
 
-    def labels(self, **kwargs: Any) -> "_NoOpMetric":
+    def labels(self, **kwargs: Any) -> _NoOpMetric:
         return self
 
 

@@ -6,14 +6,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from common.constants import AgentName, AuditConclusion, ReportStatus, ViolationSeverity
-from common.ids import inspection_id as _inspection_id_factory, report_id
-from common.timeutils import utc_now
-from models.domain import Inspection, ReviewReport, Violation
-
 from agents.compliance_agent.regulation_engine.mcp_loader import (
     RegulationSummary,
 )
+from common.constants import AgentName, AuditConclusion, ReportStatus, ViolationSeverity
+from common.ids import inspection_id as _inspection_id_factory
+from common.ids import report_id
+from common.timeutils import utc_now
+from models.domain import Inspection, ReviewReport, Violation
 
 logger = logging.getLogger(__name__)
 

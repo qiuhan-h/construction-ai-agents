@@ -8,7 +8,6 @@
   MCPProtocolVersionMismatchError, MCPPromptNotFoundError
 """
 
-from core.mcp.client import MCPClient
 from common.exceptions import (
     MCPError,
     MCPPromptNotFoundError,
@@ -17,9 +16,10 @@ from common.exceptions import (
     MCPToolExecutionError,
     MCPToolNotFoundError,
 )
+from core.mcp.client import MCPClient
 from core.mcp.server import (
-    MCPService,
     MCPServer,
+    MCPService,
     build_fastapi_router,
     get_mcp_service,
     register_prompt,

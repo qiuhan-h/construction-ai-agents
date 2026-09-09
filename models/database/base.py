@@ -13,7 +13,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import DateTime, Enum as SAEnum, MetaData, String
+from sqlalchemy import DateTime, MetaData, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from common.ids import new_id

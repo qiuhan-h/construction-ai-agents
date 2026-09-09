@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
-
-from core.events import get_event_bus
-from core.events.events import ViolationCreatedEvent, ViolationRectifiedEvent
-from models.domain import Violation
 
 from agents.compliance_agent.outputs.violation_repository import (
     ViolationRepository,
 )
+from core.events import get_event_bus
+from core.events.events import ViolationCreatedEvent, ViolationRectifiedEvent
+from models.domain import Violation
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +36,7 @@ class ViolationTracker:
             v.inspection_id = inspection_id
             if not v.tenant_id:
                 v.tenant_id = self._tenant_id
-        ids = await asyncio.to_thread(self._repo.add, violations)
+        await asyncio.to_thread(self._repo.add, violations)
         for v in violations:
             try:
                 await self._bus.publish(ViolationCreatedEvent(

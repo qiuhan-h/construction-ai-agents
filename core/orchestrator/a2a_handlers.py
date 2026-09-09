@@ -21,7 +21,7 @@ from typing import Any
 
 from common.ids import new_id
 from common.timeutils import to_iso, utc_now
-from core.a2a.message import A2AMessage, Artifact, Task
+from core.a2a.message import A2AMessage, Task
 from core.a2a.server import A2AAgentProtocol, get_registry
 
 logger = logging.getLogger(__name__)

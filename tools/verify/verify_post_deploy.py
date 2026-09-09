@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT))
 def _run_local() -> int:
     """本地降级模式验证（TestClient）。"""
     from fastapi.testclient import TestClient
+
     from api.main import create_app
 
     app = create_app()

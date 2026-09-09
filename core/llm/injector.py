@@ -78,7 +78,13 @@ def _build_httpx_adapter() -> Any | None:
         def _llm_type(self) -> str:
             return "openai_compatible_httpx"
 
-        def _call(self, prompt: str, stop: list[str] | None = None, **_: Any) -> str:
+        def _call(
+            self,
+            prompt: str,
+            stop: list[str] | None = None,
+            run_manager: Any = None,
+            **_: Any,
+        ) -> str:
             resp = self._provider.chat(
                 [ChatMessage(role="user", content=prompt)],
                 caller="langchain_chain",
@@ -115,7 +121,7 @@ def _build_fake_llm() -> Any:
             import importlib
 
             mod = importlib.import_module(module_path)
-            fake_cls = getattr(mod, "FakeListLLM")
+            fake_cls = mod.FakeListLLM
             return fake_cls(responses=list(_MOCK_RESPONSES))
         except ImportError as e:  # noqa: PERF203
             errors.append(f"{module_path}: {e}")

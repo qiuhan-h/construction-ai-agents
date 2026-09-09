@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 # 项目根：tests/integration/test_bim_edge.py → parents[2]
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _DOCKERFILE_EDGE = _PROJECT_ROOT / "deployment" / "docker" / "Dockerfile.edge"
@@ -26,8 +24,9 @@ _DOCKERFILE_EDGE = _PROJECT_ROOT / "deployment" / "docker" / "Dockerfile.edge"
 # =====================================================
 def test_bim_project_tree() -> None:
     """GET /api/v1/bim/projects/{id}/tree → 200 + 含 IfcBuilding。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -50,8 +49,9 @@ def test_bim_project_tree() -> None:
 # =================================================
 def test_bim_element() -> None:
     """GET /api/v1/bim/elements/{id} → 200 + element_id 匹配。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -71,8 +71,9 @@ def test_bim_element() -> None:
 # =====================================================
 def test_bim_progress() -> None:
     """GET /api/v1/bim/progress/{id} → 200 + 含偏差项。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)
@@ -213,8 +214,9 @@ def test_progress_tracker_deviation() -> None:
 
 def test_bim_progress_delayed_ahead_counts() -> None:
     """进度端点返回 delayed / ahead 计数。"""
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)

@@ -73,10 +73,10 @@ def _parse_geometry(coords: Any) -> list[tuple[float, float]]:
     def _walk(obj: Any) -> None:
         if obj is None:
             return
-        if isinstance(obj, (int, float)):
+        if isinstance(obj, int | float):
             return
         if isinstance(obj, list):
-            if len(obj) >= 2 and isinstance(obj[0], (int, float)):
+            if len(obj) >= 2 and isinstance(obj[0], int | float):
                 # [lon, lat] 或 [lon, lat, alt]
                 out.append((float(obj[0]), float(obj[1])))
             else:
@@ -103,7 +103,7 @@ def _scan_geojson_dir(data_dir: str) -> list[dict[str, Any]]:
             continue
         path = os.path.join(data_dir, name)
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 doc = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             logger.warning("读取 GeoJSON 失败 %s: %s", path, e)

@@ -235,7 +235,7 @@ class DataIngestionService:
             raise ValueError("tenant_id / project_id / filename 必填")
         if kind not in ("regulation", "drawing", "report", "case"):
             raise ValueError(f"kind 非法: {kind!r}")
-        if not isinstance(content, (bytes, bytearray)):
+        if not isinstance(content, bytes | bytearray):
             raise TypeError("content 须为 bytes")
         fp = hashlib.sha256(content).hexdigest()
         art = FileArtifact(

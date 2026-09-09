@@ -63,6 +63,9 @@ class WeComRealChannel(BaseChannel):
             )
             return self._mock_message_id("wecom-real")
 
+        # _has_credentials() 为真时 webhook 必然非空（mypy 无法识别该自定义守卫）
+        assert self._webhook is not None
+
         use_markdown = bool(meta.get("markdown", True))
         if use_markdown:
             payload: dict[str, Any] = {

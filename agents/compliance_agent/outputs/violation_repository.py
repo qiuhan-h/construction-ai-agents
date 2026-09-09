@@ -113,8 +113,10 @@ class ViolationRepository:
 
     @staticmethod
     def _from_row(row: ViolationTable) -> dict[str, Any]:
+        # ViolationTable 本身无 project_id 列，经 inspection 关联获取（未加载时降级 None）
+        project_id = getattr(getattr(row, "inspection", None), "project_id", None)
         return {
-            "id": row.id, "tenant_id": row.tenant_id, "project_id": row.project_id,
+            "id": row.id, "tenant_id": row.tenant_id, "project_id": project_id,
             "inspection_id": row.inspection_id,
             "regulation_id": row.regulation_id, "regulation_version": row.regulation_version,
             "clause": row.clause, "description": row.description,

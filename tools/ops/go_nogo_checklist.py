@@ -21,9 +21,8 @@
 
 from __future__ import annotations
 
-import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -125,7 +124,7 @@ def check_backups() -> tuple[list[str], list[str]]:
     if not env_file.exists():
         warnings.append(".env 文件不存在（生产应通过 K8s Secret 注入）")
     else:
-        print(f"  [OK] .env 文件存在")
+        print("  [OK] .env 文件存在")
 
     return blockers, warnings
 
@@ -202,7 +201,7 @@ def check_rollback() -> tuple[list[str], list[str]]:
     if not dockerfile_api.exists():
         blockers.append(f"Dockerfile.api 不存在: {dockerfile_api.name}")
     else:
-        print(f"  [OK] Dockerfile.api 存在")
+        print("  [OK] Dockerfile.api 存在")
 
     return blockers, warnings
 
@@ -247,7 +246,7 @@ def main() -> int:
     """主入口。返回 0=GO, 1=NO-GO, 2=WARNING。"""
     print("=" * 72)
     print("7d-1 Go/No-Go 上线预检")
-    print(f"时间: {datetime.now(timezone.utc).isoformat()}")
+    print(f"时间: {datetime.now(UTC).isoformat()}")
     print("=" * 72)
 
     checks = [

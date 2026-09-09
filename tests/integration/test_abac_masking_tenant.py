@@ -12,20 +12,16 @@
 
 from __future__ import annotations
 
-import asyncio
-import time
-from datetime import datetime, timezone
-from unittest.mock import patch
+from datetime import UTC, datetime
 
 import pytest
 
-from core.security.abac_engine import ABACEngine, get_abac_engine, reset_abac_engine
-from core.security.field_masking import FieldMasker, get_field_masker
+from core.security.abac_engine import ABACEngine, reset_abac_engine
+from core.security.field_masking import FieldMasker
 from core.security.policies import get_policy_engine, reset_policy_engine
 from core.storage.tenant_middleware import (
     TenantContext,
     TenantMiddleware,
-    get_tenant_middleware,
     reset_tenant_middleware,
 )
 
@@ -50,7 +46,7 @@ def test_abac_time_window_outside_work_hours_denied() -> None:
     """非工作时段（如 03:00 UTC+8）→ evaluate 返回 False。"""
     engine = ABACEngine()
     # 03:00 UTC+8 → UTC 19:00 前一天
-    fake_midnight = datetime(2026, 9, 4, 19, 0, 0, tzinfo=timezone.utc)
+    fake_midnight = datetime(2026, 9, 4, 19, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -63,7 +59,7 @@ def test_abac_time_window_outside_work_hours_denied() -> None:
 def test_abac_time_window_inside_work_hours_allowed() -> None:
     """工作时段（如 10:00 UTC+8 = 02:00 UTC）→ evaluate 返回 True。"""
     engine = ABACEngine()
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)  # 10:00 UTC+8
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)  # 10:00 UTC+8
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -76,7 +72,7 @@ def test_abac_time_window_inside_work_hours_allowed() -> None:
 def test_abac_time_window_disabled_flag() -> None:
     """time_window_enabled=False → 时间窗规则关闭。"""
     engine = ABACEngine()
-    fake_midnight = datetime(2026, 9, 4, 19, 0, 0, tzinfo=timezone.utc)
+    fake_midnight = datetime(2026, 9, 4, 19, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -92,7 +88,7 @@ def test_abac_time_window_disabled_flag() -> None:
 def test_abac_sensitivity_low_clearance_high_sensitivity_denied() -> None:
     """resource.sensitivity=high + subject.clearance=low → False。"""
     engine = ABACEngine()
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "engineer", "tenant_id": "t1", "clearance": "low"},
         resource_attrs={"tenant_id": "t1", "sensitivity": "high"},
@@ -105,7 +101,7 @@ def test_abac_sensitivity_low_clearance_high_sensitivity_denied() -> None:
 def test_abac_sensitivity_high_clearance_high_sensitivity_allowed() -> None:
     """resource.sensitivity=high + subject.clearance=high → True。"""
     engine = ABACEngine()
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1", "sensitivity": "high"},
@@ -143,7 +139,7 @@ def test_abac_timeout_denied() -> None:
 
     engine.register_rule("slow_rule", slow_rule, description="模拟慢评估")
 
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -158,7 +154,7 @@ def test_abac_timeout_not_triggered_when_rules_fast() -> None:
     clock = _FakeClock()
     engine = ABACEngine(clock=clock)
 
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         subject_attrs={"role": "admin", "tenant_id": "t1", "clearance": "high"},
         resource_attrs={"tenant_id": "t1"},
@@ -389,7 +385,7 @@ def test_policy_engine_rbac_deny_skips_abac() -> None:
 def test_policy_engine_rbac_pass_abac_pass() -> None:
     """RBAC 通过 + ABAC 通过 → True。"""
     engine = get_policy_engine()
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         role="admin",
         resource="safety_audit",
@@ -405,7 +401,7 @@ def test_policy_engine_rbac_pass_abac_pass() -> None:
 def test_policy_engine_rbac_pass_abac_deny() -> None:
     """RBAC 通过 + ABAC 拒绝（敏感度不足）→ False。"""
     engine = get_policy_engine()
-    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=timezone.utc)
+    fake_work_hour = datetime(2026, 9, 4, 2, 0, 0, tzinfo=UTC)
     result = engine.evaluate(
         role="engineer",
         resource="safety_audit",

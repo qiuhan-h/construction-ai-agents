@@ -21,13 +21,12 @@ import hmac
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from services.notification_channels.base_channel import (
     BaseChannel,
     HTTPError,
-    http_post_json,
     http_post_raw_json,
     is_placeholder,
     register_channel,
@@ -100,7 +99,7 @@ def _sign_tencent_v3(
 
     # ---- 2. StringToSign ----
     # CredentialScope 中的 date 必须用 UTC 时间（YYYY-MM-DD，带连字符）
-    date_str = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y-%m-%d")
+    date_str = datetime.fromtimestamp(timestamp, tz=UTC).strftime("%Y-%m-%d")
     credential_scope = f"{date_str}/{service}/tc3_request"
     string_to_sign = (
         f"TC3-HMAC-SHA256\n"
@@ -190,7 +189,7 @@ class SmsTencentChannel(BaseChannel):
         template_param_set = meta.get("template_param_set")
         if template_param_set is None:
             template_param_set = [title or "", body or ""] if title or body else [body or ""]
-        if not isinstance(template_param_set, (list, tuple)):
+        if not isinstance(template_param_set, list | tuple):
             template_param_set = [str(template_param_set)]
         template_param_set = [str(p) for p in template_param_set]
 

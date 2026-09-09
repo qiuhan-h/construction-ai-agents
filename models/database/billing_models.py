@@ -60,7 +60,7 @@ class UsageRecordTable(TenantMixin, IDMixin, TimestampMixin, Base):
     amount: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     period: Mapped[str | None] = mapped_column(String(7), nullable=True, index=True)
     detail: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    occurred_at: Mapped["object"] = mapped_column(
+    occurred_at: Mapped[object] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, index=True
     )
 

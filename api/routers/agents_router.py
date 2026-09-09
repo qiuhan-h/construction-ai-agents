@@ -41,7 +41,7 @@ def build_agents_router() -> APIRouter:
     async def list_agents(
         auth: AuthContext = Depends(get_auth_context),
         mgr: AgentManager = Depends(get_agent_manager),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         # 1) 列出 AgentManager 白名单 + 当前租户已实例化
         supported = mgr.list_supported()
         cached = {a.name: a for a in mgr.list_for_tenant(auth.tenant_id)}
@@ -70,7 +70,7 @@ def build_agents_router() -> APIRouter:
     @router.get("/supported", response_model=ApiResponse[dict])
     async def list_supported(
         mgr: AgentManager = Depends(get_agent_manager),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         return ApiResponse[dict].ok({"supported": mgr.list_supported()})
 
     @router.get("/{name}/card", response_model=ApiResponse[dict])
@@ -78,7 +78,7 @@ def build_agents_router() -> APIRouter:
         name: str,
         auth: AuthContext = Depends(get_auth_context),
         mgr: AgentManager = Depends(get_agent_manager),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         try:
             agent = await mgr.get(name, auth.tenant_id)
         except AppException as e:
@@ -116,7 +116,7 @@ def build_agents_router() -> APIRouter:
         payload: dict[str, Any],
         auth: AuthContext = Depends(get_auth_context),
         mgr: AgentManager = Depends(get_agent_manager),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         """通过 HTTP 触发智能体方法。
 
         payload 形如：

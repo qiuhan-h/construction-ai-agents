@@ -41,7 +41,7 @@ def build_tasks_router() -> APIRouter:
     async def get_task(
         task_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         from services.task_queue import get_task_queue
 
         q = get_task_queue()
@@ -61,7 +61,7 @@ def build_tasks_router() -> APIRouter:
     async def cancel_task(
         task_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         from services.task_queue import get_task_queue
 
         q = get_task_queue()

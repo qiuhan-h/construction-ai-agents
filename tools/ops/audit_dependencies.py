@@ -66,7 +66,6 @@ def main() -> int:
         return 0
 
     # 检查 HIGH+ 级别漏洞
-    high_vulns = []
     all_vulns = []
 
     for dep in vulnerabilities:
@@ -74,7 +73,7 @@ def main() -> int:
         version = dep.get("version", "?")
         for vuln in dep.get("vulns", []):
             vuln_id = vuln.get("id", "?")
-            description = vuln.get("description", "")[:100]
+            vuln.get("description", "")[:100]
             fix_versions = vuln.get("fix_versions", [])
 
             all_vulns.append(

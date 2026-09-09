@@ -34,18 +34,18 @@ def get_tracer(name: str = APP_NAME) -> Any:
     global _initialized, _provider
     if not _initialized:
         try:
-            from opentelemetry import trace
-            from opentelemetry.sdk.resources import Resource
-            from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry import trace  # type: ignore[import-not-found]
+            from opentelemetry.sdk.resources import Resource  # type: ignore[import-not-found]
+            from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-not-found]
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor  # type: ignore[import-not-found]
 
             try:
-                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found]
                     OTLPSpanExporter,
                 )
                 exporter = OTLPSpanExporter()
             except ImportError:
-                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # type: ignore[import-not-found]
                     OTLPSpanExporter,
                 )
                 exporter = OTLPSpanExporter()
@@ -73,7 +73,7 @@ def get_tracer(name: str = APP_NAME) -> Any:
 class _NoOpSpan:
     """NoOp span：所有方法空实现。"""
 
-    def __enter__(self) -> "_NoOpSpan":
+    def __enter__(self) -> _NoOpSpan:
         return self
 
     def __exit__(self, *args: Any) -> None:

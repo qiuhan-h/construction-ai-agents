@@ -37,7 +37,8 @@ import asyncio
 import inspect
 import logging
 import threading
-from typing import Any, Callable, Protocol, runtime_checkable
+from collections.abc import Callable
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +223,6 @@ class LangChainToolAdapter:
                         loop = asyncio.get_running_loop()
                         if loop.is_running():
                             # H5 修正：不再返回伪造 echo，而是投递到运行中的 loop
-                            import concurrent.futures
                             future = asyncio.run_coroutine_threadsafe(
                                 adapter._biz.run(**kwargs), loop
                             )

@@ -77,7 +77,7 @@ def _sign_aliyun_sms(
     canonicalized = "&".join(f"{k}={v}" for k, v in sorted_items)
     string_to_sign = f"POST&{_percent_encode('/')}&{_percent_encode(canonicalized)}"
     h = hmac.new(
-        f"{access_key_secret}&".encode("utf-8"),
+        f"{access_key_secret}&".encode(),
         string_to_sign.encode("utf-8"),
         hashlib.sha1,
     )

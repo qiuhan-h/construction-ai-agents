@@ -23,12 +23,10 @@ import asyncio
 import logging
 from typing import Any
 
-from common.exceptions import A2AError
 from common.ids import task_id
 from common.timeutils import to_iso, utc_now
 from core.a2a.agent_card import AgentCard, Capabilities, Skill
 from core.a2a.message import A2AMessage, MessagePart, Task, TaskState
-from core.a2a.protocol import PROTOCOL_VERSION
 from core.a2a.server import A2AAgentProtocol, get_registry
 
 logger = logging.getLogger("agents.base_agent")
@@ -37,7 +35,7 @@ logger = logging.getLogger("agents.base_agent")
 # =====================================================
 # 装饰器：register_agent
 # =====================================================
-def register_agent(cls: type["BaseAgent"]) -> type["BaseAgent"]:
+def register_agent(cls: type[BaseAgent]) -> type[BaseAgent]:
     """装饰器：把 BaseAgent 子类自动注册到全局 AgentRegistry。
 
     使用：

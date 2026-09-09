@@ -87,12 +87,12 @@ class APIClient:
         if resp.status_code >= 400:
             try:
                 body = resp.json()
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
                 raise APIError(
                     f"HTTP {resp.status_code}: {resp.text[:200]}",
                     code="HTTP",
                     status=resp.status_code,
-                )
+                ) from exc
             detail = body.get("detail") if isinstance(body, dict) else None
             if isinstance(detail, dict):
                 raise APIError(

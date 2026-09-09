@@ -43,8 +43,12 @@ langchain>=0.2
 langchain-openai>=0.1
 
 # --- GIS 集成 ---
-geopandas>=0.14
+# shapely 2.x 提供 manylinux wheel（内含 GEOS），slim 可直接装。
 shapely>=2.0
+# geopandas 依赖 GDAL/fiona（需系统 libgdal-dev，slim 无法直接 pip 编译），
+# 且本项目 GIS 引擎对 geopandas 做了 try/except 降级 → 默认不装。
+# 需要真实 GIS 能力时构建带 GIS 的镜像：pip install -e ".[geo]"
+# geopandas>=0.14
 
 # --- 向量存储 ---
 chromadb>=0.5
@@ -66,7 +70,11 @@ gmssl>=3.2
 paho-mqtt>=2.0
 
 # --- BIM/IFC 解析 (5b.5, 不安装则降级 mock) ---
-ifcopenshell>=0.7
+# ifcopenshell 为 C++/OCCT 重型依赖：slim 镜像无 CMake/OCCT 时无法从 sdist 编译，
+# 部分 Python 版本在 PyPI 无预编译 wheel。BIMConnector 已实现自动降级 mock，
+# 故默认不装入镜像。需要真实 IFC 解析时使用带 BIM 扩展的构建：
+#   pip install -e ".[bim]"   （或基于装有 ifcopenshell wheel 的镜像）
+# ifcopenshell>=0.7
 
 # =====================================================
 # 开发依赖请安装: pip install -e ".[dev]"

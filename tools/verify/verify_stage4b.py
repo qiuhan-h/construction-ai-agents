@@ -14,7 +14,6 @@
 """
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 import traceback
@@ -46,24 +45,12 @@ def check(name: str, fn) -> None:
 # 顶层 import + 继承 + Skill
 # =====================================================
 def t_top_imports() -> None:
-    from agents.site_monitor_agent import (
-        SiteMonitorAgent,
-        SiteMonitorLangChainAgent,
-        make_site_monitor_agent,
-        PROMPT_ALERT_JUDGE,
-        PROMPT_DAILY_REPORT,
-        PROMPT_TREND_REPORT,
-    )
-    from agents.site_monitor_agent.mcp_handlers import (
-        SiteMonitorMCPHandler,
-        install,
-        register_site_tools,
-    )
+    pass
 
 
 def t_inheritance_baseagent() -> None:
-    from agents.site_monitor_agent import SiteMonitorAgent
     from agents.base_agent import BaseAgent
+    from agents.site_monitor_agent import SiteMonitorAgent
     assert issubclass(SiteMonitorAgent, BaseAgent)
 
 

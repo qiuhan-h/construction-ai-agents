@@ -17,13 +17,6 @@ from core.events.event_bus import (
 )
 from core.events.events import (
     KNOWN_TOPICS,
-    AgentTaskDoneEvent,
-    AlertResolvedEvent,
-    AlertTriggeredEvent,
-    Event,
-    InspectionCompletedEvent,
-    RegulationUpdatedEvent,
-    ReportSignedEvent,
     TOPIC_AGENT_TASK_DONE,
     TOPIC_ALERT_RESOLVED,
     TOPIC_ALERT_TRIGGERED,
@@ -32,6 +25,13 @@ from core.events.events import (
     TOPIC_REPORT_SIGNED,
     TOPIC_VIOLATION_CREATED,
     TOPIC_VIOLATION_RECTIFIED,
+    AgentTaskDoneEvent,
+    AlertResolvedEvent,
+    AlertTriggeredEvent,
+    Event,
+    InspectionCompletedEvent,
+    RegulationUpdatedEvent,
+    ReportSignedEvent,
     ViolationCreatedEvent,
     ViolationRectifiedEvent,
 )

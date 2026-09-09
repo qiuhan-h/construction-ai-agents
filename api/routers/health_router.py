@@ -90,7 +90,7 @@ def build_health_router() -> APIRouter:
     router = APIRouter(prefix="/api/v1/health", tags=["health"])
 
     @router.get("/healthz", response_model=ApiResponse[dict])
-    async def healthz() -> dict[str, Any]:
+    async def healthz() -> ApiResponse[dict[str, Any]]:
         return ApiResponse[dict].ok(
             {
                 "status": "ok",
@@ -99,7 +99,7 @@ def build_health_router() -> APIRouter:
         )
 
     @router.get("/readyz", response_model=ApiResponse[dict])
-    async def readyz(response: Response) -> dict[str, Any]:
+    async def readyz(response: Response) -> ApiResponse[dict[str, Any]]:
         checks: dict[str, dict[str, Any]] = {}
         for name, fn in (
             ("database", _check_db),

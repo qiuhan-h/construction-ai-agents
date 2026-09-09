@@ -7,16 +7,15 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from agents.site_monitor_agent.alert_engine.alert_repository import (
+    AlertRepository,
+)
 from common.constants import AlertLevel
 from common.timeutils import utc_now
 from core.events import get_event_bus
 from core.events.events import (
     AlertResolvedEvent,
     AlertTriggeredEvent,
-)
-
-from agents.site_monitor_agent.alert_engine.alert_repository import (
-    AlertRepository,
 )
 
 logger = logging.getLogger(__name__)

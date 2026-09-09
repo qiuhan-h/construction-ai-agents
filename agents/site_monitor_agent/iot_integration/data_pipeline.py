@@ -5,8 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 
 from common.timeutils import ensure_utc, from_iso, to_iso, utc_now
 
@@ -70,8 +69,8 @@ class DataPipeline:
         except (TypeError, ValueError):
             return {}
         ts_raw = raw.get("timestamp")
-        if isinstance(ts_raw, (int, float)):
-            ts = datetime.fromtimestamp(ts_raw, tz=timezone.utc).isoformat()
+        if isinstance(ts_raw, int | float):
+            ts = datetime.fromtimestamp(ts_raw, tz=UTC).isoformat()
         elif isinstance(ts_raw, str) and ts_raw:
             try:
                 ts = ensure_utc(from_iso(ts_raw)).isoformat()

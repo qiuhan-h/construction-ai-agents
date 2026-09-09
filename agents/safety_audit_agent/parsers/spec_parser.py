@@ -87,7 +87,7 @@ def _split_sections(text: str) -> list[tuple[str, str]]:
         sections.append((current_title, current_body))
     # 兜底：未识别章节
     if not sections:
-        return [("", [text])]
+        return [("", text)]
     return [(title, "\n".join(body).strip()) for title, body in sections]
 
 

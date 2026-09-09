@@ -9,8 +9,8 @@ import asyncio
 
 from core.a2a.message import A2AMessage
 from core.events import (
-    Event,
     TOPIC_INSPECTION_COMPLETED,
+    Event,
     get_event_bus,
     reset_event_bus,
 )

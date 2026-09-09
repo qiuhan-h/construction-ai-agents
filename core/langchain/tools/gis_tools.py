@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from core.langchain.tools import MCPToolAdapter, register_tool
 
-
 _DESC_AGGREGATE = "多源风险聚合：合并塔吊/高支模/深基坑等危险源 → 综合风险评分"
 
 

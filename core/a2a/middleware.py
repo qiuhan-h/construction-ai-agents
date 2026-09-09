@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import deque
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from core.a2a.serializers import JSONRPCRequest
 

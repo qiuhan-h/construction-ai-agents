@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-import httpx  # type: ignore[import-not-found]
+import httpx  # type: ignore[import-not-found]  # noqa: E402
 
 API_BASE = "http://localhost:8000/api/v1"
 A2A_BASE = "http://localhost:8080"

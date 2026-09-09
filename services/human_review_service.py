@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
 from common.ids import new_id
 from services.human_review_repository import HumanReviewRepository, HumanReviewRow

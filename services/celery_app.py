@@ -7,7 +7,6 @@ autodiscover_tasks(["services"]) 自动发现 services/ 下的 @app.task 函数�
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def _build_celery_app() -> Any:
     """构造 Celery 实例；broker 未配置时使用 memory://。"""
-    from celery import Celery
+    from celery import Celery  # type: ignore[import-not-found]
 
     # 配置：缺凭据时退回 memory://
     try:

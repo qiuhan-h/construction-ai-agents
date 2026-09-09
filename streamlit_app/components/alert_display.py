@@ -17,7 +17,6 @@ import streamlit as st
 
 from streamlit_app.utils import get_state
 
-
 # =====================================================
 # severity 配置
 # =====================================================

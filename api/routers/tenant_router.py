@@ -99,7 +99,7 @@ def build_tenant_router() -> APIRouter:
         response_model=ApiResponse[dict],
         status_code=status.HTTP_201_CREATED,
     )
-    async def register_tenant(body: TenantCreateRequest) -> dict[str, Any]:
+    async def register_tenant(body: TenantCreateRequest) -> ApiResponse[dict[str, Any]]:
         """自助注册：trial 套餐 30 天 + 初始配额。"""
         from services.tenant_service import get_tenant_service
 
@@ -121,7 +121,7 @@ def build_tenant_router() -> APIRouter:
     async def get_tenant(
         tenant_id: str,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         _ensure_same_tenant(auth, tenant_id)
         from services.tenant_service import get_tenant_service
 
@@ -138,7 +138,7 @@ def build_tenant_router() -> APIRouter:
         tenant_id: str,
         body: PlanUpgradeRequest,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         _ensure_same_tenant(auth, tenant_id)
         from services.tenant_service import get_tenant_service
 
@@ -155,7 +155,7 @@ def build_tenant_router() -> APIRouter:
         tenant_id: str,
         body: QuotaCheckRequest,
         auth: AuthContext = Depends(get_auth_context),
-    ) -> dict[str, Any]:
+    ) -> ApiResponse[dict[str, Any]]:
         """消耗一次配额；trial 第 101 次调用在此返回 429。"""
         _ensure_same_tenant(auth, tenant_id)
         from services.quota_service import get_quota_service

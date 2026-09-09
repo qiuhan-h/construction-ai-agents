@@ -20,8 +20,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from fastapi.testclient import TestClient
-from api.main import create_app
+from fastapi.testclient import TestClient  # noqa: E402
+
+from api.main import create_app  # noqa: E402
 
 
 @pytest.fixture(scope="module")

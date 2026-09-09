@@ -297,11 +297,8 @@ class WorkflowEngine:
         self, params: dict, tenant_id: str, run_id: str, node: TaskSpec
     ) -> Any:
         # 通过 ServiceRegistry 调 system 动作
-        try:
-            from core.services.service_registry import ServiceRegistry
-        except ImportError:
-            # 4c 首版允许没有 ServiceRegistry（用 mock dispatcher 替代）
-            from services.service_registry import ServiceRegistry  # type: ignore[no-redef]
+        from services.service_registry import ServiceRegistry
+
         result = ServiceRegistry.dispatch(node.system_action, params, tenant_id)
         # 兼容同步/异步 handler
         if asyncio.iscoroutine(result):

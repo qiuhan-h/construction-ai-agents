@@ -119,7 +119,7 @@ def _extract_materials(text: str) -> list[str]:
 
 
 # L12 修补：荷载正则提为模块级常量，避免每次调用 _extract_loads 重新编译。
-_LOAD_VALUE_PATTERNS: dict[str, "re.Pattern[str]"] = {
+_LOAD_VALUE_PATTERNS: dict[str, re.Pattern[str]] = {
     "dead": re.compile(r"(?:恒|永久)荷载[^0-9]{0,5}(\d+(?:\.\d+)?)"),
     "live": re.compile(r"(?:活|可变)荷载[^0-9]{0,5}(\d+(?:\.\d+)?)"),
     "wind": re.compile(r"风\s*荷载[^0-9]{0,5}(\d+(?:\.\d+)?)"),

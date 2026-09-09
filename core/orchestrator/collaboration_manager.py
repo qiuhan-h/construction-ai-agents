@@ -110,6 +110,8 @@ class CollaborationManager:
 
     # ---------- 持久化 ----------
     def _flush_to_disk(self) -> None:
+        if not self._persist_path:
+            return
         try:
             data = {
                 tid: [e.to_dict() for e in entries]
@@ -121,8 +123,10 @@ class CollaborationManager:
             logger.warning("协作时间线落盘失败: %s", e)
 
     def _load_from_disk(self) -> None:
+        if not self._persist_path:
+            return
         try:
-            with open(self._persist_path, "r", encoding="utf-8") as f:
+            with open(self._persist_path, encoding="utf-8") as f:
                 data = json.load(f)
             self._store = {
                 tid: [

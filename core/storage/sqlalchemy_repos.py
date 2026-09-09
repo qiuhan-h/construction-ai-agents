@@ -22,11 +22,13 @@
 
 from __future__ import annotations
 
+import builtins
 import logging
 import os
 import threading
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from typing import Any, Iterable, Iterator, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from common.timeutils import to_iso
 from core.storage.base import (
@@ -407,7 +409,7 @@ class RegulationRepository(Repository):
     # ---- 业务便捷 ----
     def find_by_code(
         self, tenant_id: str, code: str, *, version: str | None = None
-    ) -> list[dict[str, Any]]:
+    ) -> builtins.list[dict[str, Any]]:
         with get_session_scope() as s:
             q = s.query(RegulationTable).filter(
                 RegulationTable.tenant_id == tenant_id,
@@ -567,7 +569,7 @@ class GeofenceViolationRepository(Repository):
         fence_id: str,
         *,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+    ) -> builtins.list[dict[str, Any]]:
         with get_session_scope() as s:
             rows = (
                 s.query(GeofenceViolationTable)
@@ -659,7 +661,7 @@ class ORMGeofenceHistoryStore:
         limit: int = 100,
     ) -> list[Any]:
         from agents.site_monitor_agent.gis_monitoring.geofencing import FenceViolation
-        from common.timeutils import ensure_utc
+        from common.timeutils import ensure_utc, from_iso, utc_now
         from models.domain import GeoPoint
 
         since = ensure_utc(since) if since is not None else None
@@ -672,27 +674,27 @@ class ORMGeofenceHistoryStore:
         out: list[FenceViolation] = []
         for r in rows:
             if since is not None:
-                ts = r.get("occurred_at")
-                if not ts:
+                ts_iso = r.get("occurred_at")
+                if not ts_iso:
                     continue
                 # r["occurred_at"] 已经是 ISO 字符串
-                from common.timeutils import from_iso
-
-                if from_iso(ts) < since:
+                if from_iso(ts_iso) < since:
                     continue
             if device_id and r.get("device_id") != device_id:
                 continue
             loc = r.get("location") or {}
+            # location 兼容两种键：GeoPoint 序列化（longitude/latitude）与旧格式（lon/lat）
             point = GeoPoint(
-                lon=float(loc.get("lon", 0.0)),
-                lat=float(loc.get("lat", 0.0)),
+                longitude=float(loc.get("longitude", loc.get("lon", 0.0))),
+                latitude=float(loc.get("latitude", loc.get("lat", 0.0))),
             )
+            occurred = r.get("occurred_at")
             out.append(
                 FenceViolation(
                     fence_id=r["geofence_id"],
                     device_id=r["device_id"],
                     point=point,
-                    ts=from_iso(r["occurred_at"]) if r.get("occurred_at") else None,
+                    ts=from_iso(occurred) if occurred else utc_now(),
                     metadata=r.get("extra") or {},
                 )
             )

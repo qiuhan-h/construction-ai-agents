@@ -17,7 +17,6 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[3] / "construction-ai-agents"
 TOOLS_DIR = Path(__file__).resolve().parent
@@ -55,8 +54,9 @@ def check_scan() -> None:
 # =====================================================
 def check_bim_api() -> None:
     print("\n[B] BIM API 端点（TR-10.1/10.2/10.3）")
-    from api.main import create_app
     from fastapi.testclient import TestClient
+
+    from api.main import create_app
 
     app = create_app()
     client = TestClient(app)

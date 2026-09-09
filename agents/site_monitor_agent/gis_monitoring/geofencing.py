@@ -5,10 +5,15 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from common.timeutils import utc_now
 from models.domain import GeoPoint
+
+if TYPE_CHECKING:
+    from agents.site_monitor_agent.gis_monitoring.geofence_history import (
+        GeofenceHistoryStore,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +33,7 @@ class Geofencing:
 
     def __init__(
         self,
-        history_store: "GeofenceHistoryStore | None" = None,
+        history_store: GeofenceHistoryStore | None = None,
     ) -> None:
         self._fences: dict[str, dict] = {}  # fence_id -> {name, polygon}
         # 5b.7：注入持久化 store；None 时按需懒加载

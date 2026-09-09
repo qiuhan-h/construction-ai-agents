@@ -9,7 +9,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-from typing import Any
 
 logger = logging.getLogger("core.security.sm2_signer")
 
@@ -37,12 +36,11 @@ class SM2Signer:
 
     def _detect_backend(self) -> str:
         """检测可用后端：gmssl → hmac 降级。"""
-        try:
-            from gmssl import sm2  # type: ignore
+        import importlib.util
+
+        if importlib.util.find_spec("gmssl") is not None:
             if self._private_key and self._public_key:
                 return "gmssl"
-        except ImportError:
-            pass
         if not self._private_key or not self._public_key:
             logger.warning(
                 "SM2 密钥未配置或 gmssl 未安装 → 降级为 HMAC-SHA256"
@@ -107,13 +105,13 @@ def generate_sm2_keypair() -> tuple[str, str]:
     缺 gmssl 时返回空串并警告。
     """
     try:
-        from gmssl import sm2, func  # type: ignore
+        from gmssl import func, sm2  # type: ignore
         private_key = func.random_hex(64)
         # gmssl 的公钥 = 04 + x(64 hex) + y(64 hex) = 130 hex chars
         crypt = sm2.CryptSM2(private_key=private_key, public_key="")
         # 公钥从私钥派生
         public_key = crypt._kg(int(private_key, 16), sm2.default_ecc_table["G"])  # type: ignore
-        pk_hex = "04" + "%064x%064x" % public_key
+        pk_hex = "04" + "{:064x}{:064x}".format(*public_key)
         return private_key, pk_hex
     except ImportError:
         logger.warning("gmssl 未安装 → 无法生成 SM2 密钥对")

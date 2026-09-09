@@ -41,11 +41,10 @@ def init_orchestrator(
     - event_bus    -> core.events.get_event_bus()
     """
     global _orch
+    from api.dependencies.agent_manager import get_agent_manager
     from core.events import get_event_bus
     from core.orchestrator import Orchestrator, WorkflowEngine
     from services.task_queue import TaskQueue
-
-    from api.dependencies.agent_manager import get_agent_manager
 
     with _orch_lock:
         tq = task_queue or TaskQueue()

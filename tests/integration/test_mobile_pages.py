@@ -53,8 +53,9 @@ def test_mobile_page_in_app_pages_list() -> None:
 
 def test_mobile_page_importable() -> None:
     """07_mobile 模块可导入且暴露 render()。"""
-    from streamlit_app.pages import _PAGE_MODULES
     import importlib
+
+    from streamlit_app.pages import _PAGE_MODULES
 
     module = importlib.import_module(_PAGE_MODULES["07_mobile"])
     assert hasattr(module, "render")
@@ -270,8 +271,9 @@ def test_render_dashboard_with_none_data() -> None:
 # =====================================================
 def test_mobile_page_render_no_crash() -> None:
     """07_mobile.render() 在 mock 环境下不崩溃（API 不可达时降级）。"""
-    from streamlit_app.pages import _PAGE_MODULES
     import importlib
+
+    from streamlit_app.pages import _PAGE_MODULES
 
     module = importlib.import_module(_PAGE_MODULES["07_mobile"])
 

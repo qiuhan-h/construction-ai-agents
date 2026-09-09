@@ -5,11 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from agents.compliance_agent.regulation_engine.mcp_loader import RegulationSummary
 from common.constants import ViolationSeverity
 from core.rules.rule import ComplianceRule, compare
 from models.domain import Violation
-
-from agents.compliance_agent.regulation_engine.mcp_loader import RegulationSummary
 
 logger = logging.getLogger(__name__)
 

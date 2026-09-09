@@ -18,15 +18,16 @@ import re
 import threading
 from abc import ABC, abstractmethod
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 # 极简中文停用词（首版，避免对常见虚词过敏感）
 _STOP_WORDS: set[str] = {
     "的", "了", "和", "与", "或", "在", "是", "我", "你", "他", "她", "它",
     "我们", "你们", "他们", "这", "那", "这个", "那个", "以及", "等", "为",
     "于", "由", "从", "向", "对", "按", "以", "可", "能", "会", "应", "须",
-    "需", "要", "不", "没", "无", "的", "了", "过", "着", "吗", "呢",
+    "需", "要", "不", "没", "无", "过", "着", "吗", "呢",
 }
 
 # 中英文字符 token 切分（连续中英/数字归为一个 token）
@@ -53,7 +54,7 @@ class VectorRecord:
     id: str
     tenant_id: str
     text: str
-    vector: list[float] = field(default_factory=list)
+    vector: dict[str, float] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

@@ -11,11 +11,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
-
-from .structural_analyzer import MemberType
-
 
 # =====================================================
 # GB 50010-2010 混凝土强度设计值 f_c (N/mm² = MPa)

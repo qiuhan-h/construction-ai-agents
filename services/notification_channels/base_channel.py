@@ -15,7 +15,6 @@ import hashlib
 import hmac
 import json
 import logging
-import socket
 import ssl
 import time
 import urllib.error
@@ -62,7 +61,7 @@ def http_post_json(
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:  # noqa: S310
             body = resp.read().decode("utf-8", errors="replace")
             return resp.status, body
-    except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+    except (urllib.error.URLError, TimeoutError) as e:
         raise HTTPError(f"POST {url} 失败: {e}") from e
 
 
@@ -90,7 +89,7 @@ def http_post_form(
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:  # noqa: S310
             body = resp.read().decode("utf-8", errors="replace")
             return resp.status, body
-    except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+    except (urllib.error.URLError, TimeoutError) as e:
         raise HTTPError(f"POST {url} 失败: {e}") from e
 
 
@@ -122,7 +121,7 @@ def http_post_raw_json(
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:  # noqa: S310
             body = resp.read().decode("utf-8", errors="replace")
             return resp.status, body
-    except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+    except (urllib.error.URLError, TimeoutError) as e:
         raise HTTPError(f"POST {url} 失败: {e}") from e
 
 
@@ -134,7 +133,7 @@ def compute_dingtalk_sign(secret: str, timestamp_ms: int | None = None) -> str:
     if timestamp_ms is None:
         timestamp_ms = int(time.time() * 1000)
     secret_enc = secret.encode("utf-8")
-    string_to_sign = f"{timestamp_ms}\n{secret}".encode("utf-8")
+    string_to_sign = f"{timestamp_ms}\n{secret}".encode()
     hmac_code = hmac.new(secret_enc, string_to_sign, digestmod=hashlib.sha256).digest()
     sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
     return f"timestamp={timestamp_ms}&sign={sign}"

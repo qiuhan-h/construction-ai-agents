@@ -11,8 +11,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from common.error_codes import ErrorCodes
-
+from common.error_codes import ErrorCode, ErrorCodes
 
 # =====================================================
 # 协议常量
@@ -50,7 +49,7 @@ class A2AErrorCode:
     NETWORK_ERROR = ErrorCodes.A2A_NETWORK_ERROR
 
 
-def make_error(code: A2AErrorCode | ErrorCodes, message: str | None = None,
+def make_error(code: ErrorCode, message: str | None = None,
                data: dict[str, Any] | None = None) -> dict[str, Any]:
     """构造 A2A JSON-RPC 标准 error 字段。"""
     payload: dict[str, Any] = {

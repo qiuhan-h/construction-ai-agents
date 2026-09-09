@@ -1,11 +1,5 @@
 """api.schemas 公共 API。"""
 
-from api.schemas.bim_schemas import (
-    BIMElement,
-    BIMProgressItem,
-    BIMProgressResponse,
-    BIMProjectTreeNode,
-)
 from api.schemas.a2a_schemas import (
     A2ACancelTaskRequest,
     A2ACancelTaskResponse,
@@ -26,6 +20,12 @@ from api.schemas.agent_schemas import (
     AgentListResponse,
     AgentSkillDTO,
     AgentSummary,
+)
+from api.schemas.bim_schemas import (
+    BIMElement,
+    BIMProgressItem,
+    BIMProgressResponse,
+    BIMProjectTreeNode,
 )
 from api.schemas.mobile_schemas import (
     MobileAlertListItem,

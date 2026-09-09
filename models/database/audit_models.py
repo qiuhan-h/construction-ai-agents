@@ -53,7 +53,7 @@ class InspectionTable(TenantMixin, IDMixin, Base):
         DateTime(timezone=True), nullable=False, default=utc_now
     )
 
-    violations: Mapped[list["ViolationTable"]] = relationship(back_populates="inspection")
+    violations: Mapped[list[ViolationTable]] = relationship(back_populates="inspection")
 
 
 class ViolationTable(TenantMixin, IDMixin, TimestampMixin, Base):
@@ -83,7 +83,7 @@ class ViolationTable(TenantMixin, IDMixin, TimestampMixin, Base):
     )
     rectification: Mapped[str | None] = mapped_column(Text)
 
-    inspection: Mapped["InspectionTable"] = relationship(back_populates="violations")
+    inspection: Mapped[InspectionTable] = relationship(back_populates="violations")
 
 
 class ReviewReportTable(TenantMixin, IDMixin, TimestampMixin, Base):

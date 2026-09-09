@@ -74,7 +74,7 @@ class NotificationService:
                 secret = ""
                 if s is not None and s.dingtalk_secret:
                     secret = s.dingtalk_secret.get_secret_value()
-                ch = DingTalkRealChannel(webhook=webhook, secret=secret or None)
+                ch: BaseChannel = DingTalkRealChannel(webhook=webhook, secret=secret or None)
                 ch.name = "dingtalk"
                 logger.info("通知渠道：钉钉真实通道（webhook 已配置）")
             else:
@@ -127,7 +127,7 @@ class NotificationService:
                     SmsAliyunChannel,
                 )
 
-                ch = SmsAliyunChannel(
+                ch: BaseChannel = SmsAliyunChannel(
                     access_key_id=ak,
                     access_key_secret=sk,
                     sign_name=sign,

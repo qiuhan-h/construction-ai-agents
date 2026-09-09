@@ -160,7 +160,6 @@ class PDFExporter:
         from reportlab.lib.pagesizes import A4  # type: ignore
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore
         from reportlab.lib.units import cm  # type: ignore
-        from reportlab.pdfbase import pdfmetrics  # type: ignore
         from reportlab.platypus import (  # type: ignore
             Paragraph,
             SimpleDocTemplate,

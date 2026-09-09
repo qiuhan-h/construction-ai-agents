@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from typing import Any, Literal
+from typing import Literal
 
 from core.vector_store.base import VectorStore
 
@@ -66,7 +66,7 @@ def get_vector_store(backend: str | None = None) -> VectorStore:
         if chosen == "chroma":
             from core.vector_store.chroma_store import ChromaVectorStore
 
-            inst = ChromaVectorStore(allow_fallback=True)
+            inst: VectorStore = ChromaVectorStore(allow_fallback=True)
         else:
             from core.vector_store.in_memory import InMemoryVectorStore
 

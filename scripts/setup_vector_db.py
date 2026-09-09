@@ -46,7 +46,7 @@ _CASE_FILENAME_RE = re.compile(r"^[Cc]ase[-_]?([A-Za-z0-9_-]+)\.md$")
 # 工具
 # =====================================================
 def _read_text(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 

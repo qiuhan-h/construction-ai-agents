@@ -179,7 +179,7 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="", description="CORS 白名单（逗号分隔域名）")
 
     @model_validator(mode="after")
-    def _warn_default_jwt_secret(self) -> "Settings":
+    def _warn_default_jwt_secret(self) -> Settings:
         # fail-fast 警告：api_jwt_secret 仍为代码默认占位值时仅记日志（不抛错，
         # 避免阻塞本地开发 / 测试）。生产环境应通过 .env / K8s Secret 注入真实密钥。
         try:

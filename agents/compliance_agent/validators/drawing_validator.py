@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any
 
 from common.constants import ViolationSeverity
@@ -91,7 +90,7 @@ class DrawingValidator:
             ))
             return out
         # 至少一个图层名前缀匹配
-        if not any(_layer_prefix(l) for l in layers):
+        if not any(_layer_prefix(layer) for layer in layers):
             out.append(self._mk_violation(
                 f"图层命名不合法：至少应包含 {self._valid_layer_prefixes} 之一",
                 severity="low",

@@ -16,8 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, Response, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Response
 
 from api.dependencies.auth import AuthContext, get_auth_context
 from api.schemas.mobile_schemas import (
@@ -46,8 +45,7 @@ def build_mobile_router() -> APIRouter:
     ) -> dict[str, Any]:
         """移动端首页仪表盘（精简聚合，< 5KB）。"""
         dashboard = _build_dashboard(auth)
-        payload = dashboard.model_dump(mode="json")
-        body = ApiResponse[MobileDashboard].ok(payload, message="mobile dashboard")
+        body = ApiResponse[MobileDashboard].ok(dashboard, message="mobile dashboard")
         # 设置 Content-Length 供客户端校验
         body_json = body.model_dump_json()
         response.headers["Content-Length"] = str(len(body_json.encode()))
@@ -106,7 +104,7 @@ def _fetch_alerts(tenant_id: str, *, limit: int = 5) -> list[dict[str, Any]]:
             rows = (
                 s.query(AlertTable)
                 .filter(AlertTable.tenant_id == tenant_id)
-                .order_by(AlertTable.created_at.desc())
+                .order_by(AlertTable.triggered_at.desc())
                 .limit(limit)
                 .all()
             )
@@ -117,7 +115,7 @@ def _fetch_alerts(tenant_id: str, *, limit: int = 5) -> list[dict[str, Any]]:
                     "title": (getattr(r, "message", "") or "")[:50],
                     "source": getattr(r, "source", None),
                     "status": getattr(r, "status", "open"),
-                    "occurred_at": to_iso(r.created_at) if r.created_at else None,
+                    "occurred_at": to_iso(r.triggered_at) if r.triggered_at else None,
                 }
                 for r in rows
             ]

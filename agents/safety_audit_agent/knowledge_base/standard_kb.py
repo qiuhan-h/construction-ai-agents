@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
 
 try:
     from agents.compliance_agent.regulation_engine.rule_checker import (
@@ -14,8 +13,8 @@ try:
         StructuredRule,
     )
 except ImportError:  # pragma: no cover
-    RuleChecker = None  # type: ignore[assignment]
-    StructuredRule = None  # type: ignore[assignment]
+    RuleChecker = None  # type: ignore[assignment,misc]
+    StructuredRule = None  # type: ignore[assignment,misc]
 
 
 @dataclass(frozen=True)

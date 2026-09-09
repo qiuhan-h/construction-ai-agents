@@ -7,11 +7,12 @@ import logging
 from datetime import date
 from typing import Any
 
+from agents.safety_audit_agent.outputs.report_signer import sign_report_content
 from common.constants import AgentName, AuditConclusion, ReportStatus
-from common.ids import inspection_id as _inspection_id_factory, report_id
+from common.ids import inspection_id as _inspection_id_factory
+from common.ids import report_id
 from common.timeutils import utc_now
 from models.domain import Inspection, ReviewReport
-from agents.safety_audit_agent.outputs.report_signer import sign_report_content
 
 logger = logging.getLogger(__name__)
 
