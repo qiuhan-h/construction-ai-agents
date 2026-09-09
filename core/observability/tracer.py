@@ -39,6 +39,7 @@ def get_tracer(name: str = APP_NAME) -> Any:
             from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-not-found]
             from opentelemetry.sdk.trace.export import BatchSpanProcessor  # type: ignore[import-not-found]
 
+            exporter: Any
             try:
                 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found]
                     OTLPSpanExporter,
@@ -46,9 +47,9 @@ def get_tracer(name: str = APP_NAME) -> Any:
                 exporter = OTLPSpanExporter()
             except ImportError:
                 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # type: ignore[import-not-found]
-                    OTLPSpanExporter,
+                    OTLPSpanExporter as _OTLP_HTTP,
                 )
-                exporter = OTLPSpanExporter()
+                exporter = _OTLP_HTTP()
 
             _provider = TracerProvider(
                 resource=Resource.create({"service.name": APP_NAME})

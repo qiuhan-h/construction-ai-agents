@@ -45,34 +45,39 @@ class StandardKnowledgeBase:
         self._checker = RuleChecker() if RuleChecker is not None else None
 
     def all(self) -> list[KnowledgeEntry]:
-        """返回全部已加载条文。"""
-        if self._checker is None:
+        if not self._checker:
             return []
-        return [self._to_entry(r) for r in self._checker._rules]
+        return [self._to_entry(r) for r in self._checker._rules]  # type: ignore[union-attr]
 
     def search(self, keyword: str) -> list[KnowledgeEntry]:
         """按关键词检索 title / reason / suggestion。"""
         kw = keyword.lower()
+        assert self._checker is not None
         return [
-            self._to_entry(r) for r in self._checker._rules
+            self._to_entry(r) for r in self._checker._rules  # type: ignore[union-attr]
             if kw in (r.title + r.reason + r.suggestion + r.clause_id).lower()
         ]
 
     def by_severity(self, severity: str) -> list[KnowledgeEntry]:
         """按严重度筛选。"""
         sev = severity.lower()
-        return [self._to_entry(r) for r in self._checker._rules if r.severity == sev]
+        assert self._checker is not None
+        return [self._to_entry(r) for r in self._checker._rules  # type: ignore[union-attr]
+                if r.severity == sev]
 
     def by_clause(self, clause_id: str) -> KnowledgeEntry | None:
         """精确查找。"""
-        for r in self._checker._rules:
+        assert self._checker is not None
+        for r in self._checker._rules:  # type: ignore[union-attr]
             if r.clause_id == clause_id:
                 return self._to_entry(r)
         return None
 
     def by_field(self, field_name: str) -> list[KnowledgeEntry]:
         """按检查字段名筛选（含点号分隔的嵌套字段）。"""
-        return [self._to_entry(r) for r in self._checker._rules if r.field == field_name]
+        assert self._checker is not None
+        return [self._to_entry(r) for r in self._checker._rules  # type: ignore[union-attr]
+                if r.field == field_name]
 
     def count(self) -> int:
         return len(self._checker._rules) if self._checker else 0
