@@ -38,18 +38,11 @@ if _ROOT_STR not in _EXISTING_PYTHONPATH.split(os.pathsep):
 # =====================================================
 # pytest 配置钩子
 # =====================================================
-def pytest_configure(config: pytest.Config) -> None:
-    """在 ``pytest-asyncio`` 可用时显式写入 ``asyncio_mode = auto``。
-
-    ``pyproject.toml`` 已声明该值；这里再次写入是为了让 conftest 在脱离
-    pyproject 上下文（例如被 IDE 单独加载）时仍生效。``addinivalue_line``
-    会幂等叠加，不会覆盖既有配置导致冲突。
-    """
-    try:
-        import pytest_asyncio  # noqa: F401
-    except ImportError:
-        return
-    config.addinivalue_line("asyncio_mode", "auto")
+# ``asyncio_mode = "auto"`` 已在 ``pyproject.toml`` 的
+# ``[tool.pytest.ini_options]`` 中声明，pytest 会自动加载；
+# 不需要在 conftest 中重复设置（pytest-asyncio>=0.23 将该选项
+# 注册为严格类型 ini option，重复写入会触发 addinivalue_line
+# 的 ``assert isinstance(x, list)`` 断言失败）。
 
 
 # =====================================================
