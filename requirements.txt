@@ -1,6 +1,13 @@
 # =====================================================
 # construction-ai-agents 运行时依赖
 # 要求 Python >= 3.11
+#
+# 约定：
+# - 本文件为「全功能运行时」依赖清单，供 Docker 镜像（6 个 Dockerfile）安装；
+# - 全部为纯 Python 或带预编译 wheel 的包，slim 镜像无需 C/C++ 工具链；
+# - 重型 C++ 依赖（ifcopenshell/OCCT、geopandas/GDAL）默认注释，
+#   需要时走可选扩展：pip install -e ".[bim]" / ".[geo]"；
+# - 代码对所有可选依赖均有 try/except 降级，缺包不阻塞启动。
 # =====================================================
 
 # --- Web 服务与 API 接入层 ---
@@ -20,6 +27,9 @@ PyYAML>=6.0.1
 SQLAlchemy>=2.0,<3.0
 alembic>=1.13
 psycopg[binary]>=3.1
+
+# --- 多租户 SQL 精确注入 (5c, 缺失时退化正则注入) ---
+sqlparse>=0.5
 
 # --- 缓存与时序存储 ---
 redis>=5.0
@@ -41,6 +51,9 @@ python-jose[cryptography]>=3.3
 # --- LangChain 业务链与工具 (阶段三起使用) ---
 langchain>=0.2
 langchain-openai>=0.1
+# Anthropic 提供商 (core/llm/injector.py 按 LLM_PROVIDER=anthropic 时使用,
+# 缺失则该提供商不可用，OpenAI/mock 路径不受影响)
+langchain-anthropic>=0.2
 
 # --- GIS 集成 ---
 # shapely 2.x 提供 manylinux wheel（内含 GEOS），slim 可直接装。
@@ -53,9 +66,17 @@ shapely>=2.0
 # --- 向量存储 ---
 chromadb>=0.5
 
-# --- 前端 ---
+# --- 前端 (streamlit 镜像) ---
 streamlit>=1.35
 websocket-client>=1.6   # streamlit 侧同步 WS 客户端
+pandas>=2.0            # 前端 components/pages 顶层直接 import (非仅间接依赖)
+plotly>=5.22           # 交互图表引擎, 缺失时退化 altair / streamlit 原生图表
+folium>=0.17           # 交互地图引擎, 缺失时退化 st.map
+streamlit-folium>=0.22 # folium 与 streamlit 的桥接组件
+
+# --- 文档解析与报告导出 ---
+python-docx>=1.1       # DOCX 方案/图纸文本解析 (plan_parser), 缺失时仅 DOCX 不可解析
+reportlab>=4.0         # PDF 报告导出 (pdf_exporter), 缺失时退化 Markdown 导出
 
 # --- 可观测性 (5c.1/5c.2, 不安装则降级 NoOp) ---
 opentelemetry-api>=1.25
@@ -68,6 +89,9 @@ gmssl>=3.2
 
 # --- MQTT 边缘网关 (6d, 不安装则降级 mock) ---
 paho-mqtt>=2.0
+
+# --- 通知通道：企业微信 SDK (services/embedded_apps, 缺失时该通道不可用) ---
+wechatpy>=1.8
 
 # --- BIM/IFC 解析 (5b.5, 不安装则降级 mock) ---
 # ifcopenshell 为 C++/OCCT 重型依赖：slim 镜像无 CMake/OCCT 时无法从 sdist 编译，
